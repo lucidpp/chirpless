@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    
+    <!-- PWA Settings -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="X Sim">
+    <meta name="theme-color" content="#ffffff">
+    <link rel="manifest" href="data:application/manifest+json;base64,eyJuYW1lIjoiWCBTaW11bGF0b3IiLCJzaG9ydF9uYW1lIjoiWCBTaW0iLCJzdGFydF91cmwiOiIuIiwiZGlzcGxheSI6InN0YW5kYWxvbmUiLCJiYWNrZ3JvdW5kX2NvbG9yIjoiI2ZmZmZmZiIsInRoZW1lX2NvbG9yIjoiI2ZmZmZmZiIsImljb25zIjpbeyJzcmMiOiJodHRwczovL3VpLWF2YXRhcnMuY29tL2FwaS8/bmFtZT1YUytTaW0mYmFja2dyb3VuZD0xZDliZjAmY29sb3I9ZmZmIiwiYWx0ZXJuYXRpdmVfdGV4dCI6IlgifV19">
+
+    <title>X Simulator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+        :root {
+            --x-blue: #1d9bf0;
+            --x-black: #0f1419;
+            --x-gray: #536471;
+            --x-light-gray: #eff3f4;
+            --x-border: #eff3f4;
+            --anim-duration: 300ms; 
+            --anim-timing: cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #ffffff;
+            color: var(--x-black);
+            overflow-x: hidden;
+            -webkit-tap-highlight-color: transparent;
+            overscroll-behavior-y: none; /* App-like feel */
+        }
+
+        ::-webkit-scrollbar { display: none; }
+
+        /* --- Odometer Core --- */
+        .odometer {
+            display: inline-flex;
+            flex-direction: row;
+            align-items: baseline; /* Align text properly with raised suffixes */
+            overflow: hidden;
+            height: 1.25em; 
+            line-height: 1.25em;
+            vertical-align: bottom;
+            font-variant-numeric: tabular-nums;
+            white-space: nowrap;
+            pointer-events: none;
+            position: relative;
+        }
+
+        .odometer-digit {
+            display: inline-block;
+            height: 100%;
+            width: 0.65em;
+            text-align: center;
+            position: relative;
+        }
+
+        /* The suffix style (K, M, B) */
+        .odometer-suffix {
+            font-size: 0.85em;
+            font-weight: 500;
+            vertical-align: 0.1em; /* Raised slightly */
+            margin-left: 1px;
+        }
+
+        .digit-track {
+            display: flex;
+            flex-direction: column;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            will-change: transform;
+            height: 1100%; 
+            transition: transform var(--anim-duration) var(--anim-timing);
+        }
+
+        .digit-value {
+            height: 9.09%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .no-transition { transition: none !important; }
+
+        /* --- Interactions --- */
+        .action-icon-wrapper {
+            transition: background-color 0.2s;
+            border-radius: 9999px;
+            padding: 8px;
+            margin: -8px;
+        }
+
+        .action-group:hover .action-icon-wrapper.like { background-color: rgba(249, 24, 128, 0.1); }
+        .action-group:hover .action-count.like { color: #f91880; }
+        .action-group:hover .action-icon-wrapper.like-blue { background-color: rgba(29, 155, 240, 0.1); }
+        .action-group:hover .action-count.like-blue { color: var(--x-blue); }
+        .action-group:hover .action-icon-wrapper.repost { background-color: rgba(0, 186, 124, 0.1); }
+        .action-group:hover .action-count.repost { color: #00ba7c; }
+
+        .liked .icon-like { fill: var(--x-blue); stroke: var(--x-blue); animation: pop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .liked .action-count { color: var(--x-blue); }
+        .reposted .icon-repost { stroke: #00ba7c; fill: rgba(0, 186, 124, 0.1); }
+        .reposted .action-count { color: #00ba7c; }
+
+        @keyframes pop { 0% { transform: scale(1); } 50% { transform: scale(1.3); } 100% { transform: scale(1); } }
+
+        .tab-active { font-weight: 700; color: var(--x-black); }
+        .tab-active::after { content: ''; position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 56px; height: 4px; background-color: var(--x-blue); border-radius: 9999px; }
+        .nav-item-active svg { stroke-width: 2.5; }
+        .compose-btn { box-shadow: 0 4px 14px 0 rgba(29, 155, 240, 0.39); }
+        .floating-input:focus ~ label, .floating-input:not(:placeholder-shown) ~ label { transform: translateY(-20px) scale(0.85); color: var(--x-blue); }
+        .hashtag { color: var(--x-blue); }
+        .sidebar-item:hover { background-color: rgba(15, 20, 25, 0.1); }
+    </style>
+</head>
+<body class="flex justify-center min-h-screen">
+
+    <!-- DESKTOP SIDEBAR -->
+    <header class="hidden md:flex flex-col items-end w-[275px] pr-4 h-screen sticky top-0 overflow-y-auto">
+        <div class="w-[250px] flex flex-col h-full pb-4">
+            <!-- Removed Logo -->
+            <div class="py-1 px-3 mb-2 h-12 flex items-center">
+               <!-- Blank space for "No Logo" requirement -->
+            </div>
+            <nav class="space-y-1 mb-4 w-full">
+                <a onclick="navTo('home')" class="group flex items-center cursor-pointer"><div class="sidebar-item py-3 px-4 rounded-full flex items-center gap-4 transition-colors"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg><span class="text-xl mr-4">Home</span></div></a>
+                <a class="group flex items-center cursor-pointer"><div class="sidebar-item py-3 px-4 rounded-full flex items-center gap-4 transition-colors"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg><span class="text-xl mr-4">Explore</span></div></a>
+                <a class="group flex items-center cursor-pointer"><div class="sidebar-item py-3 px-4 rounded-full flex items-center gap-4 transition-colors"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg><span class="text-xl mr-4">Notifications</span></div></a>
+                <a onclick="navTo('profile')" class="group flex items-center cursor-pointer"><div class="sidebar-item py-3 px-4 rounded-full flex items-center gap-4 transition-colors"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg><span class="text-xl mr-4">Profile</span></div></a>
+            </nav>
+            <button onclick="openCompose()" class="bg-[#1d9bf0] text-white text-lg font-bold py-3.5 rounded-full w-[90%] shadow-lg hover:bg-[#1a8cd8] transition-colors">Post</button>
+            <div class="mt-auto mb-4 cursor-pointer sidebar-item p-3 rounded-full flex items-center gap-3" onclick="navTo('profile')">
+                <div class="w-10 h-10 rounded-full bg-gray-200 overflow-hidden shrink-0"><img id="sidebar-avatar" src="" class="w-full h-full object-cover"></div>
+                <div class="flex flex-col hidden xl:flex"><span class="font-bold text-[15px]" id="sidebar-name">Name</span><span class="text-gray-500 text-[15px]" id="sidebar-handle">@handle</span></div>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN APP -->
+    <div id="app" class="w-full max-w-[600px] min-h-screen border-x border-gray-100 relative pb-16 md:pb-0">
+        <!-- MOBILE HEADER -->
+        <header id="mobile-header" class="sticky top-0 z-50 bg-white/85 backdrop-blur-md border-b border-gray-100 md:hidden transition-transform duration-300">
+            <div class="h-14 flex items-center justify-between px-4">
+                <div class="w-8 h-8 rounded-full bg-gray-200 overflow-hidden cursor-pointer" onclick="navTo('profile')"><img id="header-avatar" src="" class="w-full h-full object-cover"></div>
+                <div class="w-6 h-6 flex items-center justify-center">
+                    <!-- Blank, no logo -->
+                </div>
+                <div class="w-8"></div>
+            </div>
+        </header>
+
+        <!-- FEED VIEW -->
+        <div id="view-home" class="view-section">
+            <div class="flex border-b border-gray-100 sticky top-14 md:top-0 bg-white/85 backdrop-blur z-40">
+                <div class="flex-1 h-12 flex items-center justify-center relative cursor-pointer hover:bg-gray-50 transition-colors tab-active"><span>For you</span></div>
+                <div class="flex-1 h-12 flex items-center justify-center relative cursor-pointer hover:bg-gray-50 transition-colors text-gray-500"><span>Following</span></div>
+            </div>
+            <div class="hidden md:flex flex-col p-4 border-b border-gray-100">
+                <div class="flex gap-3">
+                    <div class="w-10 h-10 rounded-full bg-gray-200 overflow-hidden shrink-0"><img id="composer-avatar-desktop" src="" class="w-full h-full object-cover"></div>
+                    <div class="flex-1">
+                        <textarea id="desktop-input" placeholder="What is happening?!" class="w-full text-xl outline-none placeholder-gray-500 text-gray-900 resize-none h-12 focus:h-24 transition-all"></textarea>
+                        <div id="desktop-img-preview" class="hidden mt-2 relative w-full h-64 rounded-xl overflow-hidden bg-gray-100 border border-gray-200">
+                            <img id="desktop-img-el" class="w-full h-full object-cover">
+                            <button onclick="clearImage('desktop')" class="absolute top-2 right-2 bg-black/70 text-white rounded-full p-1 hover:bg-black/90"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+                        </div>
+                        <div class="flex justify-between items-center mt-3 border-t border-gray-100 pt-3">
+                            <div class="flex text-[#1d9bf0] gap-2">
+                                <label class="p-2 hover:bg-[#1d9bf0]/10 rounded-full cursor-pointer"><input type="file" accept="image/*" class="hidden" onchange="handleImage(this, 'desktop')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg></label>
+                            </div>
+                            <button onclick="submitPost('desktop')" id="desktop-post-btn" class="bg-[#1d9bf0] text-white font-bold px-4 py-1.5 rounded-full text-sm disabled:opacity-50" disabled>Post</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="feed-container"></div>
+        </div>
+
+        <!-- PROFILE VIEW -->
+        <div id="view-profile" class="view-section hidden">
+            <div class="sticky top-0 z-40 bg-white/85 backdrop-blur-md px-4 h-14 flex items-center gap-6 border-b border-gray-100 md:hidden">
+                <button onclick="navTo('home')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg></button>
+                <div><span class="font-bold text-lg block leading-5" id="profile-header-name">Name</span><span class="text-xs text-gray-500" id="profile-header-posts">0 posts</span></div>
+            </div>
+            <div class="h-32 bg-[#cfd9de] relative"></div>
+            <div class="px-4 relative">
+                <div class="w-32 h-32 rounded-full border-4 border-white bg-white absolute -top-16 overflow-hidden"><img id="profile-avatar-lg" src="" class="w-full h-full object-cover"></div>
+                <div class="flex justify-end py-3"><button onclick="openEditProfile()" class="px-4 py-1.5 border border-gray-300 rounded-full font-bold text-sm hover:bg-gray-100 transition-colors">Edit profile</button></div>
+                <div class="mt-2">
+                    <h1 class="font-black text-xl leading-tight" id="profile-name">Name</h1>
+                    <p class="text-gray-500 text-sm mb-3" id="profile-handle">@handle</p>
+                    <p class="text-gray-900 text-[15px] mb-3" id="profile-bio">Bio text goes here.</p>
+                    <div class="flex gap-4 text-sm mb-4">
+                        <span class="hover:underline cursor-pointer"><span class="font-bold text-black odometer js-profile-followers" id="profile-following">0</span> <span class="text-gray-500">Following</span></span>
+                        <span class="hover:underline cursor-pointer" onclick="openFollowerEditor()"><span class="font-bold text-black odometer js-profile-followers" id="profile-followers">0</span> <span class="text-gray-500">Followers</span></span>
+                    </div>
+                </div>
+                <div class="flex border-b border-gray-100 mt-2">
+                    <div class="flex-1 h-12 flex items-center justify-center relative cursor-pointer hover:bg-gray-50 transition-colors tab-active"><span>Posts</span></div>
+                    <div class="flex-1 h-12 flex items-center justify-center relative cursor-pointer hover:bg-gray-50 transition-colors text-gray-500"><span>Replies</span></div>
+                    <div class="flex-1 h-12 flex items-center justify-center relative cursor-pointer hover:bg-gray-50 transition-colors text-gray-500"><span>Media</span></div>
+                </div>
+            </div>
+            <div id="profile-feed-container"></div>
+        </div>
+    </div>
+
+    <!-- RIGHT SIDEBAR -->
+    <div class="hidden lg:block w-[350px] pl-8 pt-4 h-screen sticky top-0 overflow-hidden">
+        <div class="bg-gray-100 rounded-full h-10 w-full flex items-center px-4 mb-4 text-gray-500 gap-3 group focus-within:bg-white focus-within:ring-1 focus-within:ring-[#1d9bf0] focus-within:text-[#1d9bf0]"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg><input type="text" placeholder="Search" class="bg-transparent border-none outline-none text-black w-full placeholder-gray-500"></div>
+        <div class="bg-[#f7f9f9] rounded-2xl pt-3 pb-3">
+            <h2 class="font-black text-xl px-4 mb-3">Trends for you</h2>
+            <div id="trending-container">
+                <!-- Dynamic Trending Content Will Go Here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- TEMPLATES -->
+    <template id="post-template">
+        <div class="post-item border-b border-gray-100 p-4 hover:bg-gray-50/50 transition-colors cursor-pointer relative">
+            <div class="trending-badge hidden absolute top-1 right-2 bg-gray-100 rounded px-2 py-0.5 text-[10px] font-bold text-gray-500 flex items-center gap-1"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>Trending</div>
+            <div class="flex gap-3">
+                <div class="w-10 h-10 rounded-full bg-gray-200 overflow-hidden shrink-0"><img class="post-avatar w-full h-full object-cover" src=""></div>
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-1 text-[15px] leading-5">
+                        <span class="font-bold text-gray-900 truncate post-name">Name</span><span class="text-gray-500 truncate post-handle">@handle</span><span class="text-gray-500 text-xs px-1">·</span><span class="text-gray-500 post-time hover:underline">1h</span>
+                    </div>
+                    <div class="text-[15px] text-gray-900 mt-0.5 whitespace-pre-wrap break-words post-content leading-6"></div>
+                    <div class="post-image-container hidden mt-3 rounded-2xl overflow-hidden border border-gray-200 max-h-[300px]"><img class="post-image w-full h-full object-cover" src=""></div>
+                    
+                    <!-- Trending Text Below Post Content -->
+                    <div class="trending-footer hidden mt-2 text-xs font-semibold text-gray-500 flex items-center gap-1">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#1d9bf0" stroke-width="3"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>
+                        <span class="text-[#1d9bf0]">Trending with your followers</span>
+                    </div>
+
+                    <div class="flex justify-between mt-3 max-w-md text-gray-500">
+                        <div class="action-group flex items-center gap-1 group cursor-pointer hover:text-[#1d9bf0]"><div class="action-icon-wrapper group-hover:bg-[#1d9bf0]/10 icon-anim"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="stroke-gray-500 group-hover:stroke-[#1d9bf0]"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg></div><span class="text-xs action-count reply-count odometer">0</span></div>
+                        <div class="action-group flex items-center gap-1 group cursor-pointer hover:text-[#00ba7c]" onclick="interact(this, 'repost')"><div class="action-icon-wrapper repost icon-anim"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon-repost stroke-gray-500 transition-colors"><polyline points="17 1 21 5 17 9"></polyline><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><polyline points="7 23 3 19 7 15"></polyline><path d="M21 13v2a4 4 0 0 1-4 4H3"></path></svg></div><span class="text-xs action-count repost-count odometer">0</span></div>
+                        <div class="action-group flex items-center gap-1 group cursor-pointer hover:text-[#1d9bf0]" onclick="interact(this, 'like')"><div class="action-icon-wrapper like-blue icon-anim"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon-like stroke-gray-500 transition-colors"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg></div><span class="text-xs action-count like-count odometer">0</span></div>
+                        <div class="action-group flex items-center gap-1 group cursor-pointer hover:text-[#1d9bf0]"><div class="action-icon-wrapper group-hover:bg-[#1d9bf0]/10 icon-anim"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="stroke-gray-500 group-hover:stroke-[#1d9bf0]"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg></div><span class="text-xs action-count view-count odometer">0</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </template>
+    
+    <!-- MOBILE FAB & NAV -->
+    <button onclick="openCompose()" class="fixed bottom-20 right-4 w-14 h-14 bg-[#1d9bf0] rounded-full text-white shadow-lg flex items-center justify-center md:hidden compose-btn z-40 active:scale-90 transition-transform"><svg viewBox="0 0 24 24" aria-hidden="true" class="w-6 h-6 fill-current"><g><path d="M23 3c-6.62-.1-10.38 2.421-13.05 6.03C7.29 12.61 6 17.331 6 22h2c0-1.007.07-2.012.19-3H12c4.1 0 7.48-3.082 7.94-7.054C22.79 10.147 23.17 6.359 23 3zm-7 8h-1.5v2H16c.63-.016 1.2-.08 1.72-.188C16.95 15.24 14.68 17 12 17H8.55c.57-2.512 1.57-4.851 3-6.78 2.16-2.912 5.29-4.911 9.45-5.187C20.95 8.079 19.9 11 16 11zM4 9V6H1V4h3V1h2v3h3v2H6v3H4z"></path></g></svg></button>
+    <nav class="fixed bottom-0 left-0 right-0 h-[53px] bg-white border-t border-gray-100 flex items-center justify-around z-50 md:hidden">
+        <button onclick="navTo('home')" class="nav-item nav-item-active p-2" id="nav-home"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg></button>
+        <button class="nav-item p-2 text-gray-500"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg></button>
+        <button class="nav-item p-2 text-gray-500"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg></button>
+        <button onclick="navTo('profile')" class="nav-item p-2 text-gray-500" id="nav-profile"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg></button>
+    </nav>
+    <div id="compose-modal" class="fixed inset-0 bg-black/40 z-[60] hidden flex items-start justify-center pt-12 md:pt-20">
+        <div class="bg-white w-full h-full md:h-auto md:w-[600px] md:rounded-2xl p-4 flex flex-col">
+            <div class="flex justify-between items-center mb-4"><button onclick="closeCompose()" class="text-gray-900">Cancel</button><button onclick="submitPost('mobile')" class="bg-[#1d9bf0] text-white font-bold px-4 py-1.5 rounded-full text-sm disabled:opacity-50" id="mobile-post-btn" disabled>Post</button></div>
+            <div class="flex gap-3 h-full overflow-y-auto"><div class="w-10 h-10 rounded-full bg-gray-200 overflow-hidden shrink-0"><img id="compose-modal-avatar" src="" class="w-full h-full object-cover"></div><div class="flex-1 flex flex-col"><textarea id="mobile-input" placeholder="What is happening?!" class="w-full h-32 resize-none text-xl outline-none placeholder-gray-500 text-gray-900 mt-2"></textarea><div id="mobile-img-preview" class="hidden mt-2 relative w-full h-48 rounded-xl overflow-hidden bg-gray-100 border border-gray-200"><img id="mobile-img-el" class="w-full h-full object-cover"><button onclick="clearImage('mobile')" class="absolute top-2 right-2 bg-black/70 text-white rounded-full p-1 hover:bg-black/90"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button></div><div class="mt-4 border-t border-gray-100 pt-3 flex text-[#1d9bf0]"><label class="p-2 hover:bg-[#1d9bf0]/10 rounded-full cursor-pointer"><input type="file" accept="image/*" class="hidden" onchange="handleImage(this, 'mobile')"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg></label></div></div></div>
+        </div>
+    </div>
+    <div id="onboarding-modal" class="fixed inset-0 bg-white z-[70] flex flex-col items-center justify-center p-6 hidden">
+        <div class="w-10 h-10 mb-8"></div>
+        <h1 class="text-2xl font-bold mb-2">Create your account</h1><p class="text-gray-500 mb-8 text-center">This is a local simulator. No data leaves your device.</p>
+        <div class="w-full max-w-sm space-y-4"><div class="relative pt-4"><input type="text" id="setup-name" class="floating-input w-full border border-gray-300 rounded px-3 py-3 outline-none focus:border-[#1d9bf0] transition-colors peer" placeholder=" "><label class="absolute left-3 top-3.5 text-gray-500 text-base transition-all pointer-events-none peer-focus:-translate-y-2.5 peer-focus:scale-75 peer-focus:text-[#1d9bf0] bg-white px-1">Name</label></div><div class="relative pt-4"><input type="text" id="setup-handle" class="floating-input w-full border border-gray-300 rounded px-3 py-3 outline-none focus:border-[#1d9bf0] transition-colors peer" placeholder=" "><label class="absolute left-3 top-3.5 text-gray-500 text-base transition-all pointer-events-none peer-focus:-translate-y-2.5 peer-focus:scale-75 peer-focus:text-[#1d9bf0] bg-white px-1">Handle</label></div><div class="relative pt-4"><input type="number" id="setup-followers" class="floating-input w-full border border-gray-300 rounded px-3 py-3 outline-none focus:border-[#1d9bf0] transition-colors peer" placeholder=" " value="100"><label class="absolute left-3 top-3.5 text-gray-500 text-base transition-all pointer-events-none peer-focus:-translate-y-2.5 peer-focus:scale-75 peer-focus:text-[#1d9bf0] bg-white px-1">Initial Followers</label></div></div>
+        <button onclick="completeSetup()" class="mt-8 bg-black text-white font-bold py-3 px-8 rounded-full w-full max-w-sm hover:bg-gray-800 transition-colors">Start Simulating</button>
+    </div>
+
+    <script>
+        const AVATAR_URL = "https://ui-avatars.com/api/?background=random&color=fff&size=128&name=";
+        const TICK_RATE = 1000;
+        let appData = { user: null, posts: [], lastActive: Date.now() };
+        let currentImage = { mobile: null, desktop: null };
+
+        const els = {
+            feed: document.getElementById('feed-container'),
+            profileFeed: document.getElementById('profile-feed-container'),
+            viewHome: document.getElementById('view-home'),
+            viewProfile: document.getElementById('view-profile'),
+            navHome: document.getElementById('nav-home'),
+            navProfile: document.getElementById('nav-profile'),
+            composeModal: document.getElementById('compose-modal'),
+            onboardingModal: document.getElementById('onboarding-modal'),
+            trending: document.getElementById('trending-container')
+        };
+
+        function init() {
+            const saved = localStorage.getItem('x_sim_data_v2');
+            if (saved) {
+                appData = JSON.parse(saved);
+                simulateTimeAway();
+                renderApp();
+            } else {
+                els.onboardingModal.classList.remove('hidden');
+            }
+            setInterval(simulateLiveGrowth, TICK_RATE);
+            setInterval(updateTimestamps, 1000);
+            window.addEventListener('beforeunload', saveState);
+            document.addEventListener('visibilitychange', () => {
+                if (document.hidden) saveState();
+                else { appData.lastActive = parseInt(localStorage.getItem('x_sim_last_active')) || Date.now(); simulateTimeAway(); }
+            });
+            ['mobile', 'desktop'].forEach(mode => {
+                document.getElementById(`${mode}-input`).addEventListener('input', (e) => {
+                    document.getElementById(`${mode}-post-btn`).disabled = e.target.value.trim().length === 0 && !currentImage[mode];
+                });
+            });
+        }
+
+        function saveState() {
+            appData.lastActive = Date.now();
+            try { localStorage.setItem('x_sim_data_v2', JSON.stringify(appData)); localStorage.setItem('x_sim_last_active', appData.lastActive); } catch (e) { console.warn("Storage full", e); }
+        }
+
+        function handleImage(input, mode) {
+            const file = input.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                currentImage[mode] = e.target.result;
+                document.getElementById(`${mode}-img-preview`).classList.remove('hidden');
+                document.getElementById(`${mode}-img-el`).src = e.target.result;
+                document.getElementById(`${mode}-post-btn`).disabled = false;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function clearImage(mode) {
+            currentImage[mode] = null;
+            document.getElementById(`${mode}-img-preview`).classList.add('hidden');
+            document.getElementById(`${mode}-input`).value === '' ? document.getElementById(`${mode}-post-btn`).disabled = true : null;
+            document.querySelectorAll(`input[type="file"]`).forEach(input => input.value = '');
+        }
+
+        function simulateTimeAway() {
+            const now = Date.now();
+            const elapsedSeconds = (now - appData.lastActive) / 1000;
+            if (elapsedSeconds < 1) return;
+            appData.posts.forEach(post => applyGrowth(post, elapsedSeconds, true));
+            if (Math.random() < (elapsedSeconds / 10000)) appData.user.followers += Math.floor(Math.random() * 3);
+            appData.lastActive = now;
+            renderFeeds();
+        }
+
+        function simulateLiveGrowth() {
+            if (document.hidden) return;
+            appData.posts.forEach(post => {
+                const changed = applyGrowth(post, 1, false);
+                if (changed) updatePostStatsInDOM(post.id);
+            });
+            if(appData.posts.some(p => applyGrowth(p, 0, false))) updateTrendingSidebar();
+        }
+
+        function applyGrowth(post, seconds, isBulk) {
+            const followers = appData.user.followers;
+            const ageHours = (Date.now() - post.timestamp) / (1000 * 60 * 60);
+            const decay = 1 / (1 + ageHours * 0.5); 
+            let growthChance = 0.05 * Math.log10(followers); 
+            if (followers > 1000) growthChance += (followers / 50000); 
+            growthChance = Math.min(growthChance, 20); 
+            const engagementRate = post.stats.views > 0 ? (post.stats.likes + post.stats.reposts) / post.stats.views : 0;
+            if (engagementRate > 0.05) growthChance *= 2.5; 
+            const expectedViews = growthChance * seconds * decay;
+            let changed = false;
+            let viewsToAdd = 0;
+            if (isBulk) viewsToAdd = Math.floor(expectedViews);
+            else if (Math.random() < expectedViews) viewsToAdd = 1 + Math.floor(Math.random() * (expectedViews * 2));
+            
+            if (viewsToAdd > 0) {
+                post.stats.views += viewsToAdd;
+                changed = true;
+                const likesToAdd = Math.floor(viewsToAdd * 0.15 * (Math.random() + 0.8)); 
+                if (likesToAdd > 0) post.stats.likes += likesToAdd;
+                const repostsToAdd = Math.floor(likesToAdd * 0.3 * Math.random());
+                if (repostsToAdd > 0) post.stats.reposts += repostsToAdd;
+                const repliesToAdd = Math.floor(likesToAdd * 0.1 * Math.random());
+                if (repliesToAdd > 0) post.stats.replies += repliesToAdd;
+            }
+            return changed;
+        }
+
+        // --- NEW FORMATTING: Show K/M/B ---
+        function formatNumber(num) {
+            if (num < 1000) return num.toString();
+            if (num >= 1000000000) return (num / 1000000000).toFixed(1) + 'B';
+            if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+            return (num / 1000).toFixed(1) + 'K';
+        }
+
+        // --- ODOMETER ANIMATION ENGINE ---
+        function renderOdometer(element, value) {
+            const currentValStr = element.getAttribute('data-value') || "0";
+            if (parseInt(currentValStr) === value) return;
+
+            const strVal = formatNumber(value);
+            const oldStr = element.getAttribute('data-prev-fmt') || ""; 
+            const oldPattern = oldStr.replace(/\d/g, 'd');
+            const newPattern = strVal.replace(/\d/g, 'd');
+
+            if (oldPattern !== newPattern) {
+                element.innerHTML = "";
+                // Split logic handles suffixes
+                strVal.split('').forEach(char => {
+                    if (isNaN(parseInt(char))) {
+                         // Suffix Handling (K, M, B, .)
+                         const s = document.createElement('span');
+                         s.innerText = char;
+                         s.className = 'odometer-suffix';
+                         element.appendChild(s);
+                    } else {
+                        element.appendChild(createDigit(char));
+                    }
+                });
+            } else {
+                const children = Array.from(element.children);
+                let digitIndex = 0;
+                strVal.split('').forEach((char) => {
+                    // Skip suffixes in DOM update check, only update tracks
+                    if (isNaN(parseInt(char))) return;
+                    
+                    // Find next digit container
+                    while(children[digitIndex] && !children[digitIndex].classList.contains('odometer-digit')) {
+                        digitIndex++;
+                    }
+                    const child = children[digitIndex];
+                    if (!child) return; 
+
+                    const track = child.querySelector('.digit-track');
+                    if (track) {
+                        const currentDigit = parseInt(track.getAttribute('data-digit'));
+                        const newDigit = parseInt(char);
+                        
+                        if (currentDigit !== newDigit) {
+                            if (currentDigit === 9 && newDigit === 0) {
+                                track.classList.remove('no-transition');
+                                track.style.transform = `translateY(-${10 * 100 / 11}%)`;
+                                setTimeout(() => {
+                                    track.classList.add('no-transition');
+                                    track.style.transform = `translateY(0%)`;
+                                    track.setAttribute('data-digit', 0);
+                                    void track.offsetHeight;
+                                }, 300);
+                            } else {
+                                track.classList.remove('no-transition');
+                                track.style.transform = `translateY(-${newDigit * 100 / 11}%)`;
+                                track.setAttribute('data-digit', newDigit);
+                            }
+                        }
+                    }
+                    digitIndex++;
+                });
+            }
+            element.setAttribute('data-value', value);
+            element.setAttribute('data-prev-fmt', strVal);
+        }
+
+        function createDigit(val) {
+            const wrapper = document.createElement('span');
+            wrapper.className = 'odometer-digit';
+            const track = document.createElement('span');
+            track.className = 'digit-track';
+            track.style.height = '1100%';
+            track.setAttribute('data-digit', val);
+            [0,1,2,3,4,5,6,7,8,9,0].forEach(n => {
+                const digit = document.createElement('span');
+                digit.className = 'digit-value';
+                digit.innerText = n;
+                track.appendChild(digit);
+            });
+            track.classList.add('no-transition');
+            track.style.transform = `translateY(-${parseInt(val) * 100 / 11}%)`;
+            wrapper.appendChild(track);
+            requestAnimationFrame(() => { track.classList.remove('no-transition'); });
+            return wrapper;
+        }
+
+        function renderApp() {
+            document.querySelectorAll('#header-avatar, #composer-avatar-desktop, #compose-modal-avatar, #profile-avatar-lg, #sidebar-avatar').forEach(img => { if(img) img.src = appData.user.avatar; });
+            setText('profile-name', appData.user.name); setText('profile-header-name', appData.user.name); setText('sidebar-name', appData.user.name);
+            setText('profile-handle', '@' + appData.user.handle); setText('sidebar-handle', '@' + appData.user.handle); setText('profile-header-posts', appData.posts.length + ' posts');
+            renderOdometer(document.getElementById('profile-followers'), appData.user.followers);
+            renderOdometer(document.getElementById('profile-following'), appData.user.following);
+            updateTrendingSidebar();
+            renderFeeds();
+        }
+        function setText(id, txt) { const el = document.getElementById(id); if(el) el.innerText = txt; }
+        
+        function updateTrendingSidebar() {
+            const container = document.getElementById('trending-container');
+            if(!container) return;
+            // Get top 3 posts by views
+            const topPosts = [...appData.posts].sort((a,b) => b.stats.views - a.stats.views).slice(0, 3);
+            
+            if(topPosts.length === 0) {
+                container.innerHTML = '<div class="p-4 text-gray-500 text-sm">No trends yet. Start posting!</div>';
+                return;
+            }
+
+            container.innerHTML = topPosts.map((post, i) => `
+                <div class="px-4 py-3 hover:bg-gray-200 cursor-pointer transition-colors" onclick="alert('Viewing post from sidebar is not implemented in sim.')">
+                    <div class="text-xs text-gray-500 flex justify-between"><span>${i+1} · Trending</span><span>···</span></div>
+                    <div class="font-bold text-[15px] truncate">${post.content.split(' ').slice(0,4).join(' ')}...</div>
+                    <div class="text-xs text-gray-500">${formatNumber(post.stats.views)} views</div>
+                </div>
+            `).join('');
+        }
+
+        function renderFeeds() {
+            els.feed.innerHTML = ''; els.profileFeed.innerHTML = '';
+            const sorted = [...appData.posts].sort((a,b) => b.timestamp - a.timestamp);
+            sorted.forEach(post => { els.feed.appendChild(createPostElement(post)); els.profileFeed.appendChild(createPostElement(post)); });
+        }
+
+        function createPostElement(post) {
+            const tmpl = document.getElementById('post-template'); const clone = tmpl.content.cloneNode(true); const el = clone.querySelector('.post-item');
+            el.dataset.postId = post.id; 
+            el.querySelector('.post-avatar').src = appData.user.avatar; el.querySelector('.post-name').innerText = appData.user.name; el.querySelector('.post-handle').innerText = '@' + appData.user.handle;
+            el.querySelector('.post-content').innerHTML = post.content.replace(/(#\w+)/g, '<span class="hashtag">$1</span>');
+            const timeEl = el.querySelector('.post-time'); timeEl.dataset.ts = post.timestamp; timeEl.innerText = timeAgo(post.timestamp);
+            if (post.image) { const imgCont = el.querySelector('.post-image-container'); imgCont.classList.remove('hidden'); imgCont.querySelector('img').src = post.image; }
+            const likesEl = el.querySelector('.like-count'); const viewsEl = el.querySelector('.view-count'); const repostEl = el.querySelector('.repost-count'); const replyEl = el.querySelector('.reply-count');
+            likesEl.classList.add(`js-like-count-${post.id}`); viewsEl.classList.add(`js-view-count-${post.id}`); repostEl.classList.add(`js-repost-count-${post.id}`); replyEl.classList.add(`js-reply-count-${post.id}`);
+            renderOdometer(likesEl, post.stats.likes); renderOdometer(viewsEl, post.stats.views); renderOdometer(repostEl, post.stats.reposts); renderOdometer(replyEl, post.stats.replies);
+            if (post.userInteracted.like) el.querySelector('.action-group:nth-child(3)').classList.add('liked');
+            if (post.userInteracted.repost) el.querySelector('.action-group:nth-child(2)').classList.add('reposted');
+            // Show trending if views > followers * 1.5
+            if (post.stats.views > Math.max(100, appData.user.followers * 1.5)) { 
+                el.querySelector('.trending-badge').classList.remove('hidden'); 
+                el.querySelector('.trending-footer').classList.remove('hidden'); 
+            }
+            el.querySelector('.action-group:nth-child(3)').onclick = (e) => { e.stopPropagation(); toggleInteraction(post.id, 'like'); };
+            el.querySelector('.action-group:nth-child(2)').onclick = (e) => { e.stopPropagation(); toggleInteraction(post.id, 'repost'); };
+            return el;
+        }
+
+        function updatePostStatsInDOM(postId) {
+            const post = appData.posts.find(p => p.id === postId); if (!post) return;
+            document.querySelectorAll(`.js-like-count-${postId}`).forEach(el => renderOdometer(el, post.stats.likes));
+            document.querySelectorAll(`.js-view-count-${postId}`).forEach(el => renderOdometer(el, post.stats.views));
+            document.querySelectorAll(`.js-repost-count-${postId}`).forEach(el => renderOdometer(el, post.stats.reposts));
+            document.querySelectorAll(`.js-reply-count-${postId}`).forEach(el => renderOdometer(el, post.stats.replies));
+             if (post.stats.views > Math.max(100, appData.user.followers * 1.5)) { 
+                 document.querySelectorAll(`[data-post-id="${postId}"]`).forEach(el => { 
+                    el.querySelector('.trending-badge').classList.remove('hidden'); 
+                    el.querySelector('.trending-footer').classList.remove('hidden'); 
+                 });
+            }
+        }
+
+        function updateTimestamps() { document.querySelectorAll('.post-time').forEach(el => { const ts = parseInt(el.dataset.ts); el.innerText = timeAgo(ts); }); }
+        function submitPost(mode) {
+            const input = document.getElementById(`${mode}-input`); const text = input.value; const img = currentImage[mode]; if (!text && !img) return;
+            const newPost = { id: Date.now().toString(), content: text, image: img, timestamp: Date.now(), stats: { views: 0, likes: 0, reposts: 0, replies: 0 }, userInteracted: { like: false, repost: false } };
+            appData.posts.unshift(newPost); input.value = ''; clearImage(mode); closeCompose(); saveState(); renderApp();
+        }
+        function toggleInteraction(postId, type) {
+            const post = appData.posts.find(p => p.id === postId); if (!post) return;
+            const active = !post.userInteracted[type]; post.userInteracted[type] = active;
+            if (active) post.stats[type + 's']++; else post.stats[type + 's']--;
+            updatePostStatsInDOM(postId);
+            document.querySelectorAll(`[data-post-id="${postId}"]`).forEach(el => { const btn = type === 'like' ? el.querySelector('.action-group:nth-child(3)') : el.querySelector('.action-group:nth-child(2)'); if(active) btn.classList.add(type === 'like' ? 'liked' : 'reposted'); else btn.classList.remove(type === 'like' ? 'liked' : 'reposted'); });
+            saveState();
+        }
+        function navTo(page) {
+            els.viewHome.classList.add('hidden'); els.viewProfile.classList.add('hidden');
+            document.querySelectorAll('.nav-item').forEach(n => { n.classList.remove('nav-item-active', 'text-black'); n.classList.add('text-gray-500'); });
+            if (page === 'home') { els.viewHome.classList.remove('hidden'); els.navHome.classList.add('nav-item-active', 'text-black'); els.navHome.classList.remove('text-gray-500'); window.scrollTo(0,0); }
+            else if (page === 'profile') { els.viewProfile.classList.remove('hidden'); els.navProfile.classList.add('nav-item-active', 'text-black'); els.navProfile.classList.remove('text-gray-500'); window.scrollTo(0,0); }
+        }
+        function openCompose() { els.composeModal.classList.remove('hidden'); document.getElementById('mobile-input').focus(); }
+        function closeCompose() { els.composeModal.classList.add('hidden'); }
+        function completeSetup() {
+            const name = document.getElementById('setup-name').value || "User"; const handle = document.getElementById('setup-handle').value.replace('@','') || "user"; const followers = parseInt(document.getElementById('setup-followers').value) || 100;
+            appData.user = { name, handle, followers, following: Math.floor(followers * 0.4), avatar: AVATAR_URL + encodeURIComponent(name) }; appData.posts = []; appData.posts.unshift({ id: Date.now().toString(), content: "Just joined the X Simulator! #NewHere", timestamp: Date.now(), stats: { views: 0, likes: 0, reposts: 0, replies: 0 }, userInteracted: { like: false, repost: false } }); els.onboardingModal.classList.add('hidden'); saveState(); renderApp();
+        }
+        function timeAgo(ts) { const s = Math.floor((Date.now() - ts) / 1000); if (s < 60) return s + 's'; const m = Math.floor(s / 60); if (m < 60) return m + 'm'; const h = Math.floor(m / 60); if (h < 24) return h + 'h'; return Math.floor(h/24) + 'd'; }
+        function openFollowerEditor() { const n = prompt("Edit followers:", appData.user.followers); if(n && !isNaN(n)) { appData.user.followers = parseInt(n); saveState(); renderApp(); } }
+        function openEditProfile() { const n = prompt("New Name:", appData.user.name); if(n) { appData.user.name = n; saveState(); renderApp(); } }
+        init();
+    </script>
+</body>
+</html>
