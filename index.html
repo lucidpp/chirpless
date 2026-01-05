@@ -32,7 +32,7 @@
             color: var(--x-black);
             overflow-x: hidden;
             -webkit-tap-highlight-color: transparent;
-            overscroll-behavior-y: none; /* App-like feel */
+            overscroll-behavior-y: none;
         }
 
         ::-webkit-scrollbar { display: none; }
@@ -41,7 +41,7 @@
         .odometer {
             display: inline-flex;
             flex-direction: row;
-            align-items: baseline; /* Align text properly with raised suffixes */
+            align-items: baseline;
             overflow: hidden;
             height: 1.25em; 
             line-height: 1.25em;
@@ -60,11 +60,10 @@
             position: relative;
         }
 
-        /* The suffix style (K, M, B) */
         .odometer-suffix {
-            font-size: 0.85em;
-            font-weight: 500;
-            vertical-align: 0.1em; /* Raised slightly */
+            font-size: 0.75em;
+            font-weight: 700;
+            vertical-align: 0.3em;
             margin-left: 1px;
         }
 
@@ -90,27 +89,34 @@
         .no-transition { transition: none !important; }
 
         /* --- Interactions --- */
-        .action-icon-wrapper {
-            transition: background-color 0.2s;
-            border-radius: 9999px;
-            padding: 8px;
-            margin: -8px;
-        }
-
+        .action-icon-wrapper { transition: background-color 0.2s; border-radius: 9999px; padding: 8px; margin: -8px; }
         .action-group:hover .action-icon-wrapper.like { background-color: rgba(249, 24, 128, 0.1); }
         .action-group:hover .action-count.like { color: #f91880; }
         .action-group:hover .action-icon-wrapper.like-blue { background-color: rgba(29, 155, 240, 0.1); }
         .action-group:hover .action-count.like-blue { color: var(--x-blue); }
         .action-group:hover .action-icon-wrapper.repost { background-color: rgba(0, 186, 124, 0.1); }
         .action-group:hover .action-count.repost { color: #00ba7c; }
-
         .liked .icon-like { fill: var(--x-blue); stroke: var(--x-blue); animation: pop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
         .liked .action-count { color: var(--x-blue); }
         .reposted .icon-repost { stroke: #00ba7c; fill: rgba(0, 186, 124, 0.1); }
         .reposted .action-count { color: #00ba7c; }
-
         @keyframes pop { 0% { transform: scale(1); } 50% { transform: scale(1.3); } 100% { transform: scale(1); } }
 
+        /* --- Custom Video Player --- */
+        .custom-video-player { position: relative; width: 100%; height: 100%; background: black; overflow: hidden; border-radius: 16px; }
+        .custom-video-player video { width: 100%; height: 100%; object-fit: contain; }
+        .video-overlay { position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.6) 0%, transparent 40%); display: flex; flex-direction: column; justify-content: flex-end; padding: 12px; opacity: 0; transition: opacity 0.2s; }
+        .custom-video-player:hover .video-overlay, .custom-video-player.paused .video-overlay { opacity: 1; }
+        .play-btn-center { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 60px; height: 60px; background: rgba(29, 155, 240, 0.9); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; cursor: pointer; transition: transform 0.2s; }
+        .play-btn-center:active { transform: translate(-50%, -50%) scale(0.9); }
+        .custom-video-player.playing .play-btn-center { display: none; }
+        .progress-bar-container { width: 100%; height: 4px; background: rgba(255,255,255,0.3); border-radius: 2px; cursor: pointer; position: relative; }
+        .progress-bar-fill { height: 100%; background: #1d9bf0; border-radius: 2px; width: 0%; position: relative; }
+        .progress-bar-fill::after { content: ''; position: absolute; right: -4px; top: -3px; width: 10px; height: 10px; background: white; border-radius: 50%; opacity: 0; transition: opacity 0.2s; }
+        .progress-bar-container:hover .progress-bar-fill::after { opacity: 1; }
+        .video-controls { display: flex; justify-content: space-between; align-items: center; color: white; margin-top: 8px; font-size: 12px; font-weight: 600; }
+
+        /* Utils */
         .tab-active { font-weight: 700; color: var(--x-black); }
         .tab-active::after { content: ''; position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 56px; height: 4px; background-color: var(--x-blue); border-radius: 9999px; }
         .nav-item-active svg { stroke-width: 2.5; }
@@ -118,6 +124,7 @@
         .floating-input:focus ~ label, .floating-input:not(:placeholder-shown) ~ label { transform: translateY(-20px) scale(0.85); color: var(--x-blue); }
         .hashtag { color: var(--x-blue); }
         .sidebar-item:hover { background-color: rgba(15, 20, 25, 0.1); }
+        .verified-badge { vertical-align: text-bottom; display: inline-block; margin-left: 4px; color: #1d9bf0; }
     </style>
 </head>
 <body class="flex justify-center min-h-screen">
@@ -125,20 +132,16 @@
     <!-- DESKTOP SIDEBAR -->
     <header class="hidden md:flex flex-col items-end w-[275px] pr-4 h-screen sticky top-0 overflow-y-auto">
         <div class="w-[250px] flex flex-col h-full pb-4">
-            <!-- Removed Logo -->
-            <div class="py-1 px-3 mb-2 h-12 flex items-center">
-               <!-- Blank space for "No Logo" requirement -->
-            </div>
+            <div class="py-1 px-3 mb-2 h-12 flex items-center"></div>
             <nav class="space-y-1 mb-4 w-full">
                 <a onclick="navTo('home')" class="group flex items-center cursor-pointer"><div class="sidebar-item py-3 px-4 rounded-full flex items-center gap-4 transition-colors"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg><span class="text-xl mr-4">Home</span></div></a>
-                <a class="group flex items-center cursor-pointer"><div class="sidebar-item py-3 px-4 rounded-full flex items-center gap-4 transition-colors"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg><span class="text-xl mr-4">Explore</span></div></a>
-                <a class="group flex items-center cursor-pointer"><div class="sidebar-item py-3 px-4 rounded-full flex items-center gap-4 transition-colors"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg><span class="text-xl mr-4">Notifications</span></div></a>
+                <a onclick="navTo('collab')" class="group flex items-center cursor-pointer"><div class="sidebar-item py-3 px-4 rounded-full flex items-center gap-4 transition-colors"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg><span class="text-xl mr-4">Collaborations</span></div></a>
                 <a onclick="navTo('profile')" class="group flex items-center cursor-pointer"><div class="sidebar-item py-3 px-4 rounded-full flex items-center gap-4 transition-colors"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg><span class="text-xl mr-4">Profile</span></div></a>
             </nav>
             <button onclick="openCompose()" class="bg-[#1d9bf0] text-white text-lg font-bold py-3.5 rounded-full w-[90%] shadow-lg hover:bg-[#1a8cd8] transition-colors">Post</button>
             <div class="mt-auto mb-4 cursor-pointer sidebar-item p-3 rounded-full flex items-center gap-3" onclick="navTo('profile')">
                 <div class="w-10 h-10 rounded-full bg-gray-200 overflow-hidden shrink-0"><img id="sidebar-avatar" src="" class="w-full h-full object-cover"></div>
-                <div class="flex flex-col hidden xl:flex"><span class="font-bold text-[15px]" id="sidebar-name">Name</span><span class="text-gray-500 text-[15px]" id="sidebar-handle">@handle</span></div>
+                <div class="flex flex-col hidden xl:flex"><div class="flex items-center"><span class="font-bold text-[15px]" id="sidebar-name">Name</span><span id="sidebar-verified"></span></div><span class="text-gray-500 text-[15px]" id="sidebar-handle">@handle</span></div>
             </div>
         </div>
     </header>
@@ -149,9 +152,6 @@
         <header id="mobile-header" class="sticky top-0 z-50 bg-white/85 backdrop-blur-md border-b border-gray-100 md:hidden transition-transform duration-300">
             <div class="h-14 flex items-center justify-between px-4">
                 <div class="w-8 h-8 rounded-full bg-gray-200 overflow-hidden cursor-pointer" onclick="navTo('profile')"><img id="header-avatar" src="" class="w-full h-full object-cover"></div>
-                <div class="w-6 h-6 flex items-center justify-center">
-                    <!-- Blank, no logo -->
-                </div>
                 <div class="w-8"></div>
             </div>
         </header>
@@ -167,13 +167,23 @@
                     <div class="w-10 h-10 rounded-full bg-gray-200 overflow-hidden shrink-0"><img id="composer-avatar-desktop" src="" class="w-full h-full object-cover"></div>
                     <div class="flex-1">
                         <textarea id="desktop-input" placeholder="What is happening?!" class="w-full text-xl outline-none placeholder-gray-500 text-gray-900 resize-none h-12 focus:h-24 transition-all"></textarea>
-                        <div id="desktop-img-preview" class="hidden mt-2 relative w-full h-64 rounded-xl overflow-hidden bg-gray-100 border border-gray-200">
-                            <img id="desktop-img-el" class="w-full h-full object-cover">
-                            <button onclick="clearImage('desktop')" class="absolute top-2 right-2 bg-black/70 text-white rounded-full p-1 hover:bg-black/90"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+                        
+                        <!-- Media Previews -->
+                        <div id="desktop-media-preview" class="hidden mt-2 relative w-full rounded-xl overflow-hidden bg-gray-100 border border-gray-200 max-h-80">
+                            <!-- JS injects img or video here -->
+                            <button onclick="clearMedia('desktop')" class="absolute top-2 right-2 z-10 bg-black/70 text-white rounded-full p-1 hover:bg-black/90"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
                         </div>
+
                         <div class="flex justify-between items-center mt-3 border-t border-gray-100 pt-3">
                             <div class="flex text-[#1d9bf0] gap-2">
-                                <label class="p-2 hover:bg-[#1d9bf0]/10 rounded-full cursor-pointer"><input type="file" accept="image/*" class="hidden" onchange="handleImage(this, 'desktop')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg></label>
+                                <label class="p-2 hover:bg-[#1d9bf0]/10 rounded-full cursor-pointer" title="Image">
+                                    <input type="file" accept="image/*" class="hidden" onchange="handleMedia(this, 'desktop', 'image')">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                                </label>
+                                <label class="p-2 hover:bg-[#1d9bf0]/10 rounded-full cursor-pointer" title="Video">
+                                    <input type="file" accept="video/*" class="hidden" onchange="handleMedia(this, 'desktop', 'video')">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 7l-7 5 7 5V7z"></path><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg>
+                                </label>
                             </div>
                             <button onclick="submitPost('desktop')" id="desktop-post-btn" class="bg-[#1d9bf0] text-white font-bold px-4 py-1.5 rounded-full text-sm disabled:opacity-50" disabled>Post</button>
                         </div>
@@ -194,7 +204,7 @@
                 <div class="w-32 h-32 rounded-full border-4 border-white bg-white absolute -top-16 overflow-hidden"><img id="profile-avatar-lg" src="" class="w-full h-full object-cover"></div>
                 <div class="flex justify-end py-3"><button onclick="openEditProfile()" class="px-4 py-1.5 border border-gray-300 rounded-full font-bold text-sm hover:bg-gray-100 transition-colors">Edit profile</button></div>
                 <div class="mt-2">
-                    <h1 class="font-black text-xl leading-tight" id="profile-name">Name</h1>
+                    <h1 class="font-black text-xl leading-tight flex items-center"><span id="profile-name">Name</span><span id="profile-verified"></span></h1>
                     <p class="text-gray-500 text-sm mb-3" id="profile-handle">@handle</p>
                     <p class="text-gray-900 text-[15px] mb-3" id="profile-bio">Bio text goes here.</p>
                     <div class="flex gap-4 text-sm mb-4">
@@ -210,6 +220,23 @@
             </div>
             <div id="profile-feed-container"></div>
         </div>
+
+        <!-- POST DETAIL VIEW -->
+        <div id="view-post" class="view-section hidden">
+            <div class="sticky top-0 z-40 bg-white/85 backdrop-blur-md px-4 h-14 flex items-center gap-6 border-b border-gray-100">
+                <button onclick="navTo('home')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg></button>
+                <div><span class="font-bold text-lg block leading-5">Post</span></div>
+            </div>
+            <div id="post-detail-container"></div>
+        </div>
+
+        <!-- COLLAB/BOT VIEW -->
+        <div id="view-collab" class="view-section hidden p-4">
+            <h1 class="font-bold text-xl mb-4">Collaborations & Bots</h1>
+            <p class="text-sm text-gray-500 mb-4">Create bots to collab with. Collabs increase your reach by 10% of the bot's follower count.</p>
+            <button onclick="createNewBot()" class="w-full py-3 bg-[#1d9bf0] text-white font-bold rounded-full mb-6">Create New Bot</button>
+            <div id="bots-list" class="space-y-4"></div>
+        </div>
     </div>
 
     <!-- RIGHT SIDEBAR -->
@@ -217,36 +244,34 @@
         <div class="bg-gray-100 rounded-full h-10 w-full flex items-center px-4 mb-4 text-gray-500 gap-3 group focus-within:bg-white focus-within:ring-1 focus-within:ring-[#1d9bf0] focus-within:text-[#1d9bf0]"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg><input type="text" placeholder="Search" class="bg-transparent border-none outline-none text-black w-full placeholder-gray-500"></div>
         <div class="bg-[#f7f9f9] rounded-2xl pt-3 pb-3">
             <h2 class="font-black text-xl px-4 mb-3">Trends for you</h2>
-            <div id="trending-container">
-                <!-- Dynamic Trending Content Will Go Here -->
-            </div>
+            <div id="trending-container"></div>
         </div>
     </div>
 
     <!-- TEMPLATES -->
     <template id="post-template">
-        <div class="post-item border-b border-gray-100 p-4 hover:bg-gray-50/50 transition-colors cursor-pointer relative">
-            <div class="trending-badge hidden absolute top-1 right-2 bg-gray-100 rounded px-2 py-0.5 text-[10px] font-bold text-gray-500 flex items-center gap-1"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>Trending</div>
+        <div class="post-item border-b border-gray-100 p-4 hover:bg-gray-50/50 transition-colors cursor-pointer relative" onclick="openPost(this.dataset.postId)">
             <div class="flex gap-3">
                 <div class="w-10 h-10 rounded-full bg-gray-200 overflow-hidden shrink-0"><img class="post-avatar w-full h-full object-cover" src=""></div>
                 <div class="flex-1 min-w-0">
                     <div class="flex items-center gap-1 text-[15px] leading-5">
-                        <span class="font-bold text-gray-900 truncate post-name">Name</span><span class="text-gray-500 truncate post-handle">@handle</span><span class="text-gray-500 text-xs px-1">·</span><span class="text-gray-500 post-time hover:underline">1h</span>
+                        <span class="font-bold text-gray-900 truncate post-name">Name</span><span class="post-verified"></span><span class="text-gray-500 truncate post-handle">@handle</span><span class="text-gray-500 text-xs px-1">·</span><span class="text-gray-500 post-time hover:underline">1h</span>
                     </div>
                     <div class="text-[15px] text-gray-900 mt-0.5 whitespace-pre-wrap break-words post-content leading-6"></div>
-                    <div class="post-image-container hidden mt-3 rounded-2xl overflow-hidden border border-gray-200 max-h-[300px]"><img class="post-image w-full h-full object-cover" src=""></div>
+                    <div class="post-media-container hidden mt-3 rounded-2xl overflow-hidden border border-gray-200 max-h-[350px]">
+                        <!-- Dynamic Media content -->
+                    </div>
                     
-                    <!-- Trending Text Below Post Content -->
                     <div class="trending-footer hidden mt-2 text-xs font-semibold text-gray-500 flex items-center gap-1">
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#1d9bf0" stroke-width="3"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>
                         <span class="text-[#1d9bf0]">Trending with your followers</span>
                     </div>
 
                     <div class="flex justify-between mt-3 max-w-md text-gray-500">
-                        <div class="action-group flex items-center gap-1 group cursor-pointer hover:text-[#1d9bf0]"><div class="action-icon-wrapper group-hover:bg-[#1d9bf0]/10 icon-anim"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="stroke-gray-500 group-hover:stroke-[#1d9bf0]"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg></div><span class="text-xs action-count reply-count odometer">0</span></div>
-                        <div class="action-group flex items-center gap-1 group cursor-pointer hover:text-[#00ba7c]" onclick="interact(this, 'repost')"><div class="action-icon-wrapper repost icon-anim"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon-repost stroke-gray-500 transition-colors"><polyline points="17 1 21 5 17 9"></polyline><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><polyline points="7 23 3 19 7 15"></polyline><path d="M21 13v2a4 4 0 0 1-4 4H3"></path></svg></div><span class="text-xs action-count repost-count odometer">0</span></div>
-                        <div class="action-group flex items-center gap-1 group cursor-pointer hover:text-[#1d9bf0]" onclick="interact(this, 'like')"><div class="action-icon-wrapper like-blue icon-anim"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon-like stroke-gray-500 transition-colors"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg></div><span class="text-xs action-count like-count odometer">0</span></div>
-                        <div class="action-group flex items-center gap-1 group cursor-pointer hover:text-[#1d9bf0]"><div class="action-icon-wrapper group-hover:bg-[#1d9bf0]/10 icon-anim"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="stroke-gray-500 group-hover:stroke-[#1d9bf0]"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg></div><span class="text-xs action-count view-count odometer">0</span></div>
+                        <div class="action-group flex items-center gap-1 group cursor-pointer hover:text-[#1d9bf0]" onclick="event.stopPropagation()"><div class="action-icon-wrapper group-hover:bg-[#1d9bf0]/10 icon-anim"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="stroke-gray-500 group-hover:stroke-[#1d9bf0]"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg></div><span class="text-xs action-count reply-count odometer">0</span></div>
+                        <div class="action-group flex items-center gap-1 group cursor-pointer hover:text-[#00ba7c]" onclick="event.stopPropagation(); interact(this, 'repost', this.closest('.post-item').dataset.postId)"><div class="action-icon-wrapper repost icon-anim"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon-repost stroke-gray-500 transition-colors"><polyline points="17 1 21 5 17 9"></polyline><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><polyline points="7 23 3 19 7 15"></polyline><path d="M21 13v2a4 4 0 0 1-4 4H3"></path></svg></div><span class="text-xs action-count repost-count odometer">0</span></div>
+                        <div class="action-group flex items-center gap-1 group cursor-pointer hover:text-[#1d9bf0]" onclick="event.stopPropagation(); interact(this, 'like', this.closest('.post-item').dataset.postId)"><div class="action-icon-wrapper like-blue icon-anim"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon-like stroke-gray-500 transition-colors"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg></div><span class="text-xs action-count like-count odometer">0</span></div>
+                        <div class="action-group flex items-center gap-1 group cursor-pointer hover:text-[#1d9bf0]" onclick="event.stopPropagation()"><div class="action-icon-wrapper group-hover:bg-[#1d9bf0]/10 icon-anim"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="stroke-gray-500 group-hover:stroke-[#1d9bf0]"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg></div><span class="text-xs action-count view-count odometer">0</span></div>
                     </div>
                 </div>
             </div>
@@ -257,14 +282,14 @@
     <button onclick="openCompose()" class="fixed bottom-20 right-4 w-14 h-14 bg-[#1d9bf0] rounded-full text-white shadow-lg flex items-center justify-center md:hidden compose-btn z-40 active:scale-90 transition-transform"><svg viewBox="0 0 24 24" aria-hidden="true" class="w-6 h-6 fill-current"><g><path d="M23 3c-6.62-.1-10.38 2.421-13.05 6.03C7.29 12.61 6 17.331 6 22h2c0-1.007.07-2.012.19-3H12c4.1 0 7.48-3.082 7.94-7.054C22.79 10.147 23.17 6.359 23 3zm-7 8h-1.5v2H16c.63-.016 1.2-.08 1.72-.188C16.95 15.24 14.68 17 12 17H8.55c.57-2.512 1.57-4.851 3-6.78 2.16-2.912 5.29-4.911 9.45-5.187C20.95 8.079 19.9 11 16 11zM4 9V6H1V4h3V1h2v3h3v2H6v3H4z"></path></g></svg></button>
     <nav class="fixed bottom-0 left-0 right-0 h-[53px] bg-white border-t border-gray-100 flex items-center justify-around z-50 md:hidden">
         <button onclick="navTo('home')" class="nav-item nav-item-active p-2" id="nav-home"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg></button>
-        <button class="nav-item p-2 text-gray-500"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg></button>
+        <button onclick="navTo('collab')" class="nav-item p-2 text-gray-500" id="nav-collab"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg></button>
         <button class="nav-item p-2 text-gray-500"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg></button>
         <button onclick="navTo('profile')" class="nav-item p-2 text-gray-500" id="nav-profile"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg></button>
     </nav>
     <div id="compose-modal" class="fixed inset-0 bg-black/40 z-[60] hidden flex items-start justify-center pt-12 md:pt-20">
         <div class="bg-white w-full h-full md:h-auto md:w-[600px] md:rounded-2xl p-4 flex flex-col">
             <div class="flex justify-between items-center mb-4"><button onclick="closeCompose()" class="text-gray-900">Cancel</button><button onclick="submitPost('mobile')" class="bg-[#1d9bf0] text-white font-bold px-4 py-1.5 rounded-full text-sm disabled:opacity-50" id="mobile-post-btn" disabled>Post</button></div>
-            <div class="flex gap-3 h-full overflow-y-auto"><div class="w-10 h-10 rounded-full bg-gray-200 overflow-hidden shrink-0"><img id="compose-modal-avatar" src="" class="w-full h-full object-cover"></div><div class="flex-1 flex flex-col"><textarea id="mobile-input" placeholder="What is happening?!" class="w-full h-32 resize-none text-xl outline-none placeholder-gray-500 text-gray-900 mt-2"></textarea><div id="mobile-img-preview" class="hidden mt-2 relative w-full h-48 rounded-xl overflow-hidden bg-gray-100 border border-gray-200"><img id="mobile-img-el" class="w-full h-full object-cover"><button onclick="clearImage('mobile')" class="absolute top-2 right-2 bg-black/70 text-white rounded-full p-1 hover:bg-black/90"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button></div><div class="mt-4 border-t border-gray-100 pt-3 flex text-[#1d9bf0]"><label class="p-2 hover:bg-[#1d9bf0]/10 rounded-full cursor-pointer"><input type="file" accept="image/*" class="hidden" onchange="handleImage(this, 'mobile')"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg></label></div></div></div>
+            <div class="flex gap-3 h-full overflow-y-auto"><div class="w-10 h-10 rounded-full bg-gray-200 overflow-hidden shrink-0"><img id="compose-modal-avatar" src="" class="w-full h-full object-cover"></div><div class="flex-1 flex flex-col"><textarea id="mobile-input" placeholder="What is happening?!" class="w-full h-32 resize-none text-xl outline-none placeholder-gray-500 text-gray-900 mt-2"></textarea><div id="mobile-media-preview" class="hidden mt-2 relative w-full rounded-xl overflow-hidden bg-gray-100 border border-gray-200 max-h-48"> <!-- JS Inject --> <button onclick="clearMedia('mobile')" class="absolute top-2 right-2 bg-black/70 text-white rounded-full p-1 hover:bg-black/90"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button></div><div class="mt-4 border-t border-gray-100 pt-3 flex text-[#1d9bf0] gap-4"><label class="p-2 hover:bg-[#1d9bf0]/10 rounded-full cursor-pointer"><input type="file" accept="image/*" class="hidden" onchange="handleMedia(this, 'mobile', 'image')"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg></label><label class="p-2 hover:bg-[#1d9bf0]/10 rounded-full cursor-pointer"><input type="file" accept="video/*" class="hidden" onchange="handleMedia(this, 'mobile', 'video')"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 7l-7 5 7 5V7z"></path><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg></label></div></div></div>
         </div>
     </div>
     <div id="onboarding-modal" class="fixed inset-0 bg-white z-[70] flex flex-col items-center justify-center p-6 hidden">
@@ -276,26 +301,33 @@
 
     <script>
         const AVATAR_URL = "https://ui-avatars.com/api/?background=random&color=fff&size=128&name=";
+        const VERIFIED_ICON = `<svg class="verified-badge w-5 h-5 text-[#1d9bf0] ml-1 inline-block" viewBox="0 0 24 24" fill="currentColor"><path d="M22.5 12.5c0-1.58-.875-2.95-2.148-3.6.154-.435.238-.905.238-1.4 0-2.21-1.71-3.998-3.818-3.998-.47 0-.92.175-1.297.503C14.78 2.67 13.438 2 12 2s-2.78.67-3.475 2.005c-.377-.328-.827-.503-1.297-.503-2.108 0-3.818 1.788-3.818 3.998 0 .495.084.965.238 1.4-1.273.65-2.148 2.02-2.148 3.6 0 1.58.875 2.95 2.148 3.6-.154.435-.238.905-.238 1.4 0 2.21 1.71 3.998 3.818 3.998.47 0 .92-.175 1.297-.503.695 1.335 2.037 2.005 3.475 2.005s2.78-.67 3.475-2.005c.377.328.827.503 1.297.503 2.108 0 3.818-1.788 3.818-3.998 0-.495-.084-.965-.238-1.4 1.273-.65 2.148-2.02 2.148-3.6zM9.763 16.296l-4.24-4.24 1.414-1.414 2.826 2.826 6.364-6.364 1.414 1.414-7.778 7.778z"></path></svg>`;
         const TICK_RATE = 1000;
-        let appData = { user: null, posts: [], lastActive: Date.now() };
-        let currentImage = { mobile: null, desktop: null };
+        let appData = { user: null, posts: [], bots: [], lastActive: Date.now() };
+        let currentMedia = { mobile: null, desktop: null }; // { type: 'image'|'video', data: base64 }
 
         const els = {
             feed: document.getElementById('feed-container'),
             profileFeed: document.getElementById('profile-feed-container'),
             viewHome: document.getElementById('view-home'),
             viewProfile: document.getElementById('view-profile'),
+            viewCollab: document.getElementById('view-collab'),
+            viewPost: document.getElementById('view-post'),
             navHome: document.getElementById('nav-home'),
             navProfile: document.getElementById('nav-profile'),
+            navCollab: document.getElementById('nav-collab'),
             composeModal: document.getElementById('compose-modal'),
             onboardingModal: document.getElementById('onboarding-modal'),
-            trending: document.getElementById('trending-container')
+            trending: document.getElementById('trending-container'),
+            botsList: document.getElementById('bots-list'),
+            postDetailContainer: document.getElementById('post-detail-container')
         };
 
         function init() {
             const saved = localStorage.getItem('x_sim_data_v2');
             if (saved) {
                 appData = JSON.parse(saved);
+                if(!appData.bots) appData.bots = [];
                 simulateTimeAway();
                 renderApp();
             } else {
@@ -310,7 +342,7 @@
             });
             ['mobile', 'desktop'].forEach(mode => {
                 document.getElementById(`${mode}-input`).addEventListener('input', (e) => {
-                    document.getElementById(`${mode}-post-btn`).disabled = e.target.value.trim().length === 0 && !currentImage[mode];
+                    document.getElementById(`${mode}-post-btn`).disabled = e.target.value.trim().length === 0 && !currentMedia[mode];
                 });
             });
         }
@@ -320,32 +352,111 @@
             try { localStorage.setItem('x_sim_data_v2', JSON.stringify(appData)); localStorage.setItem('x_sim_last_active', appData.lastActive); } catch (e) { console.warn("Storage full", e); }
         }
 
-        function handleImage(input, mode) {
+        function handleMedia(input, mode, type) {
             const file = input.files[0];
             if (!file) return;
+            // Basic size check (5MB limit for LS safety)
+            if(file.size > 4 * 1024 * 1024) { alert("File too large for simulator storage (Max 4MB)"); return; }
+
             const reader = new FileReader();
             reader.onload = function(e) {
-                currentImage[mode] = e.target.result;
-                document.getElementById(`${mode}-img-preview`).classList.remove('hidden');
-                document.getElementById(`${mode}-img-el`).src = e.target.result;
+                currentMedia[mode] = { type: type, data: e.target.result };
+                const container = document.getElementById(`${mode}-media-preview`);
+                container.classList.remove('hidden');
+                
+                // Clear previous
+                const oldContent = container.querySelector('img, video');
+                if(oldContent) oldContent.remove();
+
+                let el;
+                if(type === 'image') {
+                    el = document.createElement('img');
+                    el.className = "w-full h-full object-cover";
+                    el.src = e.target.result;
+                } else {
+                    el = document.createElement('video');
+                    el.className = "w-full h-full object-cover";
+                    el.src = e.target.result;
+                    el.controls = true; 
+                }
+                container.insertBefore(el, container.firstChild);
                 document.getElementById(`${mode}-post-btn`).disabled = false;
             };
             reader.readAsDataURL(file);
         }
 
-        function clearImage(mode) {
-            currentImage[mode] = null;
-            document.getElementById(`${mode}-img-preview`).classList.add('hidden');
+        function clearMedia(mode) {
+            currentMedia[mode] = null;
+            document.getElementById(`${mode}-media-preview`).classList.add('hidden');
             document.getElementById(`${mode}-input`).value === '' ? document.getElementById(`${mode}-post-btn`).disabled = true : null;
             document.querySelectorAll(`input[type="file"]`).forEach(input => input.value = '');
         }
 
+        // --- CUSTOM VIDEO PLAYER RENDERER ---
+        function renderVideoPlayer(src) {
+            // Unique ID for this player instance
+            const playerId = 'vid-' + Math.random().toString(36).substr(2, 9);
+            return `
+                <div class="custom-video-player paused" id="${playerId}" onclick="toggleVideo('${playerId}')">
+                    <video src="${src}" loop playsinline></video>
+                    <div class="video-overlay">
+                        <div class="video-controls" onclick="event.stopPropagation()">
+                            <div class="progress-bar-container" onclick="seekVideo(event, '${playerId}')">
+                                <div class="progress-bar-fill"></div>
+                            </div>
+                            <div class="flex justify-between mt-2">
+                                <button onclick="toggleVideo('${playerId}')">Play/Pause</button>
+                                <button onclick="toggleFullscreen('${playerId}')">⛶</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="play-btn-center">▶</div>
+                </div>
+            `;
+        }
+
+        // Global video functions
+        window.toggleVideo = function(id) {
+            const container = document.getElementById(id);
+            const video = container.querySelector('video');
+            if (video.paused) {
+                video.play();
+                container.classList.remove('paused');
+                container.classList.add('playing');
+                // Start progress loop
+                video.ontimeupdate = () => {
+                    const pct = (video.currentTime / video.duration) * 100;
+                    container.querySelector('.progress-bar-fill').style.width = pct + '%';
+                };
+            } else {
+                video.pause();
+                container.classList.remove('playing');
+                container.classList.add('paused');
+            }
+        };
+
+        window.seekVideo = function(e, id) {
+            const container = document.getElementById(id);
+            const video = container.querySelector('video');
+            const rect = e.target.getBoundingClientRect();
+            const pos = (e.clientX - rect.left) / rect.width;
+            video.currentTime = pos * video.duration;
+        };
+
+        window.toggleFullscreen = function(id) {
+            const video = document.getElementById(id).querySelector('video');
+            if (video.requestFullscreen) video.requestFullscreen();
+            else if (video.webkitRequestFullscreen) video.webkitRequestFullscreen();
+        };
+
+
+        // --- GROWTH & LOGIC ---
         function simulateTimeAway() {
             const now = Date.now();
             const elapsedSeconds = (now - appData.lastActive) / 1000;
             if (elapsedSeconds < 1) return;
             appData.posts.forEach(post => applyGrowth(post, elapsedSeconds, true));
-            if (Math.random() < (elapsedSeconds / 10000)) appData.user.followers += Math.floor(Math.random() * 3);
+            if (Math.random() < (elapsedSeconds / 20000)) appData.user.followers += Math.floor(Math.random() * 5);
             appData.lastActive = now;
             renderFeeds();
         }
@@ -356,38 +467,51 @@
                 const changed = applyGrowth(post, 1, false);
                 if (changed) updatePostStatsInDOM(post.id);
             });
-            if(appData.posts.some(p => applyGrowth(p, 0, false))) updateTrendingSidebar();
+            updateTrendingSidebar();
         }
 
         function applyGrowth(post, seconds, isBulk) {
             const followers = appData.user.followers;
             const ageHours = (Date.now() - post.timestamp) / (1000 * 60 * 60);
-            const decay = 1 / (1 + ageHours * 0.5); 
-            let growthChance = 0.05 * Math.log10(followers); 
-            if (followers > 1000) growthChance += (followers / 50000); 
-            growthChance = Math.min(growthChance, 20); 
+            const decay = Math.exp(-ageHours / 6); 
+            if (decay < 0.01) return false;
+
+            let baseSpeed = (Math.log10(Math.max(10, followers)) - 1) * 0.5; 
+            if(followers > 10000) baseSpeed += (followers / 100000);
+
+            let botPower = appData.bots.reduce((acc, bot) => acc + bot.followers, 0);
+            if (botPower > 0) baseSpeed += (botPower / 50000);
+
             const engagementRate = post.stats.views > 0 ? (post.stats.likes + post.stats.reposts) / post.stats.views : 0;
-            if (engagementRate > 0.05) growthChance *= 2.5; 
-            const expectedViews = growthChance * seconds * decay;
-            let changed = false;
+            if (engagementRate > 0.05) baseSpeed *= 2; 
+
             let viewsToAdd = 0;
-            if (isBulk) viewsToAdd = Math.floor(expectedViews);
-            else if (Math.random() < expectedViews) viewsToAdd = 1 + Math.floor(Math.random() * (expectedViews * 2));
+            if (isBulk) {
+                const effectiveSeconds = seconds * decay;
+                viewsToAdd = Math.floor(baseSpeed * effectiveSeconds * 0.5); 
+                const cap = (followers + botPower) * 5; 
+                if (viewsToAdd > cap) viewsToAdd = cap;
+            } else {
+                if (Math.random() < baseSpeed) {
+                    viewsToAdd = Math.ceil(baseSpeed * Math.random());
+                }
+            }
             
+            let changed = false;
             if (viewsToAdd > 0) {
                 post.stats.views += viewsToAdd;
                 changed = true;
-                const likesToAdd = Math.floor(viewsToAdd * 0.15 * (Math.random() + 0.8)); 
-                if (likesToAdd > 0) post.stats.likes += likesToAdd;
-                const repostsToAdd = Math.floor(likesToAdd * 0.3 * Math.random());
-                if (repostsToAdd > 0) post.stats.reposts += repostsToAdd;
-                const repliesToAdd = Math.floor(likesToAdd * 0.1 * Math.random());
-                if (repliesToAdd > 0) post.stats.replies += repliesToAdd;
+                if(Math.random() < 0.2) { 
+                    const likesToAdd = Math.ceil(viewsToAdd * 0.05); 
+                    post.stats.likes += likesToAdd;
+                    if(Math.random() < 0.3) post.stats.reposts += Math.ceil(likesToAdd * 0.2);
+                    if(Math.random() < 0.1) post.stats.replies += Math.ceil(likesToAdd * 0.1);
+                }
             }
             return changed;
         }
 
-        // --- NEW FORMATTING: Show K/M/B ---
+        // --- FORMATTING & ANIMATION ---
         function formatNumber(num) {
             if (num < 1000) return num.toString();
             if (num >= 1000000000) return (num / 1000000000).toFixed(1) + 'B';
@@ -395,7 +519,6 @@
             return (num / 1000).toFixed(1) + 'K';
         }
 
-        // --- ODOMETER ANIMATION ENGINE ---
         function renderOdometer(element, value) {
             const currentValStr = element.getAttribute('data-value') || "0";
             if (parseInt(currentValStr) === value) return;
@@ -407,10 +530,8 @@
 
             if (oldPattern !== newPattern) {
                 element.innerHTML = "";
-                // Split logic handles suffixes
                 strVal.split('').forEach(char => {
                     if (isNaN(parseInt(char))) {
-                         // Suffix Handling (K, M, B, .)
                          const s = document.createElement('span');
                          s.innerText = char;
                          s.className = 'odometer-suffix';
@@ -423,21 +544,14 @@
                 const children = Array.from(element.children);
                 let digitIndex = 0;
                 strVal.split('').forEach((char) => {
-                    // Skip suffixes in DOM update check, only update tracks
                     if (isNaN(parseInt(char))) return;
-                    
-                    // Find next digit container
-                    while(children[digitIndex] && !children[digitIndex].classList.contains('odometer-digit')) {
-                        digitIndex++;
-                    }
+                    while(children[digitIndex] && !children[digitIndex].classList.contains('odometer-digit')) { digitIndex++; }
                     const child = children[digitIndex];
                     if (!child) return; 
-
                     const track = child.querySelector('.digit-track');
                     if (track) {
                         const currentDigit = parseInt(track.getAttribute('data-digit'));
                         const newDigit = parseInt(char);
-                        
                         if (currentDigit !== newDigit) {
                             if (currentDigit === 9 && newDigit === 0) {
                                 track.classList.remove('no-transition');
@@ -463,20 +577,11 @@
         }
 
         function createDigit(val) {
-            const wrapper = document.createElement('span');
-            wrapper.className = 'odometer-digit';
-            const track = document.createElement('span');
-            track.className = 'digit-track';
-            track.style.height = '1100%';
+            const wrapper = document.createElement('span'); wrapper.className = 'odometer-digit';
+            const track = document.createElement('span'); track.className = 'digit-track'; track.style.height = '1100%';
             track.setAttribute('data-digit', val);
-            [0,1,2,3,4,5,6,7,8,9,0].forEach(n => {
-                const digit = document.createElement('span');
-                digit.className = 'digit-value';
-                digit.innerText = n;
-                track.appendChild(digit);
-            });
-            track.classList.add('no-transition');
-            track.style.transform = `translateY(-${parseInt(val) * 100 / 11}%)`;
+            [0,1,2,3,4,5,6,7,8,9,0].forEach(n => { const digit = document.createElement('span'); digit.className = 'digit-value'; digit.innerText = n; track.appendChild(digit); });
+            track.classList.add('no-transition'); track.style.transform = `translateY(-${parseInt(val) * 100 / 11}%)`;
             wrapper.appendChild(track);
             requestAnimationFrame(() => { track.classList.remove('no-transition'); });
             return wrapper;
@@ -484,28 +589,28 @@
 
         function renderApp() {
             document.querySelectorAll('#header-avatar, #composer-avatar-desktop, #compose-modal-avatar, #profile-avatar-lg, #sidebar-avatar').forEach(img => { if(img) img.src = appData.user.avatar; });
-            setText('profile-name', appData.user.name); setText('profile-header-name', appData.user.name); setText('sidebar-name', appData.user.name);
+            const isVerified = appData.user.followers >= 100000;
+            const badge = isVerified ? VERIFIED_ICON : '';
+            const setTextAndVerify = (id, txt) => {
+                const el = document.getElementById(id); if(el) { el.innerText = txt; }
+                const verEl = document.getElementById(id.replace('name', 'verified')); if(verEl) verEl.innerHTML = badge;
+            };
+            setTextAndVerify('profile-name', appData.user.name); setTextAndVerify('profile-header-name', appData.user.name); setTextAndVerify('sidebar-name', appData.user.name);
             setText('profile-handle', '@' + appData.user.handle); setText('sidebar-handle', '@' + appData.user.handle); setText('profile-header-posts', appData.posts.length + ' posts');
             renderOdometer(document.getElementById('profile-followers'), appData.user.followers);
             renderOdometer(document.getElementById('profile-following'), appData.user.following);
             updateTrendingSidebar();
             renderFeeds();
+            renderBots();
         }
         function setText(id, txt) { const el = document.getElementById(id); if(el) el.innerText = txt; }
         
         function updateTrendingSidebar() {
-            const container = document.getElementById('trending-container');
-            if(!container) return;
-            // Get top 3 posts by views
+            const container = document.getElementById('trending-container'); if(!container) return;
             const topPosts = [...appData.posts].sort((a,b) => b.stats.views - a.stats.views).slice(0, 3);
-            
-            if(topPosts.length === 0) {
-                container.innerHTML = '<div class="p-4 text-gray-500 text-sm">No trends yet. Start posting!</div>';
-                return;
-            }
-
+            if(topPosts.length === 0 || topPosts[0].stats.views < 100) { container.innerHTML = '<div class="p-4 text-gray-500 text-sm">No trends yet. Start posting!</div>'; return; }
             container.innerHTML = topPosts.map((post, i) => `
-                <div class="px-4 py-3 hover:bg-gray-200 cursor-pointer transition-colors" onclick="alert('Viewing post from sidebar is not implemented in sim.')">
+                <div class="px-4 py-3 hover:bg-gray-200 cursor-pointer transition-colors" onclick="openPost('${post.id}')">
                     <div class="text-xs text-gray-500 flex justify-between"><span>${i+1} · Trending</span><span>···</span></div>
                     <div class="font-bold text-[15px] truncate">${post.content.split(' ').slice(0,4).join(' ')}...</div>
                     <div class="text-xs text-gray-500">${formatNumber(post.stats.views)} views</div>
@@ -523,22 +628,104 @@
             const tmpl = document.getElementById('post-template'); const clone = tmpl.content.cloneNode(true); const el = clone.querySelector('.post-item');
             el.dataset.postId = post.id; 
             el.querySelector('.post-avatar').src = appData.user.avatar; el.querySelector('.post-name').innerText = appData.user.name; el.querySelector('.post-handle').innerText = '@' + appData.user.handle;
+            if(appData.user.followers >= 100000) el.querySelector('.post-verified').innerHTML = VERIFIED_ICON;
             el.querySelector('.post-content').innerHTML = post.content.replace(/(#\w+)/g, '<span class="hashtag">$1</span>');
             const timeEl = el.querySelector('.post-time'); timeEl.dataset.ts = post.timestamp; timeEl.innerText = timeAgo(post.timestamp);
-            if (post.image) { const imgCont = el.querySelector('.post-image-container'); imgCont.classList.remove('hidden'); imgCont.querySelector('img').src = post.image; }
+            
+            // Media Rendering
+            if (post.media) {
+                const imgCont = el.querySelector('.post-media-container');
+                imgCont.classList.remove('hidden');
+                if(post.media.type === 'image') {
+                    imgCont.innerHTML = `<img class="w-full h-full object-cover" src="${post.media.data}">`;
+                } else if (post.media.type === 'video') {
+                    imgCont.innerHTML = renderVideoPlayer(post.media.data);
+                }
+            }
+
             const likesEl = el.querySelector('.like-count'); const viewsEl = el.querySelector('.view-count'); const repostEl = el.querySelector('.repost-count'); const replyEl = el.querySelector('.reply-count');
             likesEl.classList.add(`js-like-count-${post.id}`); viewsEl.classList.add(`js-view-count-${post.id}`); repostEl.classList.add(`js-repost-count-${post.id}`); replyEl.classList.add(`js-reply-count-${post.id}`);
             renderOdometer(likesEl, post.stats.likes); renderOdometer(viewsEl, post.stats.views); renderOdometer(repostEl, post.stats.reposts); renderOdometer(replyEl, post.stats.replies);
             if (post.userInteracted.like) el.querySelector('.action-group:nth-child(3)').classList.add('liked');
             if (post.userInteracted.repost) el.querySelector('.action-group:nth-child(2)').classList.add('reposted');
-            // Show trending if views > followers * 1.5
-            if (post.stats.views > Math.max(100, appData.user.followers * 1.5)) { 
-                el.querySelector('.trending-badge').classList.remove('hidden'); 
-                el.querySelector('.trending-footer').classList.remove('hidden'); 
-            }
-            el.querySelector('.action-group:nth-child(3)').onclick = (e) => { e.stopPropagation(); toggleInteraction(post.id, 'like'); };
-            el.querySelector('.action-group:nth-child(2)').onclick = (e) => { e.stopPropagation(); toggleInteraction(post.id, 'repost'); };
+            const threshold = Math.max(1000, appData.user.followers * 0.5);
+            if (post.stats.views > threshold) { el.querySelector('.trending-badge').classList.remove('hidden'); el.querySelector('.trending-footer').classList.remove('hidden'); }
             return el;
+        }
+
+        // --- POST DETAIL PAGE ---
+        function openPost(postId) {
+            const post = appData.posts.find(p => p.id === postId);
+            if (!post) return;
+            
+            navTo('post');
+            const container = els.postDetailContainer;
+            const verifiedHtml = appData.user.followers >= 100000 ? VERIFIED_ICON : '';
+            
+            let mediaHtml = '';
+            if(post.media) {
+                if(post.media.type === 'image') mediaHtml = `<div class="rounded-xl overflow-hidden mt-3 border border-gray-200"><img src="${post.media.data}" class="w-full"></div>`;
+                else mediaHtml = `<div class="rounded-xl overflow-hidden mt-3 border border-gray-200 aspect-video">${renderVideoPlayer(post.media.data)}</div>`;
+            }
+
+            container.innerHTML = `
+                <div class="p-4">
+                    <div class="flex gap-3 items-center mb-3">
+                        <img src="${appData.user.avatar}" class="w-10 h-10 rounded-full bg-gray-200">
+                        <div>
+                            <div class="font-bold flex items-center">${appData.user.name}${verifiedHtml}</div>
+                            <div class="text-gray-500 text-sm">@${appData.user.handle}</div>
+                        </div>
+                    </div>
+                    <div class="text-xl leading-normal mb-3 whitespace-pre-wrap">${post.content.replace(/(#\w+)/g, '<span class="hashtag">$1</span>')}</div>
+                    ${mediaHtml}
+                    <div class="py-4 text-gray-500 text-[15px] border-b border-gray-100">
+                        ${new Date(post.timestamp).toLocaleTimeString([], {hour: 'numeric', minute:'2-digit'})} · ${new Date(post.timestamp).toLocaleDateString()}
+                    </div>
+                    <div class="py-4 border-b border-gray-100 flex gap-4 text-sm">
+                        <span class="font-bold text-black odometer js-repost-count-${post.id}">0</span> <span class="text-gray-500">Reposts</span>
+                        <span class="font-bold text-black odometer js-like-count-${post.id}">0</span> <span class="text-gray-500">Likes</span>
+                        <span class="font-bold text-black odometer js-view-count-${post.id}">0</span> <span class="text-gray-500">Views</span>
+                    </div>
+                    <div class="flex justify-around py-3 border-b border-gray-100 text-gray-500">
+                        <button class="p-2 hover:bg-blue-50 rounded-full"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg></button>
+                        <button class="p-2 hover:bg-green-50 rounded-full ${post.userInteracted.repost ? 'text-green-500' : ''}" onclick="interact(this, 'repost', '${post.id}')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="17 1 21 5 17 9"></polyline><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><polyline points="7 23 3 19 7 15"></polyline><path d="M21 13v2a4 4 0 0 1-4 4H3"></path></svg></button>
+                        <button class="p-2 hover:bg-pink-50 rounded-full ${post.userInteracted.like ? 'text-[#1d9bf0]' : ''}" onclick="interact(this, 'like', '${post.id}')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="${post.userInteracted.like ? 'fill-[#1d9bf0] stroke-[#1d9bf0]' : ''}"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg></button>
+                        <button class="p-2 hover:bg-blue-50 rounded-full"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19 12H5M12 19l-7-7 7-7"/></svg></button>
+                    </div>
+                </div>
+            `;
+            // Trigger stats update immediately
+            updatePostStatsInDOM(post.id);
+        }
+
+        // --- BOT LOGIC ---
+        function createNewBot() {
+            const name = prompt("Bot Name:");
+            if(!name) return;
+            const followers = parseInt(prompt("Bot Followers:", "10000")) || 10000;
+            appData.bots.push({ name, followers, id: Date.now() });
+            saveState();
+            renderBots();
+        }
+
+        function renderBots() {
+            els.botsList.innerHTML = appData.bots.map(bot => `
+                <div class="flex justify-between items-center bg-gray-50 p-3 rounded-lg">
+                    <div>
+                        <div class="font-bold">${bot.name}</div>
+                        <div class="text-sm text-gray-500">${formatNumber(bot.followers)} Followers</div>
+                    </div>
+                    <button onclick="editBot(${bot.id})" class="text-[#1d9bf0] font-bold text-sm">Edit</button>
+                </div>
+            `).join('');
+        }
+
+        function editBot(id) {
+            const bot = appData.bots.find(b => b.id === id);
+            if(!bot) return;
+            const newF = prompt("Update Followers:", bot.followers);
+            if(newF && !isNaN(newF)) { bot.followers = parseInt(newF); saveState(); renderBots(); }
         }
 
         function updatePostStatsInDOM(postId) {
@@ -547,7 +734,7 @@
             document.querySelectorAll(`.js-view-count-${postId}`).forEach(el => renderOdometer(el, post.stats.views));
             document.querySelectorAll(`.js-repost-count-${postId}`).forEach(el => renderOdometer(el, post.stats.reposts));
             document.querySelectorAll(`.js-reply-count-${postId}`).forEach(el => renderOdometer(el, post.stats.replies));
-             if (post.stats.views > Math.max(100, appData.user.followers * 1.5)) { 
+             if (post.stats.views > Math.max(1000, appData.user.followers * 0.5)) { 
                  document.querySelectorAll(`[data-post-id="${postId}"]`).forEach(el => { 
                     el.querySelector('.trending-badge').classList.remove('hidden'); 
                     el.querySelector('.trending-footer').classList.remove('hidden'); 
@@ -557,23 +744,35 @@
 
         function updateTimestamps() { document.querySelectorAll('.post-time').forEach(el => { const ts = parseInt(el.dataset.ts); el.innerText = timeAgo(ts); }); }
         function submitPost(mode) {
-            const input = document.getElementById(`${mode}-input`); const text = input.value; const img = currentImage[mode]; if (!text && !img) return;
-            const newPost = { id: Date.now().toString(), content: text, image: img, timestamp: Date.now(), stats: { views: 0, likes: 0, reposts: 0, replies: 0 }, userInteracted: { like: false, repost: false } };
-            appData.posts.unshift(newPost); input.value = ''; clearImage(mode); closeCompose(); saveState(); renderApp();
+            const input = document.getElementById(`${mode}-input`); const text = input.value; const media = currentMedia[mode]; if (!text && !media) return;
+            const newPost = { id: Date.now().toString(), content: text, media: media, timestamp: Date.now(), stats: { views: 0, likes: 0, reposts: 0, replies: 0 }, userInteracted: { like: false, repost: false } };
+            appData.posts.unshift(newPost); input.value = ''; clearMedia(mode); closeCompose(); saveState(); renderApp();
         }
-        function toggleInteraction(postId, type) {
+        function toggleInteraction(btn, type, postId) {
+            // Helper wrapper for inline HTML calls
+            interact(btn, type, postId);
+        }
+        function interact(btn, type, postId) {
             const post = appData.posts.find(p => p.id === postId); if (!post) return;
             const active = !post.userInteracted[type]; post.userInteracted[type] = active;
             if (active) post.stats[type + 's']++; else post.stats[type + 's']--;
             updatePostStatsInDOM(postId);
-            document.querySelectorAll(`[data-post-id="${postId}"]`).forEach(el => { const btn = type === 'like' ? el.querySelector('.action-group:nth-child(3)') : el.querySelector('.action-group:nth-child(2)'); if(active) btn.classList.add(type === 'like' ? 'liked' : 'reposted'); else btn.classList.remove(type === 'like' ? 'liked' : 'reposted'); });
+            // Instant visual feedback for detail page
+            if(document.getElementById('view-post').classList.contains('hidden') === false) {
+               openPost(postId); // re-render to update color classes safely
+            } else {
+               renderFeeds(); // re-render feeds
+            }
             saveState();
         }
         function navTo(page) {
-            els.viewHome.classList.add('hidden'); els.viewProfile.classList.add('hidden');
+            els.viewHome.classList.add('hidden'); els.viewProfile.classList.add('hidden'); els.viewCollab.classList.add('hidden'); els.viewPost.classList.add('hidden');
             document.querySelectorAll('.nav-item').forEach(n => { n.classList.remove('nav-item-active', 'text-black'); n.classList.add('text-gray-500'); });
+            
             if (page === 'home') { els.viewHome.classList.remove('hidden'); els.navHome.classList.add('nav-item-active', 'text-black'); els.navHome.classList.remove('text-gray-500'); window.scrollTo(0,0); }
             else if (page === 'profile') { els.viewProfile.classList.remove('hidden'); els.navProfile.classList.add('nav-item-active', 'text-black'); els.navProfile.classList.remove('text-gray-500'); window.scrollTo(0,0); }
+            else if (page === 'collab') { els.viewCollab.classList.remove('hidden'); els.navCollab.classList.add('nav-item-active', 'text-black'); els.navCollab.classList.remove('text-gray-500'); window.scrollTo(0,0); }
+            else if (page === 'post') { els.viewPost.classList.remove('hidden'); window.scrollTo(0,0); }
         }
         function openCompose() { els.composeModal.classList.remove('hidden'); document.getElementById('mobile-input').focus(); }
         function closeCompose() { els.composeModal.classList.add('hidden'); }
