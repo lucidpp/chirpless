@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <meta name="apple-mobile-web-app-title" content="X Sim">
+    <meta name="apple-mobile-web-app-title" content="Chirpless">
     <meta name="theme-color" content="#ffffff">
     <title>Chirpless</title>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -13,7 +13,8 @@
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
         :root {
-            --x-main: #f91880;
+            /* THEME: X Red */
+            --x-main: #f91880; 
             --x-black: #0f1419;
             --x-gray: #536471;
             --x-light-gray: #eff3f4;
@@ -87,12 +88,15 @@
             display: flex; align-items: center; justify-content: center;
         }
         .action-group:hover .action-icon-wrapper.like { background-color: rgba(249, 24, 128, 0.1); }
-        
-        .liked-blue .icon-like {
+        .action-group:hover .action-count.like { color: var(--x-main); }
+        .action-group:hover .action-icon-wrapper.like-red { background-color: rgba(249, 24, 128, 0.1); }
+        .action-group:hover .action-count.like-red { color: var(--x-main); }
+
+        .liked-active .icon-like {
             fill: var(--x-main); stroke: var(--x-main);
             animation: heart-pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
-        .liked-blue .action-count { color: var(--x-main); }
+        .liked-active .action-count { color: var(--x-main); }
 
         .reposted .icon-repost { stroke: #00ba7c; fill: rgba(0, 186, 124, 0.1); }
         .reposted .action-count { color: #00ba7c; }
@@ -118,30 +122,37 @@
         .poll-option.voted { cursor: default; }
         .poll-bg {
             position: absolute; top: 0; left: 0; bottom: 0;
-            background-color: rgba(29, 155, 240, 0.12);
+            background-color: rgba(249, 24, 128, 0.12); /* Red tint */
             width: 0%;
             transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
             z-index: 0;
         }
-        .poll-bg.winner { background-color: rgba(29, 155, 240, 0.25); }
+        .poll-bg.winner { background-color: rgba(249, 24, 128, 0.25); }
         .poll-label {
             position: relative; z-index: 1; padding: 0 12px;
             width: 100%; display: flex; justify-content: space-between;
             font-weight: 500; font-size: 15px;
         }
         .poll-btn-style {
-            border: 1px solid #1d9bf0; color: #1d9bf0; font-weight: 700;
+            border: 1px solid var(--x-main); color: var(--x-main); font-weight: 700;
             border-radius: 9999px; height: 32px; display: flex; align-items: center; justify-content: center;
             width: 100%; transition: background 0.2s;
         }
-        .poll-btn-style:hover { background-color: rgba(29, 155, 240, 0.1); }
+        .poll-btn-style:hover { background-color: rgba(249, 24, 128, 0.1); }
 
         /* --- UTILS --- */
-        .tab-active { font-weight: 700; color: var(--x-black); border-bottom: 4px solid #1d9bf0; }
+        .tab-active { font-weight: 700; color: var(--x-black); border-bottom: 4px solid var(--x-main); }
         .tab-inactive { color: var(--x-gray); font-weight: 500; }
         .trending-badge { font-size: 11px; font-weight: 700; margin-bottom: 4px; display: flex; align-items: center; gap: 4px; }
-        .verified-badge { color: #1d9bf0; margin-left: 2px; display: inline-block; vertical-align: text-bottom; }
+        .verified-badge { color: var(--x-main); margin-left: 2px; display: inline-block; vertical-align: text-bottom; }
         .pinned-indicator { font-size: 11px; font-weight: 700; color: #536471; display: flex; align-items: center; gap: 4px; margin-bottom: 4px; }
+        
+        /* Video Player */
+        .custom-player { position: relative; background: black; width: 100%; aspect-ratio: 16/9; border-radius: 12px; overflow: hidden; }
+        .custom-player video { width: 100%; height: 100%; object-fit: contain; }
+        .play-overlay { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: none; }
+        .play-icon { width: 50px; height: 50px; background: rgba(249, 24, 128, 0.9); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; opacity: 0; transition: transform 0.2s; }
+        .custom-player.paused .play-icon { opacity: 1; }
         
         /* Menu */
         .post-menu { position: absolute; top: 10px; right: 10px; background: white; box-shadow: 0 0 10px rgba(0,0,0,0.1); border-radius: 8px; z-index: 20; display: none; flex-direction: column; overflow: hidden; border: 1px solid #eff3f4; }
@@ -151,7 +162,7 @@
         .post-menu.show { display: flex; }
 
         /* Media Upload Label */
-        .upload-label { cursor: pointer; display: flex; align-items: center; justify-content: center; width: 100%; height: 100px; border: 2px dashed #eff3f4; border-radius: 8px; color: #1d9bf0; font-weight: 600; transition: background 0.2s; }
+        .upload-label { cursor: pointer; display: flex; align-items: center; justify-content: center; width: 100%; height: 100px; border: 2px dashed #eff3f4; border-radius: 8px; color: var(--x-main); font-weight: 600; transition: background 0.2s; }
         .upload-label:hover { background: #f7f9f9; }
     </style>
 </head>
@@ -217,7 +228,8 @@
                 <div class="flex-1">
                     <textarea id="desktop-input" maxlength="400" placeholder="What is happening?!" class="w-full text-xl outline-none resize-none h-12 focus:h-24 transition-all placeholder-gray-500"></textarea>
                     
-                    <!-- Poll Preview -->
+                    <!-- Previews -->
+                    <div id="desktop-media-preview" class="hidden mt-2 rounded-xl overflow-hidden relative"></div>
                     <div id="desktop-poll-creator" class="hidden mt-2 border border-gray-200 rounded-xl p-3">
                         <div id="desktop-poll-options">
                             <input type="text" class="w-full border-b border-gray-100 p-2 outline-none mb-2 poll-option-input" placeholder="Choice 1">
@@ -231,12 +243,12 @@
 
                     <div class="flex justify-between items-center mt-2 pt-2 border-t border-gray-100">
                         <div class="flex gap-2 text-[#f91880] items-center">
-                            <button class="p-2 hover:bg-blue-50 rounded-full cursor-pointer" onclick="togglePollCreator('desktop')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg></button>
-                            
-                            <!-- Desktop AI Collab Select -->
-                            <select id="desktop-collab-select" class="ml-2 bg-transparent text-sm font-bold text-[#f91880] outline-none cursor-pointer hover:bg-blue-50 p-1 rounded max-w-[150px]">
+                            <label class="p-2 hover:bg-red-50 rounded-full cursor-pointer"><input type="file" accept="image/*" hidden onchange="handleMedia('desktop', 'image')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg></label>
+                            <!-- Simulated Video Upload -->
+                            <button class="p-2 hover:bg-red-50 rounded-full cursor-pointer" onclick="handleVideoUpload('desktop')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 7l-7 5 7 5V7z"></path><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg></button>
+                            <button class="p-2 hover:bg-red-50 rounded-full cursor-pointer" onclick="togglePollCreator('desktop')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg></button>
+                            <select id="desktop-collab-select" class="ml-2 bg-transparent text-sm font-bold text-[#f91880] outline-none cursor-pointer hover:bg-red-50 p-1 rounded max-w-[150px]">
                                 <option value="none">✨ Collab</option>
-                                <!-- JS Populated -->
                             </select>
                         </div>
                         <button id="desktop-post-btn" onclick="submitPost('desktop')" class="bg-[#f91880] text-white font-bold px-4 py-1.5 rounded-full disabled:opacity-50" disabled>Post</button>
@@ -344,6 +356,8 @@
             </div>
 
             <div class="mt-4 pt-3 border-t border-gray-100 flex gap-4 text-[#f91880] items-center">
+                <label><input type="file" accept="image/*" hidden onchange="handleMedia('mobile', 'image')">📷</label>
+                <button onclick="handleVideoUpload('mobile')">🎥</button>
                 <button onclick="togglePollCreator('mobile')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg></button>
                 <select id="mobile-collab-select" class="ml-auto bg-transparent text-sm font-bold text-[#f91880] outline-none cursor-pointer hover:bg-blue-50 p-1 rounded max-w-[150px]">
                     <option value="none">✨ Collab</option>
@@ -355,7 +369,7 @@
 
     <!-- ONBOARDING -->
     <div id="onboarding-modal" class="fixed inset-0 bg-white z-[100] flex flex-col items-center justify-center p-6 hidden">
-        <div class="w-10 h-10 mb-8 bg-black rounded-full"></div>
+        <img src="site.png" class="w-12 h-12 mb-8 object-contain" onerror="this.style.display='none'; this.parentElement.innerHTML='<div class=\'w-12 h-12 mb-8 bg-black rounded-full\'></div>'">
         <h1 class="text-3xl font-black mb-8 text-left w-full max-w-sm">Create your account</h1>
         <div class="w-full max-w-sm space-y-6">
             <div class="relative"><input type="text" id="setup-name" class="w-full border p-4 rounded outline-none" placeholder="Name"></div>
@@ -390,16 +404,17 @@
 
     <script>
         const VERIFIED = `<svg class="verified-badge w-5 h-5 text-[#f91880] inline-block ml-1 align-text-bottom" viewBox="0 0 24 24" fill="currentColor"><path d="M22.5 12.5c0-1.58-.875-2.95-2.148-3.6.154-.435.238-.905.238-1.4 0-2.21-1.71-3.998-3.818-3.998-.47 0-.92.175-1.297.503C14.78 2.67 13.438 2 12 2s-2.78.67-3.475 2.005c-.377-.328-.827-.503-1.297-.503-2.108 0-3.818 1.788-3.818 3.998 0 .495.084.965.238 1.4 1.273-.65 2.148-2.02 2.148-3.6zM9.763 16.296l-4.24-4.24 1.414-1.414 2.826 2.826 6.364-6.364 1.414 1.414-7.778 7.778z"></path></svg>`;
-        const DECAY_CONSTANT = 21600; 
+        const DECAY_CONSTANT = 60; // 1 MINUTE aggressively
         const AI_NAMES = ["TechGuru", "CryptoWhale", "MemeLord", "Artist_X", "NewsBot", "Traveler"];
         const AI_REPLIES = ["Big if true.", "🚀", "Interesting.", "Following.", "Perspective.", "Elaborate?", "Underrated.", "First!", "Really?", "Facts."];
         const COLLAB_BOOSTS = { 'viral': 1.5, 'trend': 3.0, 'hype': 5.0, 'none': 1.0 };
         
         // STRICT LIMITS
-        const MAX_POSTS = 1; 
+        const MAX_POSTS = 2; // Strict 2 post limit for memory safety
 
         let appData = { user: { name: "", handle: "", followers: 0, following: 0, avatar: "", bio: "" }, posts: [], bots: [], lastActive: Date.now(), currentTab: 'foryou' };
         let tempProfileMedia = { avatar: null, banner: null };
+        let currentMedia = { desktop: null, mobile: null };
         const els = {};
 
         function init() {
@@ -422,7 +437,6 @@
                     if (!Array.isArray(appData.bots)) appData.bots = [];
                     if (!appData.currentTab) appData.currentTab = 'foryou';
                     
-                    // Enforce limit on load
                     if(appData.posts.length > MAX_POSTS) {
                         appData.posts = appData.posts.slice(0, MAX_POSTS);
                     }
@@ -430,6 +444,7 @@
                     simulateTimeAway();
                     renderAll();
                     updateTabUI();
+                    sessionStorage.removeItem('recovered');
                 } else {
                     if(els.onboarding) els.onboarding.classList.remove('hidden');
                 }
@@ -457,24 +472,59 @@
         function saveState() {
             appData.lastActive = Date.now();
             
-            // STRICT 1-POST LIMIT
             if(appData.posts.length > MAX_POSTS) {
                 appData.posts = appData.posts.slice(0, MAX_POSTS);
             }
 
-            try {
-                // Check string size
-                const str = JSON.stringify(appData);
-                if(str.length > 1000000) { // 1MB limit check
-                    appData.posts = []; // Nuke to survive
-                    localStorage.setItem('x_sim_v3', JSON.stringify(appData));
-                } else {
-                    localStorage.setItem('x_sim_v3', str);
+            // CLEANER: Trim comments if too many
+            appData.posts.forEach(p => {
+                if(p.comments && p.comments.length > 20) {
+                    p.comments = p.comments.slice(0, 20);
                 }
+            });
+
+            try {
+                localStorage.setItem('x_sim_v3', JSON.stringify(appData));
                 localStorage.setItem('x_sim_last_active', appData.lastActive);
-            } catch (e) {
-                console.warn("Storage error");
+            } catch (e) { console.warn("Storage error"); }
+        }
+
+        // IMAGE COMPRESSION
+        function compressImage(file, maxWidth, callback) {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = event => {
+                const img = new Image();
+                img.src = event.target.result;
+                img.onload = () => {
+                    const elem = document.createElement('canvas');
+                    const scale = maxWidth / img.width;
+                    elem.width = maxWidth;
+                    elem.height = img.height * scale;
+                    const ctx = elem.getContext('2d');
+                    ctx.drawImage(img, 0, 0, elem.width, elem.height);
+                    callback(elem.toDataURL('image/jpeg', 0.5)); 
+                }
             }
+        }
+
+        function handleProfileMedia(type) {
+            const file = event.target.files[0];
+            if(!file) return;
+            const size = type === 'avatar' ? 150 : 500;
+            compressImage(file, size, (data) => {
+                tempProfileMedia[type] = data;
+            });
+        }
+
+        function saveEditProfile() {
+            appData.user.name = document.getElementById('edit-name').value;
+            appData.user.bio = document.getElementById('edit-bio').value;
+            if(tempProfileMedia.avatar) appData.user.avatar = tempProfileMedia.avatar;
+            if(tempProfileMedia.banner) appData.user.banner = tempProfileMedia.banner;
+            saveState(); renderAll();
+            document.getElementById('edit-profile-modal').classList.add('hidden');
+            tempProfileMedia = { avatar: null, banner: null };
         }
 
         function completeSetup() {
@@ -657,8 +707,10 @@
                 const age = (Date.now() - post.timestamp) / 1000;
                 if (age > 172800) return;
 
-                const decay = Math.exp(-age / DECAY_CONSTANT);
-                if (decay < 0.01) return;
+                // 1-minute decay constant applied here
+                let decay = Math.exp(-age / DECAY_CONSTANT);
+                // Ensure minimal trickle even after "death"
+                decay = Math.max(decay, 0.001); 
                 
                 const followers = post.isBot ? post.botFollowers : appData.user.followers;
                 let baseViews = (followers * 0.001) + (Math.log10(followers) * 0.1);
@@ -715,6 +767,9 @@
 
         function generateAIReplies(post, count) {
             if(!post.comments) post.comments = [];
+            // Limit comments to prevent memory bloat
+            if(post.comments.length > 20) return; 
+
             for(let i=0; i<count; i++) {
                 const name = AI_NAMES[Math.floor(Math.random() * AI_NAMES.length)];
                 const text = AI_REPLIES[Math.floor(Math.random() * AI_REPLIES.length)];
@@ -734,7 +789,6 @@
                 if(post.poll) {
                     const pollContainer = el.querySelector('.poll-container');
                     if(pollContainer) {
-                        // Always render/update bars if user voted or poll ended
                         if (post.poll.voted !== null || post.poll.ended) {
                            if(!pollContainer.classList.contains('results-shown')) {
                                pollContainer.classList.add('results-shown');
@@ -764,7 +818,7 @@
                 const footer = el.querySelector('.trending-footer');
                 const rank = getTrendingRank(post.id);
                 if(rank && footer) {
-                    footer.innerHTML = `<span class="text-[#1d9bf0]">#${rank} on Trending</span>`;
+                    footer.innerHTML = `<span class="text-[#f91880]">#${rank} on Trending</span>`;
                     footer.classList.remove('hidden');
                 } else if (footer) footer.classList.add('hidden');
             });
@@ -823,30 +877,6 @@
             userPosts.forEach(p => els.profile.appendChild(createPostHTML(p)));
         }
 
-        function renderPollResults(post) {
-            const max = Math.max(...post.poll.options.map(o => o.votes));
-            const endButton = !post.poll.ended 
-                ? `<button onclick="event.stopPropagation(); endPoll('${post.id}')" class="end-poll-btn text-red-500 font-bold hover:underline">End Poll</button>` 
-                : `<span class="text-gray-500 font-bold">Final Results</span>`;
-
-            return post.poll.options.map((opt, idx) => {
-                const pct = post.poll.total > 0 ? Math.round((opt.votes / post.poll.total) * 100) : 0;
-                const isWin = opt.votes === max && max > 0;
-                return `
-                    <div class="poll-option voted" data-opt-idx="${idx}">
-                        <div class="poll-bg ${isWin ? 'winner' : ''}" style="width: ${pct}%"></div>
-                        <div class="poll-label">
-                            <span>${opt.text} ${isWin ? '✔' : ''}</span>
-                            <span><span class="odometer" data-value="${pct}">${generateOdometerHTML(pct.toString())}</span>%</span>
-                        </div>
-                    </div>
-                `;
-            }).join('') + `<div class="text-xs text-gray-500 mt-2 flex justify-between">
-                <span><span class="odometer total-votes-odo" data-value="${post.poll.total}">${generateOdometerHTML(post.poll.total.toString())}</span> votes</span>
-                ${endButton}
-            </div>`;
-        }
-
         function createPostHTML(post) {
             const div = document.createElement('div');
             div.className = "p-4 border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors relative";
@@ -867,13 +897,20 @@
             }
 
             const rank = getTrendingRank(post.id);
-            const trendHtml = rank ? `<div class="trending-badge"><span class="text-[#1d9bf0]">#${rank} on Trending</span></div>` : '<div class="trending-footer hidden text-xs font-bold mt-1"></div>';
+            const trendHtml = rank ? `<div class="trending-badge"><span class="text-[#f91880]">#${rank} on Trending</span></div>` : '<div class="trending-footer hidden text-xs font-bold mt-1"></div>';
             const pinnedHtml = post.pinned ? `<div class="pinned-indicator"><svg width="12" height="12" viewBox="0 0 24 24" fill="#536471"><path d="M16 4.5C16 3.12 14.88 2 13.5 2H10.5C9.12 2 8 3.12 8 4.5V8H6V10H8V16L6 18V19H9.5V22H14.5V19H18V18L16 16V10H18V8H16V4.5Z"></path></svg> Pinned</div>` : '';
             
             let collabHtml = '';
             if(post.collab && post.collab !== 'none') {
                 const bot = appData.bots.find(b => b.id == post.collab);
                 if(bot) collabHtml = `<span class="text-gray-500 text-sm ml-1">& ${bot.name}</span>`;
+            }
+
+            let mediaHtml = '';
+            if(post.media) {
+                if(post.media.type === 'image') mediaHtml = `<div class="mt-3 rounded-xl overflow-hidden border border-gray-200"><img src="${post.media.data}" class="w-full object-cover max-h-[500px]"></div>`;
+                // Video rendering handled via pure simulated visual
+                else mediaHtml = `<div class="mt-3 rounded-xl overflow-hidden border border-gray-200 aspect-video custom-player paused" onclick="event.stopPropagation(); toggleVideo(this)"><div class="sim-video-bg">Simulated Video (Storage Saved)</div><div class="play-overlay"><div class="play-icon">▶</div></div></div>`;
             }
 
             let pollHtml = '';
@@ -913,6 +950,7 @@
                         </div>
                         ${trendHtml}
                         <div class="text-[15px] whitespace-pre-wrap leading-6">${post.content}</div>
+                        ${mediaHtml}
                         ${pollHtml}
                         <div class="flex justify-between mt-3 max-w-md text-gray-500 text-xs">
                             <div class="action-group flex items-center gap-1 group">
@@ -1008,17 +1046,16 @@
                 }
             }
 
-            if(!txt && !poll) return;
+            if(!txt && !currentMedia[mode] && !poll) return;
 
-            // PREPEND new post
             appData.posts.unshift({
-                id: Date.now().toString(), content: txt, timestamp: Date.now(),
+                id: Date.now().toString(), content: txt, media: currentMedia[mode], timestamp: Date.now(),
                 stats: { views: 0, likes: 0, reposts: 0, replies: 0 }, interacted: { like: false, repost: false },
                 collab: collab, comments: [], pinned: false, poll: poll, isBot: false
             });
             
             document.getElementById(`${mode}-input`).value = ''; 
-            clearPoll(mode);
+            clearMedia(mode); clearPoll(mode);
             if(mode === 'mobile') closeCompose();
             saveState(); renderAll();
         }
@@ -1034,6 +1071,66 @@
             }
         }
 
+        function handleMedia(mode, type) {
+            // FAKE IT: For video, just set the flag. For image, limit size
+            if(type === 'video') {
+                currentMedia[mode] = { type: 'video', data: null }; // Just a flag
+                showMediaPreview(mode, type, null);
+                return;
+            }
+            
+            const file = event.target.files[0];
+            if(!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                // Compress image by drawing to canvas
+                const img = new Image();
+                img.src = e.target.result;
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    // Resize to max 500px width
+                    const scale = 500 / img.width;
+                    canvas.width = 500;
+                    canvas.height = img.height * scale;
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                    // Compress to low quality jpg
+                    const dataUrl = canvas.toDataURL('image/jpeg', 0.5);
+                    currentMedia[mode] = { type: 'image', data: dataUrl };
+                    showMediaPreview(mode, type, dataUrl);
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function showMediaPreview(mode, type, data) {
+            const el = document.getElementById(`${mode}-media-preview`);
+            el.classList.remove('hidden');
+            el.innerHTML = type === 'image' 
+                ? `<img src="${data}" class="w-full h-full object-cover">` 
+                : `<div class="w-full h-full bg-black flex items-center justify-center text-white font-bold">Video Attached (Simulated)</div>`;
+            const btn = document.createElement('button');
+            btn.className = "absolute top-2 right-2 bg-black/70 text-white rounded-full p-1";
+            btn.innerHTML = 'X';
+            btn.onclick = () => clearMedia(mode);
+            el.appendChild(btn);
+            document.getElementById(`${mode}-post-btn`).disabled = false;
+        }
+
+        function handleVideoUpload(mode) {
+             // Just trigger the simulated logic directly
+             currentMedia[mode] = { type: 'video', data: null };
+             showMediaPreview(mode, 'video', null);
+        }
+
+        function clearMedia(mode) {
+            currentMedia[mode] = null;
+            document.getElementById(`${mode}-media-preview`).classList.add('hidden');
+            document.getElementById(`${mode}-post-btn`).disabled = true;
+        }
+
+        // --- PROFILE EDITING ---
         function openEditProfileModal() {
             document.getElementById('edit-name').value = appData.user.name;
             document.getElementById('edit-bio').value = appData.user.bio || "";
@@ -1099,8 +1196,20 @@
             `).join('');
         }
 
+        function toggleVideo(container) {
+             // Fake play/pause for visual effect
+             if(container.classList.contains('paused')) {
+                 container.classList.remove('paused');
+                 container.classList.add('playing');
+             } else {
+                 container.classList.add('paused');
+                 container.classList.remove('playing');
+             }
+        }
+
         function openCompose() { document.getElementById('compose-modal').classList.remove('hidden'); updateCollabSelects(); }
         function closeCompose() { document.getElementById('compose-modal').classList.add('hidden'); }
+        function resetData() { if(confirm("Reset?")) { localStorage.removeItem('x_sim_v3'); location.reload(); } }
         function editProfile() { openEditProfileModal(); } 
         function editFollowers() { const f = prompt("Followers", appData.user.followers); if(f) { appData.user.followers = parseInt(f); saveState(); renderAll(); } }
         function timeAgo(ts) {
