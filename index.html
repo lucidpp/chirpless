@@ -215,7 +215,7 @@
             <div class="hidden md:flex gap-3 p-4 border-b border-gray-100">
                 <img id="desktop-compose-avatar" class="w-10 h-10 rounded-full bg-gray-200 object-cover">
                 <div class="flex-1">
-                    <textarea id="desktop-input" maxlength="400" placeholder="What is happening?!" class="w-full text-xl outline-none resize-none h-12 focus:h-24 transition-all placeholder-gray-500"></textarea>
+                    <textarea id="desktop-input" placeholder="What is happening?!" class="w-full text-xl outline-none resize-none h-12 focus:h-24 transition-all placeholder-gray-500"></textarea>
                     
                     <!-- Poll Preview -->
                     <div id="desktop-poll-creator" class="hidden mt-2 border border-gray-200 rounded-xl p-3">
@@ -389,7 +389,7 @@
     </div>
 
     <script>
-        const VERIFIED = `<svg class="verified-badge w-5 h-5 text-[#1d9bf0] inline-block ml-1 align-text-bottom" viewBox="0 0 24 24" fill="currentColor"><path d="M22.5 12.5c0-1.58-.875-2.95-2.148-3.6.154-.435.238-.905.238-1.4 0-2.21-1.71-3.998-3.818-3.998-.47 0-.92.175-1.297.503C14.78 2.67 13.438 2 12 2s-2.78.67-3.475 2.005c-.377-.328-.827-.503-1.297-.503-2.108 0-3.818 1.788-3.818 3.998 0 .495.084.965.238 1.4-1.273.65-2.148 2.02-2.148 3.6 0 1.58.875 2.95 2.148 3.6-.154.435-.238.905-.238 1.4 0 2.21 1.71 3.998 3.818 3.998.47 0 .92-.175 1.297-.503.695 1.335 2.037 2.005 3.475 2.005s2.78-.67 3.475-2.005c.377.328.827.503 1.297.503 2.108 0 3.818-1.788 3.818-3.998 0-.495-.084-.965-.238-1.4 1.273-.65 2.148-2.02 2.148-3.6zM9.763 16.296l-4.24-4.24 1.414-1.414 2.826 2.826 6.364-6.364 1.414 1.414-7.778 7.778z"></path></svg>`;
+        const VERIFIED = `<svg class="verified-badge w-5 h-5 text-[#1d9bf0] inline-block ml-1 align-text-bottom" viewBox="0 0 24 24" fill="currentColor"><path d="M22.5 12.5c0-1.58-.875-2.95-2.148-3.6.154-.435.238-.905.238-1.4 0-2.21-1.71-3.998-3.818-3.998-.47 0-.92.175-1.297.503C14.78 2.67 13.438 2 12 2s-2.78.67-3.475 2.005c-.377-.328-.827-.503-1.297-.503-2.108 0-3.818 1.788-3.818 3.998 0 .495.084.965.238 1.4 1.273-.65 2.148-2.02 2.148-3.6zM9.763 16.296l-4.24-4.24 1.414-1.414 2.826 2.826 6.364-6.364 1.414 1.414-7.778 7.778z"></path></svg>`;
         const DECAY_CONSTANT = 21600; 
         const AI_NAMES = ["TechGuru", "CryptoWhale", "MemeLord", "Artist_X", "NewsBot", "Traveler"];
         const AI_REPLIES = ["Big if true.", "🚀 to the moon!", "This is the content I signed up for.", "Following.", "Interesting perspective.", "Can you elaborate?", "Underrated tweet.", "First!", "Wait, really?", "Facts."];
@@ -397,7 +397,7 @@
         const COLLAB_NAMES = { 'viral': 'ViralGPT', 'trend': 'TrendSetter', 'hype': 'HypeBeast' };
         
         // STRICT LIMITS
-        const MAX_POSTS = 2; 
+        const MAX_POSTS = 1; 
 
         let appData = { user: { name: "", handle: "", followers: 0, following: 0, avatar: "", bio: "" }, posts: [], bots: [], lastActive: Date.now(), currentTab: 'foryou' };
         let tempProfileMedia = { avatar: null, banner: null };
@@ -415,6 +415,14 @@
             els.replyList = document.getElementById('post-replies-list');
 
             try {
+                // DATA WIPE CHECK FOR FIRST RUN OF NEW VERSION
+                // Check if user has "v3" data but it's huge (previous versions)
+                const raw = localStorage.getItem('x_sim_v3');
+                if(raw && raw.length > 500000) { // If > 500KB, it's likely bloated
+                    console.log("Detected bloated data, wiping for safety.");
+                    localStorage.removeItem('x_sim_v3');
+                }
+
                 const saved = localStorage.getItem('x_sim_v3');
                 if (saved) {
                     const parsed = JSON.parse(saved);
@@ -791,24 +799,12 @@
             document.getElementById('sidebar-handle').innerText = '@' + appData.user.handle;
             document.getElementById('profile-handle').innerText = '@' + appData.user.handle;
             document.getElementById('profile-bio').innerText = appData.user.bio || "";
-            
-            if(appData.user.banner) {
-                const b = document.getElementById('profile-banner');
-                b.src = appData.user.banner;
-                b.classList.remove('hidden');
-            }
             updateProfileHeader();
         }
         
         function updateProfileHeader() {
             renderOdometer(document.getElementById('profile-followers'), appData.user.followers);
             renderOdometer(document.getElementById('profile-following'), appData.user.following);
-            
-            // Post Count Odometer in Header
-            const postCountEl = document.getElementById('profile-header-posts');
-            if(postCountEl) {
-                postCountEl.innerHTML = `<span class="odometer" data-value="${appData.posts.length}">${generateOdometerHTML(formatNumber(appData.posts.length))}</span> posts`;
-            }
         }
 
         function renderFeeds() {
@@ -830,30 +826,6 @@
             
             const userPosts = appData.posts.filter(p => !p.isBot).sort((a,b) => b.timestamp - a.timestamp);
             userPosts.forEach(p => els.profile.appendChild(createPostHTML(p)));
-        }
-
-        function renderPollResults(post) {
-            const max = Math.max(...post.poll.options.map(o => o.votes));
-            const endButton = !post.poll.ended 
-                ? `<button onclick="event.stopPropagation(); endPoll('${post.id}')" class="end-poll-btn text-red-500 font-bold hover:underline">End Poll</button>` 
-                : `<span class="text-gray-500 font-bold">Final Results</span>`;
-
-            return post.poll.options.map((opt, idx) => {
-                const pct = post.poll.total > 0 ? Math.round((opt.votes / post.poll.total) * 100) : 0;
-                const isWin = opt.votes === max && max > 0;
-                return `
-                    <div class="poll-option voted" data-opt-idx="${idx}">
-                        <div class="poll-bg ${isWin ? 'winner' : ''}" style="width: ${pct}%"></div>
-                        <div class="poll-label">
-                            <span>${opt.text} ${isWin ? '✔' : ''}</span>
-                            <span><span class="odometer" data-value="${pct}">${generateOdometerHTML(pct.toString())}</span>%</span>
-                        </div>
-                    </div>
-                `;
-            }).join('') + `<div class="text-xs text-gray-500 mt-2 flex justify-between">
-                <span><span class="odometer total-votes-odo" data-value="${post.poll.total}">${generateOdometerHTML(post.poll.total.toString())}</span> votes</span>
-                ${endButton}
-            </div>`;
         }
 
         function createPostHTML(post) {
