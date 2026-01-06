@@ -143,13 +143,6 @@
         .verified-badge { color: #1d9bf0; margin-left: 2px; display: inline-block; vertical-align: text-bottom; }
         .pinned-indicator { font-size: 11px; font-weight: 700; color: #536471; display: flex; align-items: center; gap: 4px; margin-bottom: 4px; }
         
-        /* Video Player */
-        .custom-player { position: relative; background: black; width: 100%; aspect-ratio: 16/9; border-radius: 12px; overflow: hidden; }
-        .custom-player video { width: 100%; height: 100%; object-fit: contain; }
-        .play-overlay { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: none; }
-        .play-icon { width: 50px; height: 50px; background: rgba(29,155,240,0.9); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; opacity: 0; transition: transform 0.2s; }
-        .custom-player.paused .play-icon { opacity: 1; }
-        
         /* Menu */
         .post-menu { position: absolute; top: 10px; right: 10px; background: white; box-shadow: 0 0 10px rgba(0,0,0,0.1); border-radius: 8px; z-index: 20; display: none; flex-direction: column; overflow: hidden; border: 1px solid #eff3f4; }
         .post-menu button { padding: 8px 16px; text-align: left; font-size: 13px; font-weight: 600; width: 150px; transition: background 0.1s; }
@@ -215,8 +208,8 @@
         <!-- VIEW: HOME -->
         <div id="view-home" class="view-section">
             <div class="flex border-b border-gray-100 sticky top-14 md:top-0 bg-white z-40">
-                <div id="tab-foryou" class="flex-1 h-12 flex items-center justify-center cursor-pointer tab-active" onclick="switchFeedTab('foryou')">For you</div>
-                <div id="tab-following" class="flex-1 h-12 flex items-center justify-center cursor-pointer tab-inactive" onclick="switchFeedTab('following')">Following</div>
+                <div id="tab-foryou" class="flex-1 h-12 flex items-center justify-center cursor-pointer tab-active">For you</div>
+                <div id="tab-following" class="flex-1 h-12 flex items-center justify-center cursor-pointer text-gray-500">Following</div>
             </div>
             <!-- Desktop Compose -->
             <div class="hidden md:flex gap-3 p-4 border-b border-gray-100">
@@ -224,8 +217,7 @@
                 <div class="flex-1">
                     <textarea id="desktop-input" placeholder="What is happening?!" class="w-full text-xl outline-none resize-none h-12 focus:h-24 transition-all placeholder-gray-500"></textarea>
                     
-                    <!-- Media/Poll Previews -->
-                    <div id="desktop-media-preview" class="hidden mt-2 rounded-xl overflow-hidden relative"></div>
+                    <!-- Poll Preview -->
                     <div id="desktop-poll-creator" class="hidden mt-2 border border-gray-200 rounded-xl p-3">
                         <div id="desktop-poll-options">
                             <input type="text" class="w-full border-b border-gray-100 p-2 outline-none mb-2 poll-option-input" placeholder="Choice 1">
@@ -239,8 +231,6 @@
 
                     <div class="flex justify-between items-center mt-2 pt-2 border-t border-gray-100">
                         <div class="flex gap-2 text-[#1d9bf0] items-center">
-                            <label class="p-2 hover:bg-blue-50 rounded-full cursor-pointer"><input type="file" accept="image/*" hidden onchange="handleMedia('desktop', 'image')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg></label>
-                            <label class="p-2 hover:bg-blue-50 rounded-full cursor-pointer"><input type="file" accept="video/*" hidden onchange="handleMedia('desktop', 'video')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 7l-7 5 7 5V7z"></path><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg></label>
                             <button class="p-2 hover:bg-blue-50 rounded-full cursor-pointer" onclick="togglePollCreator('desktop')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg></button>
                             
                             <!-- Desktop AI Collab Select -->
@@ -285,7 +275,7 @@
         <!-- VIEW: COLLAB -->
         <div id="view-collab" class="view-section hidden p-4">
             <h1 class="font-bold text-xl mb-4">Bot Collabs</h1>
-            <p class="text-gray-500 text-sm mb-4">Create bots to boost your engagement rate.</p>
+            <p class="text-gray-500 text-sm mb-4">Create bots to boost your engagement rate. Bots will help simulate engagement.</p>
             <button onclick="createBot()" class="w-full py-3 bg-black text-white rounded-full font-bold mb-4">Create New Bot</button>
             <div id="bot-list" class="space-y-2"></div>
         </div>
@@ -342,7 +332,6 @@
                 <button id="mobile-post-btn" onclick="submitPost('mobile')" class="bg-[#1d9bf0] text-white font-bold px-4 py-1.5 rounded-full disabled:opacity-50" disabled>Post</button>
             </div>
             <textarea id="mobile-input" placeholder="What is happening?!" class="w-full text-xl outline-none resize-none h-32"></textarea>
-            <div id="mobile-media-preview" class="hidden mt-2 rounded-xl overflow-hidden relative max-h-60"></div>
             
             <div id="mobile-poll-creator" class="hidden mt-2 border border-gray-200 rounded-xl p-3">
                 <div id="mobile-poll-options">
@@ -356,8 +345,6 @@
             </div>
 
             <div class="mt-4 pt-3 border-t border-gray-100 flex gap-4 text-[#1d9bf0] items-center">
-                <label><input type="file" accept="image/*" hidden onchange="handleMedia('mobile', 'image')">📷</label>
-                <label><input type="file" accept="video/*" hidden onchange="handleMedia('mobile', 'video')">🎥</label>
                 <button onclick="togglePollCreator('mobile')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg></button>
                 <select id="mobile-collab-select" class="ml-auto bg-transparent text-sm font-bold text-[#1d9bf0] outline-none cursor-pointer hover:bg-blue-50 p-1 rounded max-w-[150px]">
                     <option value="none">✨ Collab</option>
@@ -403,17 +390,6 @@
     </div>
 
     <script>
-        // --- SAFE RECOVERY ---
-        window.onerror = function(msg, url, line) {
-            console.error("Crash detected:", msg);
-            // Auto-recover on crash loop
-            if(!sessionStorage.getItem('recovered')) {
-                sessionStorage.setItem('recovered', 'true');
-                localStorage.removeItem('x_sim_v3');
-                location.reload();
-            }
-        };
-
         const VERIFIED = `<svg class="verified-badge w-5 h-5 text-[#1d9bf0] inline-block ml-1 align-text-bottom" viewBox="0 0 24 24" fill="currentColor"><path d="M22.5 12.5c0-1.58-.875-2.95-2.148-3.6.154-.435.238-.905.238-1.4 0-2.21-1.71-3.998-3.818-3.998-.47 0-.92.175-1.297.503C14.78 2.67 13.438 2 12 2s-2.78.67-3.475 2.005c-.377-.328-.827-.503-1.297-.503-2.108 0-3.818 1.788-3.818 3.998 0 .495.084.965.238 1.4-1.273.65-2.148 2.02-2.148 3.6 0 1.58.875 2.95 2.148 3.6-.154.435-.238.905-.238 1.4 0 2.21 1.71 3.998 3.818 3.998.47 0 .92-.175 1.297-.503.695 1.335 2.037 2.005 3.475 2.005s2.78-.67 3.475-2.005c.377.328.827.503 1.297.503 2.108 0 3.818-1.788 3.818-3.998 0-.495-.084-.965-.238-1.4 1.273-.65 2.148-2.02 2.148-3.6zM9.763 16.296l-4.24-4.24 1.414-1.414 2.826 2.826 6.364-6.364 1.414 1.414-7.778 7.778z"></path></svg>`;
         const DECAY_CONSTANT = 21600; 
         const AI_NAMES = ["TechGuru", "CryptoWhale", "MemeLord", "Artist_X", "NewsBot", "Traveler"];
@@ -422,7 +398,6 @@
         const COLLAB_NAMES = { 'viral': 'ViralGPT', 'trend': 'TrendSetter', 'hype': 'HypeBeast' };
 
         let appData = { user: { name: "", handle: "", followers: 0, following: 0, avatar: "", banner: "", bio: "" }, posts: [], bots: [], lastActive: Date.now(), currentTab: 'foryou' };
-        let currentMedia = { desktop: null, mobile: null };
         let tempProfileMedia = { avatar: null, banner: null };
         const els = {};
 
@@ -437,12 +412,10 @@
             els.postDetail = document.getElementById('post-detail-content');
             els.replyList = document.getElementById('post-replies-list');
 
-            // Defensive Load
             try {
                 const saved = localStorage.getItem('x_sim_v3');
                 if (saved) {
                     const parsed = JSON.parse(saved);
-                    // Merge
                     appData = { ...appData, ...parsed };
                     if (!Array.isArray(appData.posts)) appData.posts = [];
                     if (!Array.isArray(appData.bots)) appData.bots = [];
@@ -452,7 +425,6 @@
                     renderAll();
                     updateTabUI();
                     
-                    // Clear crash flag on successful load
                     sessionStorage.removeItem('recovered');
                 } else {
                     if(els.onboarding) els.onboarding.classList.remove('hidden');
@@ -465,7 +437,6 @@
 
             setInterval(simulateLive, 1000);
             setInterval(renderTrending, 2000);
-            setInterval(generateBotPosts, 10000);
             
             ['desktop', 'mobile'].forEach(m => {
                 const inp = document.getElementById(`${m}-input`);
@@ -475,41 +446,25 @@
             window.addEventListener('beforeunload', saveState);
             document.addEventListener('visibilitychange', () => {
                 if (document.hidden) saveState();
-                else { 
-                    appData.lastActive = parseInt(localStorage.getItem('x_sim_last_active')) || Date.now(); 
-                    simulateTimeAway(); 
-                }
+                else { appData.lastActive = parseInt(localStorage.getItem('x_sim_last_active')) || Date.now(); simulateTimeAway(); }
             });
         }
 
         function saveState() {
             appData.lastActive = Date.now();
             
-            // GARBAGE COLLECTION to prevent white screen
-            if(appData.posts.length > 20) {
-                // Keep the newest 20 fully intact
-                // For older posts, strip media to save space
-                for(let i = 20; i < appData.posts.length; i++) {
-                    delete appData.posts[i].media;
-                }
-                
-                // Hard cap at 50 posts total
-                if(appData.posts.length > 50) {
-                     appData.posts = appData.posts.slice(0, 50);
-                }
+            // STRICT 4-POST LIMIT to save storage
+            if(appData.posts.length > 4) {
+                appData.posts = appData.posts.slice(0, 4);
             }
+            // Ensure no media ever saved
+            appData.posts.forEach(p => { if(p.media) delete p.media; });
 
             try {
                 localStorage.setItem('x_sim_v3', JSON.stringify(appData));
                 localStorage.setItem('x_sim_last_active', appData.lastActive);
             } catch (e) {
-                // If failed, likely quota exceeded. Emergency purge.
-                appData.posts.forEach(p => delete p.media);
-                try {
-                    localStorage.setItem('x_sim_v3', JSON.stringify(appData));
-                } catch(e2) {
-                    console.error("Fatal storage error");
-                }
+                console.warn("Storage error");
             }
         }
 
@@ -530,7 +485,6 @@
             saveState(); renderAll();
         }
 
-        // --- FEED TABS ---
         function switchFeedTab(tab) {
             appData.currentTab = tab;
             updateTabUI();
@@ -540,7 +494,6 @@
         function updateTabUI() {
             const forYouTab = document.getElementById('tab-foryou');
             const followingTab = document.getElementById('tab-following');
-            
             if(appData.currentTab === 'foryou') {
                 forYouTab.className = "flex-1 h-12 flex items-center justify-center cursor-pointer tab-active";
                 followingTab.className = "flex-1 h-12 flex items-center justify-center cursor-pointer text-gray-500 font-medium";
@@ -550,26 +503,6 @@
             }
         }
 
-        function generateBotPosts() {
-            if(appData.bots.length === 0) return;
-            if(Math.random() > 0.3) return; // 30% chance per tick
-
-            const bot = appData.bots[Math.floor(Math.random() * appData.bots.length)];
-            const templates = [ "Just thinking about the future.", "Simulation theory is wild.", "Coding is life.", "Crypto markets 📈", "Coffee time ☕", "Hello world!", "Big updates coming soon." ];
-            const content = templates[Math.floor(Math.random() * templates.length)];
-            
-            const newPost = {
-                id: Date.now().toString() + Math.random(),
-                content: content, timestamp: Date.now(),
-                stats: { views: 0, likes: 0, reposts: 0, replies: 0 }, interacted: { like: false, repost: false },
-                collab: 'none', comments: [], pinned: false, poll: null,
-                isBot: true, botName: bot.name, botFollowers: bot.followers
-            };
-            appData.posts.unshift(newPost);
-            renderFeeds();
-        }
-
-        // --- ANIMATION ENGINE ---
         function formatNumber(num) {
             if (num < 1000) return num.toLocaleString();
             if (num >= 1000000000) return (num / 1000000000).toFixed(1) + 'B';
@@ -625,7 +558,6 @@
             }).join('');
         }
 
-        // --- POLLS ---
         function togglePollCreator(mode) {
             const el = document.getElementById(`${mode}-poll-creator`);
             el.classList.toggle('hidden');
@@ -666,7 +598,6 @@
              }
         }
 
-        // --- COLLAB ---
         function updateCollabSelects() {
             const options = `<option value="none">✨ Collab</option>` + appData.bots.map(b => `<option value="${b.id}">${b.name} (${formatNumber(b.followers)})</option>`).join('');
             const d = document.getElementById('desktop-collab-select');
@@ -675,7 +606,6 @@
             if(m) m.innerHTML = options;
         }
 
-        // --- SIMULATION ---
         function simulateTimeAway() {
             const now = Date.now();
             const elapsed = (now - appData.lastActive) / 1000;
@@ -784,7 +714,6 @@
             }
         }
 
-        // --- DOM UPDATES ---
         function updatePostDOM(post) {
             const selector = `[data-post-id="${post.id}"]`;
             document.querySelectorAll(selector).forEach(el => {
@@ -884,30 +813,6 @@
             userPosts.forEach(p => els.profile.appendChild(createPostHTML(p)));
         }
 
-        function renderPollResults(post) {
-            const max = Math.max(...post.poll.options.map(o => o.votes));
-            const endButton = !post.poll.ended 
-                ? `<button onclick="event.stopPropagation(); endPoll('${post.id}')" class="end-poll-btn text-red-500 font-bold hover:underline">End Poll</button>` 
-                : `<span class="text-gray-500 font-bold">Final Results</span>`;
-
-            return post.poll.options.map((opt, idx) => {
-                const pct = post.poll.total > 0 ? Math.round((opt.votes / post.poll.total) * 100) : 0;
-                const isWin = opt.votes === max && max > 0;
-                return `
-                    <div class="poll-option voted" data-opt-idx="${idx}">
-                        <div class="poll-bg ${isWin ? 'winner' : ''}" style="width: ${pct}%"></div>
-                        <div class="poll-label">
-                            <span>${opt.text} ${isWin ? '✔' : ''}</span>
-                            <span><span class="odometer" data-value="${pct}">${generateOdometerHTML(pct.toString())}</span>%</span>
-                        </div>
-                    </div>
-                `;
-            }).join('') + `<div class="text-xs text-gray-500 mt-2 flex justify-between">
-                <span><span class="odometer total-votes-odo" data-value="${post.poll.total}">${generateOdometerHTML(post.poll.total.toString())}</span> votes</span>
-                ${endButton}
-            </div>`;
-        }
-
         function createPostHTML(post) {
             const div = document.createElement('div');
             div.className = "p-4 border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors relative";
@@ -935,12 +840,6 @@
             if(post.collab && post.collab !== 'none') {
                 const bot = appData.bots.find(b => b.id == post.collab);
                 if(bot) collabHtml = `<span class="text-gray-500 text-sm ml-1">& ${bot.name}</span>`;
-            }
-
-            let mediaHtml = '';
-            if(post.media) {
-                if(post.media.type === 'image') mediaHtml = `<div class="mt-3 rounded-xl overflow-hidden border border-gray-200"><img src="${post.media.data}" class="w-full object-cover max-h-[500px]"></div>`;
-                else mediaHtml = `<div class="mt-3 rounded-xl overflow-hidden border border-gray-200 aspect-video custom-player paused" onclick="event.stopPropagation(); toggleVideo(this)"><video src="${post.media.data}" loop playsinline></video><div class="play-overlay"><div class="play-icon">▶</div></div></div>`;
             }
 
             let pollHtml = '';
@@ -980,7 +879,6 @@
                         </div>
                         ${trendHtml}
                         <div class="text-[15px] whitespace-pre-wrap leading-6">${post.content}</div>
-                        ${mediaHtml}
                         ${pollHtml}
                         <div class="flex justify-between mt-3 max-w-md text-gray-500 text-xs">
                             <div class="action-group flex items-center gap-1 group">
@@ -1076,16 +974,16 @@
                 }
             }
 
-            if(!txt && !currentMedia[mode] && !poll) return;
+            if(!txt && !poll) return;
 
             appData.posts.unshift({
-                id: Date.now().toString(), content: txt, media: currentMedia[mode], timestamp: Date.now(),
+                id: Date.now().toString(), content: txt, timestamp: Date.now(),
                 stats: { views: 0, likes: 0, reposts: 0, replies: 0 }, interacted: { like: false, repost: false },
-                collab: collab, comments: [], pinned: false, poll: poll
+                collab: collab, comments: [], pinned: false, poll: poll, isBot: false
             });
             
             document.getElementById(`${mode}-input`).value = ''; 
-            clearMedia(mode); clearPoll(mode);
+            clearPoll(mode);
             if(mode === 'mobile') closeCompose();
             saveState(); renderAll();
         }
@@ -1099,30 +997,6 @@
                 updatePostDOM(post);
                 saveState();
             }
-        }
-
-        function handleMedia(mode, type) {
-            const file = event.target.files[0];
-            if(!file) return;
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                currentMedia[mode] = { type, data: e.target.result };
-                const el = document.getElementById(`${mode}-media-preview`);
-                el.classList.remove('hidden');
-                el.innerHTML = type === 'image' ? `<img src="${e.target.result}" class="w-full h-full object-cover">` : `<video src="${e.target.result}" controls class="w-full h-full"></video>`;
-                const btn = document.createElement('button');
-                btn.className = "absolute top-2 right-2 bg-black/70 text-white rounded-full p-1";
-                btn.innerHTML = 'X';
-                btn.onclick = () => clearMedia(mode);
-                el.appendChild(btn);
-                document.getElementById(`${mode}-post-btn`).disabled = false;
-            };
-            reader.readAsDataURL(file);
-        }
-        function clearMedia(mode) {
-            currentMedia[mode] = null;
-            document.getElementById(`${mode}-media-preview`).classList.add('hidden');
-            document.getElementById(`${mode}-post-btn`).disabled = true;
         }
 
         // --- PROFILE EDITING ---
@@ -1179,10 +1053,6 @@
             `).join('');
         }
 
-        function toggleVideo(container) {
-            const v = container.querySelector('video');
-            if(v.paused) { v.play(); container.classList.remove('paused'); } else { v.pause(); container.classList.add('paused'); }
-        }
         function openCompose() { document.getElementById('compose-modal').classList.remove('hidden'); updateCollabSelects(); }
         function closeCompose() { document.getElementById('compose-modal').classList.add('hidden'); }
         function resetData() { if(confirm("Reset?")) { localStorage.removeItem('x_sim_v3'); location.reload(); } }
