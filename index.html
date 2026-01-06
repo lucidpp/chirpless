@@ -427,21 +427,23 @@
             els.postDetail = document.getElementById('post-detail-content');
             els.replyList = document.getElementById('post-replies-list');
 
+            // SAFE LOAD logic
             try {
                 const saved = localStorage.getItem('x_sim_v3');
                 if (saved) {
                     const parsed = JSON.parse(saved);
-                    // Safe merge to handle old versions
+                    // Merge to ensure no fields are missing in old data
                     appData = { ...appData, ...parsed };
                     if (!appData.bots) appData.bots = [];
+                    // Ensure bots exist if null
                     simulateTimeAway();
                     renderAll();
                 } else {
                     if(els.onboarding) els.onboarding.classList.remove('hidden');
                 }
             } catch (e) {
-                console.error("Data load error", e);
-                localStorage.removeItem('x_sim_v3'); // wipe corrupt data
+                console.error("Save file corrupted, resetting", e);
+                localStorage.removeItem('x_sim_v3');
                 if(els.onboarding) els.onboarding.classList.remove('hidden');
             }
 
@@ -463,20 +465,35 @@
             window.addEventListener('beforeunload', saveState);
             document.addEventListener('visibilitychange', () => {
                 if (document.hidden) saveState();
-                else { appData.lastActive = parseInt(localStorage.getItem('x_sim_last_active')) || Date.now(); simulateTimeAway(); }
+                else { 
+                    appData.lastActive = parseInt(localStorage.getItem('x_sim_last_active')) || Date.now(); 
+                    simulateTimeAway(); 
+                }
             });
         }
 
         function saveState() {
             appData.lastActive = Date.now();
-            // OPTIMIZATION: Limit posts to 50 to prevent localStorage crash
+            
+            // GARBAGE COLLECTION: Prevent white screen by limiting array size
+            // If more than 50 posts, delete oldest.
             if(appData.posts.length > 50) {
-                appData.posts = appData.posts.slice(0, 50);
+                appData.posts = appData.posts.slice(0, 50); // Keep newest 50
             }
+
             try {
                 localStorage.setItem('x_sim_v3', JSON.stringify(appData));
                 localStorage.setItem('x_sim_last_active', appData.lastActive);
-            } catch (e) { console.warn("Storage quota exceeded", e); }
+            } catch (e) {
+                // If storage full, desperate cleanup
+                console.warn("Storage full, purging media from old posts");
+                appData.posts.forEach(p => delete p.media); // Clear heavy media
+                try {
+                    localStorage.setItem('x_sim_v3', JSON.stringify(appData));
+                } catch(e2) {
+                    console.error("Fatal storage error");
+                }
+            }
         }
 
         function completeSetup() {
@@ -485,7 +502,6 @@
             const followers = parseInt(document.getElementById('setup-followers').value) || 100;
             
             appData.user = { name, handle, followers, following: Math.floor(followers * 0.4), avatar: `https://ui-avatars.com/api/?name=${name}&background=random`, bio: "Just chatting." };
-            // Default AutoBot
             appData.bots.push({ name: "AutoBot", followers: 10000, id: Date.now() });
             
             appData.posts.push({
@@ -610,10 +626,9 @@
             if (elapsed < 1) return;
             appData.posts.forEach(post => {
                 const age = (now - post.timestamp) / 1000;
-                if (age > 172800) return; // 48h hard limit
+                if (age > 172800) return; 
 
                 const decay = Math.exp(-age / DECAY_CONSTANT); 
-                
                 let baseRate = (appData.user.followers / 100) + (Math.log10(Math.max(10, appData.user.followers)) * 5);
                 let botPower = appData.bots.reduce((a,b) => a + b.followers, 0);
                 baseRate += (botPower / 500);
@@ -628,7 +643,6 @@
                     post.stats.reposts += Math.floor(added * 0.03);
                     generateAIReplies(post, Math.floor(added * 0.01));
                     simulatePollVotes(post, added);
-                    
                     const newFollowers = Math.floor(added * 0.0005);
                     if(newFollowers > 0) appData.user.followers += newFollowers;
                 }
@@ -645,21 +659,15 @@
                 if (decay < 0.01) return;
                 
                 let baseViews = (appData.user.followers * 0.001) + (Math.log10(appData.user.followers) * 0.1);
-                
                 let botBoost = 0;
                 if (post.collab && post.collab !== 'none') {
                     const bot = appData.bots.find(b => b.id == post.collab);
                     if(bot) botBoost = bot.followers * 0.0005;
                 }
-
                 let amount = (baseViews + botBoost) * decay;
-
                 let viewsToAdd = 0;
-                if(amount > 1) {
-                    viewsToAdd = Math.ceil(amount * (0.8 + Math.random() * 0.4));
-                } else {
-                    if(Math.random() < amount) viewsToAdd = 1;
-                }
+                if(amount > 1) { viewsToAdd = Math.ceil(amount * (0.8 + Math.random() * 0.4)); } 
+                else { if(Math.random() < amount) viewsToAdd = 1; }
 
                 if (viewsToAdd > 0) {
                     post.stats.views += viewsToAdd;
@@ -672,7 +680,6 @@
                         appData.user.followers += Math.ceil(viewsToAdd * 0.002);
                         updateProfileHeader();
                     }
-
                     updatePostDOM(post);
                 }
             });
@@ -680,10 +687,8 @@
 
         function simulatePollVotes(post, newViews) {
             if(post.poll && !post.poll.ended) {
-                // Not every view votes. Say 5% vote.
                 const newVotes = Math.ceil(newViews * 0.05 * Math.random());
                 for(let i=0; i<newVotes; i++) {
-                    // Use weights to determine vote
                     const rand = Math.random();
                     let cumulative = 0;
                     for(let j=0; j<post.poll.options.length; j++) {
@@ -717,17 +722,16 @@
                 renderOdometer(el.querySelector('.odometer[data-type="reposts"]'), post.stats.reposts);
                 renderOdometer(el.querySelector('.odometer[data-type="replies"]'), post.stats.replies);
                 
-                // Poll Update (Crucial: Update live even if voted)
+                // Poll Update
                 if(post.poll) {
                     const pollContainer = el.querySelector('.poll-container');
                     if(pollContainer) {
+                        // Always update bars/numbers if visible
                         if (post.poll.voted !== null || post.poll.ended) {
-                           // Ensure container has results class
                            if(!pollContainer.classList.contains('results-shown')) {
                                pollContainer.classList.add('results-shown');
                                pollContainer.innerHTML = renderPollResults(post);
                            } else {
-                               // Live update numbers inside results
                                post.poll.options.forEach((opt, idx) => {
                                    const pct = post.poll.total > 0 ? Math.round((opt.votes/post.poll.total)*100) : 0;
                                    const bar = pollContainer.querySelector(`[data-opt-idx="${idx}"] .poll-bg`);
@@ -737,12 +741,8 @@
                                });
                                const totalOdo = pollContainer.querySelector('.total-votes-odo');
                                if(totalOdo) renderOdometer(totalOdo, post.poll.total);
-                               
-                               // Toggle End Button Text
                                const endBtn = pollContainer.querySelector('.end-poll-btn');
-                               if(endBtn) {
-                                   if(post.poll.ended) { endBtn.innerText = "Final Results"; endBtn.disabled = true; }
-                               }
+                               if(endBtn && post.poll.ended) { endBtn.innerText = "Final Results"; endBtn.disabled = true; }
                            }
                         }
                     }
@@ -786,7 +786,6 @@
                 b.src = appData.user.banner;
                 b.classList.remove('hidden');
             }
-
             updateProfileHeader();
         }
         
@@ -966,7 +965,6 @@
                 inputs.forEach(inp => { if(inp.value.trim()) options.push({ text: inp.value.trim(), votes: 0, weight: Math.random() }); });
                 
                 if(options.length >= 2) {
-                    // Normalize weights for probability
                     const totalWeight = options.reduce((a,b) => a + b.weight, 0);
                     options.forEach(o => o.weight = o.weight / totalWeight);
                     poll = { options, total: 0, voted: null, ended: false };
