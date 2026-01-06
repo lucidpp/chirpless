@@ -3,11 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    
+    <!-- BRANDING & METADATA -->
+    <title>Chirpless.com</title>
+    <meta name="description" content="Chirpless - The lightweight, offline social media simulator. Create posts, gain followers, and trend without the noise.">
+    <meta property="og:title" content="Chirpless.com">
+    <meta property="og:description" content="The lightweight, offline social media simulator.">
+    <meta property="og:image" content="site.png">
+    <link rel="icon" href="site.png" type="image/png">
+
+    <!-- PWA Settings -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <meta name="apple-mobile-web-app-title" content="X Sim">
+    <meta name="apple-mobile-web-app-title" content="Chirpless">
     <meta name="theme-color" content="#ffffff">
-    <title>X Simulator</title>
+    
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
@@ -161,7 +171,7 @@
     <header class="hidden md:flex flex-col items-end w-[275px] pr-6 h-screen sticky top-0">
         <div class="w-[250px] flex flex-col h-full pb-4 pt-2">
             <div class="w-12 h-12 flex items-center justify-center hover:bg-gray-100 rounded-full cursor-pointer transition-colors mb-2" onclick="navTo('home')">
-                <div class="w-7 h-7 bg-black rounded-full"></div> 
+                <img src="site.png" class="w-8 h-8 object-contain" onerror="this.style.display='none'; this.parentElement.innerHTML='<div class=\'w-8 h-8 bg-black rounded-full\'></div>'">
             </div>
             
             <nav class="space-y-2 w-full text-xl">
@@ -201,7 +211,7 @@
         <!-- HEADER MOBILE -->
         <div class="sticky top-0 z-50 bg-white/85 backdrop-blur-md border-b border-gray-100 md:hidden flex justify-between items-center px-4 h-14">
             <img id="mobile-header-avatar" class="w-8 h-8 rounded-full bg-gray-200 object-cover" onclick="navTo('profile')">
-            <div class="w-6 h-6 bg-black rounded-full"></div>
+            <img src="site.png" class="w-6 h-6 object-contain" onerror="this.style.display='none';">
             <div class="w-8"></div>
         </div>
 
@@ -215,7 +225,7 @@
             <div class="hidden md:flex gap-3 p-4 border-b border-gray-100">
                 <img id="desktop-compose-avatar" class="w-10 h-10 rounded-full bg-gray-200 object-cover">
                 <div class="flex-1">
-                    <textarea id="desktop-input" placeholder="What is happening?!" class="w-full text-xl outline-none resize-none h-12 focus:h-24 transition-all placeholder-gray-500"></textarea>
+                    <textarea id="desktop-input" maxlength="400" placeholder="What is happening?!" class="w-full text-xl outline-none resize-none h-12 focus:h-24 transition-all placeholder-gray-500"></textarea>
                     
                     <!-- Poll Preview -->
                     <div id="desktop-poll-creator" class="hidden mt-2 border border-gray-200 rounded-xl p-3">
@@ -256,6 +266,7 @@
                     <img id="profile-lg-avatar" class="w-full h-full object-cover">
                 </div>
                 <div class="flex justify-end gap-2 py-3">
+                    <!-- Reset button removed -->
                     <button onclick="editProfile()" class="px-4 py-1.5 border border-gray-300 rounded-full font-bold text-sm hover:bg-gray-100">Edit profile</button>
                 </div>
                 <div class="mt-2">
@@ -355,7 +366,7 @@
 
     <!-- ONBOARDING -->
     <div id="onboarding-modal" class="fixed inset-0 bg-white z-[100] flex flex-col items-center justify-center p-6 hidden">
-        <div class="w-10 h-10 mb-8 bg-black rounded-full"></div>
+        <img src="site.png" class="w-12 h-12 mb-8 object-contain" onerror="this.style.display='none'; this.parentElement.innerHTML='<div class=\'w-12 h-12 mb-8 bg-black rounded-full\'></div>'">
         <h1 class="text-3xl font-black mb-8 text-left w-full max-w-sm">Create your account</h1>
         <div class="w-full max-w-sm space-y-6">
             <div class="relative"><input type="text" id="setup-name" class="w-full border p-4 rounded outline-none" placeholder="Name"></div>
@@ -389,15 +400,15 @@
     </div>
 
     <script>
-        const VERIFIED = `<svg class="verified-badge w-5 h-5 text-[#1d9bf0] inline-block ml-1 align-text-bottom" viewBox="0 0 24 24" fill="currentColor"><path d="M22.5 12.5c0-1.58-.875-2.95-2.148-3.6.154-.435.238-.905.238-1.4 0-2.21-1.71-3.998-3.818-3.998-.47 0-.92.175-1.297.503C14.78 2.67 13.438 2 12 2s-2.78.67-3.475 2.005c-.377-.328-.827-.503-1.297-.503-2.108 0-3.818 1.788-3.818 3.998 0 .495.084.965.238 1.4 1.273-.65 2.148-2.02 2.148-3.6zM9.763 16.296l-4.24-4.24 1.414-1.414 2.826 2.826 6.364-6.364 1.414 1.414-7.778 7.778z"></path></svg>`;
+        const VERIFIED = `<svg class="verified-badge w-5 h-5 text-[#1d9bf0] inline-block ml-1 align-text-bottom" viewBox="0 0 24 24" fill="currentColor"><path d="M22.5 12.5c0-1.58-.875-2.95-2.148-3.6.154-.435.238-.905.238-1.4 0-2.21-1.71-3.998-3.818-3.998-.47 0-.92.175-1.297.503C14.78 2.67 13.438 2 12 2s-2.78.67-3.475 2.005c-.377-.328-.827-.503-1.297-.503-2.108 0-3.818 1.788-3.818 3.998 0 .495.084.965.238 1.4-1.273.65-2.148 2.02-2.148 3.6 0 1.58.875 2.95 2.148 3.6-.154.435-.238.905-.238 1.4 0 2.21 1.71 3.998 3.818 3.998.47 0 .92.175 1.297-.503.695 1.335 2.037 2.005 3.475 2.005s2.78-.67 3.475-2.005c.377.328.827.503 1.297.503 2.108 0 3.818-1.788 3.818-3.998 0-.495-.084-.965-.238-1.4 1.273-.65 2.148-2.02 2.148-3.6zM9.763 16.296l-4.24-4.24 1.414-1.414 2.826 2.826 6.364-6.364 1.414 1.414-7.778 7.778z"></path></svg>`;
         const DECAY_CONSTANT = 21600; 
         const AI_NAMES = ["TechGuru", "CryptoWhale", "MemeLord", "Artist_X", "NewsBot", "Traveler"];
-        const AI_REPLIES = ["Big if true.", "🚀 to the moon!", "This is the content I signed up for.", "Following.", "Interesting perspective.", "Can you elaborate?", "Underrated tweet.", "First!", "Wait, really?", "Facts."];
+        const AI_REPLIES = ["Big if true.", "🚀", "Interesting.", "Following.", "Perspective.", "Elaborate?", "Underrated.", "First!", "Really?", "Facts."];
         const COLLAB_BOOSTS = { 'viral': 1.5, 'trend': 3.0, 'hype': 5.0, 'none': 1.0 };
         const COLLAB_NAMES = { 'viral': 'ViralGPT', 'trend': 'TrendSetter', 'hype': 'HypeBeast' };
         
         // STRICT LIMITS
-        const MAX_POSTS = 1; 
+        const MAX_POSTS = 5; 
 
         let appData = { user: { name: "", handle: "", followers: 0, following: 0, avatar: "", bio: "" }, posts: [], bots: [], lastActive: Date.now(), currentTab: 'foryou' };
         let tempProfileMedia = { avatar: null, banner: null };
@@ -467,7 +478,7 @@
         function saveState() {
             appData.lastActive = Date.now();
             
-            // STRICT POST LIMIT
+            // STRICT 5-POST LIMIT
             if(appData.posts.length > MAX_POSTS) {
                 appData.posts = appData.posts.slice(0, MAX_POSTS);
             }
@@ -799,6 +810,12 @@
             document.getElementById('sidebar-handle').innerText = '@' + appData.user.handle;
             document.getElementById('profile-handle').innerText = '@' + appData.user.handle;
             document.getElementById('profile-bio').innerText = appData.user.bio || "";
+            
+            if(appData.user.banner) {
+                const b = document.getElementById('profile-banner');
+                b.src = appData.user.banner;
+                b.classList.remove('hidden');
+            }
             updateProfileHeader();
         }
         
@@ -1023,7 +1040,19 @@
             const file = event.target.files[0];
             if(!file) return;
             const reader = new FileReader();
-            reader.onload = (e) => { tempProfileMedia[type] = e.target.result; };
+            reader.onload = (e) => { 
+                const img = new Image();
+                img.src = e.target.result;
+                img.onload = () => {
+                    const elem = document.createElement('canvas');
+                    const scale = (type==='avatar' ? 150 : 500) / img.width;
+                    elem.width = (type==='avatar' ? 150 : 500);
+                    elem.height = img.height * scale;
+                    const ctx = elem.getContext('2d');
+                    ctx.drawImage(img, 0, 0, elem.width, elem.height);
+                    tempProfileMedia[type] = elem.toDataURL('image/jpeg', 0.5);
+                }
+            };
             reader.readAsDataURL(file);
         }
         function saveEditProfile() {
