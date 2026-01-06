@@ -149,6 +149,10 @@
         .post-menu button:hover { background: #f7f9f9; }
         .post-menu button.delete { color: #f4212e; }
         .post-menu.show { display: flex; }
+
+        /* Media Upload Label */
+        .upload-label { cursor: pointer; display: flex; align-items: center; justify-content: center; width: 100%; height: 100px; border: 2px dashed #eff3f4; border-radius: 8px; color: #1d9bf0; font-weight: 600; transition: background 0.2s; }
+        .upload-label:hover { background: #f7f9f9; }
     </style>
 </head>
 <body class="flex justify-center min-h-screen">
@@ -211,7 +215,7 @@
             <div class="hidden md:flex gap-3 p-4 border-b border-gray-100">
                 <img id="desktop-compose-avatar" class="w-10 h-10 rounded-full bg-gray-200 object-cover">
                 <div class="flex-1">
-                    <textarea id="desktop-input" placeholder="What is happening?!" class="w-full text-xl outline-none resize-none h-12 focus:h-24 transition-all placeholder-gray-500"></textarea>
+                    <textarea id="desktop-input" maxlength="400" placeholder="What is happening?!" class="w-full text-xl outline-none resize-none h-12 focus:h-24 transition-all placeholder-gray-500"></textarea>
                     
                     <!-- Poll Preview -->
                     <div id="desktop-poll-creator" class="hidden mt-2 border border-gray-200 rounded-xl p-3">
@@ -245,14 +249,13 @@
         <!-- VIEW: PROFILE -->
         <div id="view-profile" class="view-section hidden">
             <div class="h-32 bg-gray-200 relative overflow-hidden">
-                <!-- Banner Removed from visual to save space, keeping logic simple -->
+                <img id="profile-banner" class="w-full h-full object-cover hidden">
             </div>
             <div class="px-4 relative">
                 <div class="w-32 h-32 rounded-full border-4 border-white bg-white absolute -top-16 overflow-hidden">
                     <img id="profile-lg-avatar" class="w-full h-full object-cover">
                 </div>
                 <div class="flex justify-end gap-2 py-3">
-                    <button onclick="resetData()" class="px-4 py-1.5 border border-red-200 text-red-600 rounded-full font-bold text-sm hover:bg-red-50">Reset Data</button>
                     <button onclick="editProfile()" class="px-4 py-1.5 border border-gray-300 rounded-full font-bold text-sm hover:bg-gray-100">Edit profile</button>
                 </div>
                 <div class="mt-2">
@@ -327,7 +330,7 @@
                 <button onclick="closeCompose()">Cancel</button>
                 <button id="mobile-post-btn" onclick="submitPost('mobile')" class="bg-[#1d9bf0] text-white font-bold px-4 py-1.5 rounded-full disabled:opacity-50" disabled>Post</button>
             </div>
-            <textarea id="mobile-input" placeholder="What is happening?!" class="w-full text-xl outline-none resize-none h-32"></textarea>
+            <textarea id="mobile-input" maxlength="400" placeholder="What is happening?!" class="w-full text-xl outline-none resize-none h-32"></textarea>
             
             <div id="mobile-poll-creator" class="hidden mt-2 border border-gray-200 rounded-xl p-3">
                 <div id="mobile-poll-options">
@@ -362,6 +365,29 @@
         <button onclick="completeSetup()" class="mt-8 bg-black text-white font-bold py-4 px-8 rounded-full w-full max-w-sm">Next</button>
     </div>
 
+    <!-- EDIT PROFILE MODAL -->
+    <div id="edit-profile-modal" class="fixed inset-0 bg-black/40 z-[90] hidden flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-md rounded-2xl p-6 relative">
+            <h2 class="text-xl font-bold mb-4">Edit Profile</h2>
+            <div class="space-y-4">
+                <label class="upload-label">
+                    <input type="file" accept="image/*" hidden onchange="handleProfileMedia('banner')">
+                    <span>Upload Banner</span>
+                </label>
+                <label class="upload-label" style="height: 60px;">
+                    <input type="file" accept="image/*" hidden onchange="handleProfileMedia('avatar')">
+                    <span>Upload Avatar</span>
+                </label>
+                <input type="text" id="edit-name" class="w-full border p-3 rounded" placeholder="Name">
+                <textarea id="edit-bio" class="w-full border p-3 rounded" placeholder="Bio" rows="3"></textarea>
+            </div>
+            <div class="flex justify-end gap-3 mt-6">
+                <button onclick="document.getElementById('edit-profile-modal').classList.add('hidden')" class="px-4 py-2 rounded-full border">Cancel</button>
+                <button onclick="saveEditProfile()" class="px-4 py-2 rounded-full bg-black text-white font-bold">Save</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         const VERIFIED = `<svg class="verified-badge w-5 h-5 text-[#1d9bf0] inline-block ml-1 align-text-bottom" viewBox="0 0 24 24" fill="currentColor"><path d="M22.5 12.5c0-1.58-.875-2.95-2.148-3.6.154-.435.238-.905.238-1.4 0-2.21-1.71-3.998-3.818-3.998-.47 0-.92.175-1.297.503C14.78 2.67 13.438 2 12 2s-2.78.67-3.475 2.005c-.377-.328-.827-.503-1.297-.503-2.108 0-3.818 1.788-3.818 3.998 0 .495.084.965.238 1.4-1.273.65-2.148 2.02-2.148 3.6 0 1.58.875 2.95 2.148 3.6-.154.435-.238.905-.238 1.4 0 2.21 1.71 3.998 3.818 3.998.47 0 .92-.175 1.297-.503.695 1.335 2.037 2.005 3.475 2.005s2.78-.67 3.475-2.005c.377.328.827.503 1.297.503 2.108 0 3.818-1.788 3.818-3.998 0-.495-.084-.965-.238-1.4 1.273-.65 2.148-2.02 2.148-3.6zM9.763 16.296l-4.24-4.24 1.414-1.414 2.826 2.826 6.364-6.364 1.414 1.414-7.778 7.778z"></path></svg>`;
         const DECAY_CONSTANT = 21600; 
@@ -369,13 +395,16 @@
         const AI_REPLIES = ["Big if true.", "🚀 to the moon!", "This is the content I signed up for.", "Following.", "Interesting perspective.", "Can you elaborate?", "Underrated tweet.", "First!", "Wait, really?", "Facts."];
         const COLLAB_BOOSTS = { 'viral': 1.5, 'trend': 3.0, 'hype': 5.0, 'none': 1.0 };
         const COLLAB_NAMES = { 'viral': 'ViralGPT', 'trend': 'TrendSetter', 'hype': 'HypeBeast' };
-        // Limit
-        const MAX_POSTS = 5; 
+        
+        // STRICT LIMITS
+        const MAX_POSTS = 2; 
 
         let appData = { user: { name: "", handle: "", followers: 0, following: 0, avatar: "", bio: "" }, posts: [], bots: [], lastActive: Date.now(), currentTab: 'foryou' };
+        let tempProfileMedia = { avatar: null, banner: null };
         const els = {};
 
         function init() {
+            // Populate DOM references
             els.feed = document.getElementById('feed-list');
             els.profile = document.getElementById('profile-list');
             els.trendingWall = document.getElementById('trending-wall');
@@ -386,14 +415,6 @@
             els.replyList = document.getElementById('post-replies-list');
 
             try {
-                // DATA WIPE CHECK FOR FIRST RUN OF NEW VERSION
-                // Check if user has "v3" data but it's huge (previous versions)
-                const raw = localStorage.getItem('x_sim_v3');
-                if(raw && raw.length > 500000) { // If > 500KB, it's likely bloated
-                    console.log("Detected bloated data, wiping for safety.");
-                    localStorage.removeItem('x_sim_v3');
-                }
-
                 const saved = localStorage.getItem('x_sim_v3');
                 if (saved) {
                     const parsed = JSON.parse(saved);
@@ -438,21 +459,26 @@
         function saveState() {
             appData.lastActive = Date.now();
             
-            // STRICT LIMIT
+            // STRICT POST LIMIT
             if(appData.posts.length > MAX_POSTS) {
                 appData.posts = appData.posts.slice(0, MAX_POSTS);
             }
-            
-            // SECURITY CHECK: Size
-            const str = JSON.stringify(appData);
-            if(str.length > 1000000) { // 1MB limit check
-                alert("Data too large! Resetting posts to prevent crash.");
-                appData.posts = []; // Nuke posts
-                localStorage.setItem('x_sim_v3', JSON.stringify(appData));
-            } else {
-                localStorage.setItem('x_sim_v3', str);
+            // Ensure no media ever saved
+            appData.posts.forEach(p => { if(p.media) delete p.media; });
+
+            try {
+                // Check string size
+                const str = JSON.stringify(appData);
+                if(str.length > 1000000) { // 1MB limit check
+                    appData.posts = [];
+                    localStorage.setItem('x_sim_v3', JSON.stringify(appData));
+                } else {
+                    localStorage.setItem('x_sim_v3', str);
+                }
+                localStorage.setItem('x_sim_last_active', appData.lastActive);
+            } catch (e) {
+                console.warn("Storage error");
             }
-            localStorage.setItem('x_sim_last_active', appData.lastActive);
         }
 
         function completeSetup() {
@@ -766,12 +792,23 @@
             document.getElementById('profile-handle').innerText = '@' + appData.user.handle;
             document.getElementById('profile-bio').innerText = appData.user.bio || "";
             
+            if(appData.user.banner) {
+                const b = document.getElementById('profile-banner');
+                b.src = appData.user.banner;
+                b.classList.remove('hidden');
+            }
             updateProfileHeader();
         }
         
         function updateProfileHeader() {
             renderOdometer(document.getElementById('profile-followers'), appData.user.followers);
             renderOdometer(document.getElementById('profile-following'), appData.user.following);
+            
+            // Post Count Odometer in Header
+            const postCountEl = document.getElementById('profile-header-posts');
+            if(postCountEl) {
+                postCountEl.innerHTML = `<span class="odometer" data-value="${appData.posts.length}">${generateOdometerHTML(formatNumber(appData.posts.length))}</span> posts`;
+            }
         }
 
         function renderFeeds() {
@@ -793,6 +830,30 @@
             
             const userPosts = appData.posts.filter(p => !p.isBot).sort((a,b) => b.timestamp - a.timestamp);
             userPosts.forEach(p => els.profile.appendChild(createPostHTML(p)));
+        }
+
+        function renderPollResults(post) {
+            const max = Math.max(...post.poll.options.map(o => o.votes));
+            const endButton = !post.poll.ended 
+                ? `<button onclick="event.stopPropagation(); endPoll('${post.id}')" class="end-poll-btn text-red-500 font-bold hover:underline">End Poll</button>` 
+                : `<span class="text-gray-500 font-bold">Final Results</span>`;
+
+            return post.poll.options.map((opt, idx) => {
+                const pct = post.poll.total > 0 ? Math.round((opt.votes / post.poll.total) * 100) : 0;
+                const isWin = opt.votes === max && max > 0;
+                return `
+                    <div class="poll-option voted" data-opt-idx="${idx}">
+                        <div class="poll-bg ${isWin ? 'winner' : ''}" style="width: ${pct}%"></div>
+                        <div class="poll-label">
+                            <span>${opt.text} ${isWin ? '✔' : ''}</span>
+                            <span><span class="odometer" data-value="${pct}">${generateOdometerHTML(pct.toString())}</span>%</span>
+                        </div>
+                    </div>
+                `;
+            }).join('') + `<div class="text-xs text-gray-500 mt-2 flex justify-between">
+                <span><span class="odometer total-votes-odo" data-value="${post.poll.total}">${generateOdometerHTML(post.poll.total.toString())}</span> votes</span>
+                ${endButton}
+            </div>`;
         }
 
         function createPostHTML(post) {
@@ -986,11 +1047,21 @@
             document.getElementById('edit-bio').value = appData.user.bio || "";
             document.getElementById('edit-profile-modal').classList.remove('hidden');
         }
+        function handleProfileMedia(type) {
+            const file = event.target.files[0];
+            if(!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => { tempProfileMedia[type] = e.target.result; };
+            reader.readAsDataURL(file);
+        }
         function saveEditProfile() {
             appData.user.name = document.getElementById('edit-name').value;
             appData.user.bio = document.getElementById('edit-bio').value;
+            if(tempProfileMedia.avatar) appData.user.avatar = tempProfileMedia.avatar;
+            if(tempProfileMedia.banner) appData.user.banner = tempProfileMedia.banner;
             saveState(); renderAll();
             document.getElementById('edit-profile-modal').classList.add('hidden');
+            tempProfileMedia = { avatar: null, banner: null };
         }
 
         function navTo(page) {
@@ -1026,7 +1097,6 @@
 
         function openCompose() { document.getElementById('compose-modal').classList.remove('hidden'); updateCollabSelects(); }
         function closeCompose() { document.getElementById('compose-modal').classList.add('hidden'); }
-        function resetData() { if(confirm("Reset?")) { localStorage.removeItem('x_sim_v3'); location.reload(); } }
         function editProfile() { openEditProfileModal(); } 
         function editFollowers() { const f = prompt("Followers", appData.user.followers); if(f) { appData.user.followers = parseInt(f); saveState(); renderAll(); } }
         function timeAgo(ts) {
