@@ -138,6 +138,7 @@
 
         /* --- UTILS --- */
         .tab-active { font-weight: 700; color: var(--x-black); border-bottom: 4px solid #1d9bf0; }
+        .tab-inactive { color: var(--x-gray); font-weight: 500; }
         .trending-badge { font-size: 11px; font-weight: 700; margin-bottom: 4px; display: flex; align-items: center; gap: 4px; }
         .verified-badge { color: #1d9bf0; margin-left: 2px; display: inline-block; vertical-align: text-bottom; }
         .pinned-indicator { font-size: 11px; font-weight: 700; color: #536471; display: flex; align-items: center; gap: 4px; margin-bottom: 4px; }
@@ -214,8 +215,8 @@
         <!-- VIEW: HOME -->
         <div id="view-home" class="view-section">
             <div class="flex border-b border-gray-100 sticky top-14 md:top-0 bg-white z-40">
-                <div class="flex-1 h-12 flex items-center justify-center hover:bg-gray-50 cursor-pointer tab-active">For you</div>
-                <div class="flex-1 h-12 flex items-center justify-center hover:bg-gray-50 cursor-pointer text-gray-500">Following</div>
+                <div id="tab-foryou" class="flex-1 h-12 flex items-center justify-center cursor-pointer tab-active" onclick="switchFeedTab('foryou')">For you</div>
+                <div id="tab-following" class="flex-1 h-12 flex items-center justify-center cursor-pointer tab-inactive" onclick="switchFeedTab('following')">Following</div>
             </div>
             <!-- Desktop Compose -->
             <div class="hidden md:flex gap-3 p-4 border-b border-gray-100">
@@ -284,7 +285,7 @@
         <!-- VIEW: COLLAB -->
         <div id="view-collab" class="view-section hidden p-4">
             <h1 class="font-bold text-xl mb-4">Bot Collabs</h1>
-            <p class="text-gray-500 text-sm mb-4">Create bots to boost your engagement rate.</p>
+            <p class="text-gray-500 text-sm mb-4">Create bots to boost your engagement rate. Bots will also post in your 'Following' feed.</p>
             <button onclick="createBot()" class="w-full py-3 bg-black text-white rounded-full font-bold mb-4">Create New Bot</button>
             <div id="bot-list" class="space-y-2"></div>
         </div>
@@ -411,7 +412,7 @@
         const COLLAB_BOOSTS = { 'viral': 1.5, 'trend': 3.0, 'hype': 5.0, 'none': 1.0 };
         const COLLAB_NAMES = { 'viral': 'ViralGPT', 'trend': 'TrendSetter', 'hype': 'HypeBeast' };
 
-        let appData = { user: { name: "", handle: "", followers: 0, following: 0, avatar: "", banner: "", bio: "" }, posts: [], bots: [], lastActive: Date.now() };
+        let appData = { user: { name: "", handle: "", followers: 0, following: 0, avatar: "", banner: "", bio: "" }, posts: [], bots: [], lastActive: Date.now(), currentTab: 'foryou' };
         let currentMedia = { desktop: null, mobile: null };
         let tempProfileMedia = { avatar: null, banner: null };
         const els = {};
@@ -432,12 +433,14 @@
                 const saved = localStorage.getItem('x_sim_v3');
                 if (saved) {
                     const parsed = JSON.parse(saved);
-                    // Merge to ensure no fields are missing in old data
                     appData = { ...appData, ...parsed };
                     if (!appData.bots) appData.bots = [];
-                    // Ensure bots exist if null
+                    // Ensure active tab defaults to foryou if missing
+                    if (!appData.currentTab) appData.currentTab = 'foryou';
+                    
                     simulateTimeAway();
                     renderAll();
+                    updateTabUI();
                 } else {
                     if(els.onboarding) els.onboarding.classList.remove('hidden');
                 }
@@ -450,6 +453,8 @@
             // Loops
             setInterval(simulateLive, 1000);
             setInterval(renderTrending, 2000);
+            // Simulated Bot Post Generation (Run every 10s roughly)
+            setInterval(generateBotPosts, 10000);
             
             // Inputs
             ['desktop', 'mobile'].forEach(m => {
@@ -475,19 +480,18 @@
         function saveState() {
             appData.lastActive = Date.now();
             
-            // GARBAGE COLLECTION: Prevent white screen by limiting array size
-            // If more than 50 posts, delete oldest.
+            // GARBAGE COLLECTION
             if(appData.posts.length > 50) {
-                appData.posts = appData.posts.slice(0, 50); // Keep newest 50
+                appData.posts = appData.posts.slice(0, 50);
             }
 
             try {
                 localStorage.setItem('x_sim_v3', JSON.stringify(appData));
                 localStorage.setItem('x_sim_last_active', appData.lastActive);
             } catch (e) {
-                // If storage full, desperate cleanup
                 console.warn("Storage full, purging media from old posts");
-                appData.posts.forEach(p => delete p.media); // Clear heavy media
+                // SAFETY: Remove media from all posts to save text data
+                appData.posts.forEach(p => delete p.media); 
                 try {
                     localStorage.setItem('x_sim_v3', JSON.stringify(appData));
                 } catch(e2) {
@@ -507,11 +511,61 @@
             appData.posts.push({
                 id: Date.now().toString(), content: "Just joined! #NewHere", timestamp: Date.now(),
                 stats: { views: 0, likes: 0, reposts: 0, replies: 0 }, interacted: { like: false, repost: false },
-                collab: 'none', comments: [], pinned: false, poll: null
+                collab: 'none', comments: [], pinned: false, poll: null, isBot: false
             });
             els.onboarding.classList.add('hidden');
             saveState(); renderAll();
         }
+
+        // --- FEED TABS ---
+        function switchFeedTab(tab) {
+            appData.currentTab = tab;
+            updateTabUI();
+            renderFeeds();
+        }
+
+        function updateTabUI() {
+            const forYouTab = document.getElementById('tab-foryou');
+            const followingTab = document.getElementById('tab-following');
+            
+            if(appData.currentTab === 'foryou') {
+                forYouTab.className = "flex-1 h-12 flex items-center justify-center cursor-pointer tab-active";
+                followingTab.className = "flex-1 h-12 flex items-center justify-center cursor-pointer text-gray-500 font-medium";
+            } else {
+                forYouTab.className = "flex-1 h-12 flex items-center justify-center cursor-pointer text-gray-500 font-medium";
+                followingTab.className = "flex-1 h-12 flex items-center justify-center cursor-pointer tab-active";
+            }
+        }
+
+        // --- BOT POST GENERATOR ---
+        function generateBotPosts() {
+            if(appData.bots.length === 0) return;
+            if(Math.random() > 0.3) return; // 30% chance per tick
+
+            const bot = appData.bots[Math.floor(Math.random() * appData.bots.length)];
+            const templates = [
+                "Just thinking about the future of AI.", "Simulation theory is wild.", "Who else is coding right now?", 
+                "Crypto markets are looking interesting.", "Coffee time ☕", "Hello world!", "Is anyone else seeing this?",
+                "Big updates coming soon.", "Stay tuned.", "Just watched a great movie."
+            ];
+            const content = templates[Math.floor(Math.random() * templates.length)];
+            
+            const newPost = {
+                id: Date.now().toString() + Math.random(),
+                content: content,
+                timestamp: Date.now(),
+                stats: { views: 0, likes: 0, reposts: 0, replies: 0 },
+                interacted: { like: false, repost: false },
+                collab: 'none', comments: [], pinned: false, poll: null,
+                isBot: true,
+                botName: bot.name,
+                botFollowers: bot.followers
+            };
+            
+            appData.posts.unshift(newPost);
+            renderFeeds();
+        }
+
 
         // --- ANIMATION ENGINE ---
         function formatNumber(num) {
@@ -629,9 +683,15 @@
                 if (age > 172800) return; 
 
                 const decay = Math.exp(-age / DECAY_CONSTANT); 
-                let baseRate = (appData.user.followers / 100) + (Math.log10(Math.max(10, appData.user.followers)) * 5);
-                let botPower = appData.bots.reduce((a,b) => a + b.followers, 0);
-                baseRate += (botPower / 500);
+                
+                // Bot posts simulate based on bot followers, user posts on user followers
+                const followers = post.isBot ? post.botFollowers : appData.user.followers;
+                
+                let baseRate = (followers / 100) + (Math.log10(Math.max(10, followers)) * 5);
+                if(!post.isBot) {
+                    let botPower = appData.bots.reduce((a,b) => a + b.followers, 0);
+                    baseRate += (botPower / 500);
+                }
                 
                 const boost = COLLAB_BOOSTS[post.collab || 'none'];
                 const speed = baseRate * boost * decay;
@@ -643,8 +703,11 @@
                     post.stats.reposts += Math.floor(added * 0.03);
                     generateAIReplies(post, Math.floor(added * 0.01));
                     simulatePollVotes(post, added);
-                    const newFollowers = Math.floor(added * 0.0005);
-                    if(newFollowers > 0) appData.user.followers += newFollowers;
+                    
+                    if(!post.isBot) {
+                        const newFollowers = Math.floor(added * 0.0005);
+                        if(newFollowers > 0) appData.user.followers += newFollowers;
+                    }
                 }
             });
             appData.lastActive = now;
@@ -658,16 +721,23 @@
                 const decay = Math.exp(-age / DECAY_CONSTANT);
                 if (decay < 0.01) return;
                 
-                let baseViews = (appData.user.followers * 0.001) + (Math.log10(appData.user.followers) * 0.1);
+                const followers = post.isBot ? post.botFollowers : appData.user.followers;
+                let baseViews = (followers * 0.001) + (Math.log10(followers) * 0.1);
+                
                 let botBoost = 0;
-                if (post.collab && post.collab !== 'none') {
+                if (!post.isBot && post.collab && post.collab !== 'none') {
                     const bot = appData.bots.find(b => b.id == post.collab);
                     if(bot) botBoost = bot.followers * 0.0005;
                 }
+
                 let amount = (baseViews + botBoost) * decay;
+
                 let viewsToAdd = 0;
-                if(amount > 1) { viewsToAdd = Math.ceil(amount * (0.8 + Math.random() * 0.4)); } 
-                else { if(Math.random() < amount) viewsToAdd = 1; }
+                if(amount > 1) {
+                    viewsToAdd = Math.ceil(amount * (0.8 + Math.random() * 0.4));
+                } else {
+                    if(Math.random() < amount) viewsToAdd = 1;
+                }
 
                 if (viewsToAdd > 0) {
                     post.stats.views += viewsToAdd;
@@ -676,10 +746,11 @@
                     if(Math.random() < 0.02) generateAIReplies(post, 1);
                     simulatePollVotes(post, viewsToAdd);
                     
-                    if(Math.random() < 0.05) { 
+                    if(!post.isBot && Math.random() < 0.05) { 
                         appData.user.followers += Math.ceil(viewsToAdd * 0.002);
                         updateProfileHeader();
                     }
+
                     updatePostDOM(post);
                 }
             });
@@ -722,11 +793,9 @@
                 renderOdometer(el.querySelector('.odometer[data-type="reposts"]'), post.stats.reposts);
                 renderOdometer(el.querySelector('.odometer[data-type="replies"]'), post.stats.replies);
                 
-                // Poll Update
                 if(post.poll) {
                     const pollContainer = el.querySelector('.poll-container');
                     if(pollContainer) {
-                        // Always update bars/numbers if visible
                         if (post.poll.voted !== null || post.poll.ended) {
                            if(!pollContainer.classList.contains('results-shown')) {
                                pollContainer.classList.add('results-shown');
@@ -796,12 +865,37 @@
 
         function renderFeeds() {
             els.feed.innerHTML = ''; els.profile.innerHTML = '';
-            const sorted = [...appData.posts].sort((a,b) => {
+            // FILTER LOGIC
+            let filteredPosts = [];
+            if(appData.currentTab === 'foryou') {
+                filteredPosts = [...appData.posts]; // Show ALL posts
+            } else {
+                filteredPosts = appData.posts.filter(p => p.isBot); // Show ONLY bot posts
+            }
+
+            if(filteredPosts.length === 0 && appData.currentTab === 'following') {
+                els.feed.innerHTML = `<div class="p-8 text-center text-gray-500">Follow some bots in the Collab tab to see posts here!</div>`;
+            }
+
+            const sorted = filteredPosts.sort((a,b) => {
                 if(a.pinned && !b.pinned) return -1;
                 if(!a.pinned && b.pinned) return 1;
                 return b.timestamp - a.timestamp;
             });
-            sorted.forEach(post => { els.feed.appendChild(createPostHTML(post)); els.profile.appendChild(createPostHTML(post)); });
+
+            sorted.forEach(post => {
+                els.feed.appendChild(createPostHTML(post));
+            });
+            
+            // Profile always shows user posts only
+            const userPosts = appData.posts.filter(p => !p.isBot).sort((a,b) => {
+                 if(a.pinned && !b.pinned) return -1;
+                 if(!a.pinned && b.pinned) return 1;
+                 return b.timestamp - a.timestamp;
+            });
+            userPosts.forEach(post => {
+                 els.profile.appendChild(createPostHTML(post));
+            });
         }
 
         function renderPollResults(post) {
@@ -834,7 +928,21 @@
             div.dataset.postId = post.id;
             div.onclick = () => openPostDetail(post.id);
             
-            const verify = appData.user.followers >= 100000 ? VERIFIED : '';
+            // Determine display info (User or Bot)
+            let name, handle, avatar, verified;
+            if(post.isBot) {
+                name = post.botName;
+                handle = post.botName.toLowerCase().replace(/\s/g, '');
+                // Basic bot avatar
+                avatar = `https://ui-avatars.com/api/?name=${name}&background=random`; 
+                verified = post.botFollowers >= 100000 ? VERIFIED : '';
+            } else {
+                name = appData.user.name;
+                handle = appData.user.handle;
+                avatar = appData.user.avatar;
+                verified = appData.user.followers >= 100000 ? VERIFIED : '';
+            }
+
             const rank = getTrendingRank(post.id);
             const trendHtml = rank ? `<div class="trending-badge"><span class="text-[#1d9bf0]">#${rank} on Trending</span></div>` : '<div class="trending-footer hidden text-xs font-bold mt-1"></div>';
             const pinnedHtml = post.pinned ? `<div class="pinned-indicator"><svg width="12" height="12" viewBox="0 0 24 24" fill="#536471"><path d="M16 4.5C16 3.12 14.88 2 13.5 2H10.5C9.12 2 8 3.12 8 4.5V8H6V10H8V16L6 18V19H9.5V22H14.5V19H18V18L16 16V10H18V8H16V4.5Z"></path></svg> Pinned</div>` : '';
@@ -863,19 +971,27 @@
                     `).join('') + `</div>`;
                 }
             }
+            
+            const menuHtml = !post.isBot ? `
+                <div class="post-menu" id="menu-${post.id}">
+                    <button onclick="event.stopPropagation(); togglePin('${post.id}')">${post.pinned ? 'Unpin' : 'Pin to profile'}</button>
+                    <button class="delete" onclick="event.stopPropagation(); deletePost('${post.id}')">Delete post</button>
+                </div>` : '';
+            
+            const menuBtn = !post.isBot ? `<button class="text-gray-400 hover:text-blue-500 px-2" onclick="event.stopPropagation(); toggleMenu('${post.id}')">•••</button>` : '';
 
             div.innerHTML = `
                 ${pinnedHtml}
                 <div class="flex gap-3">
-                    <img src="${appData.user.avatar}" class="w-10 h-10 rounded-full bg-gray-200 shrink-0">
+                    <img src="${avatar}" class="w-10 h-10 rounded-full bg-gray-200 shrink-0">
                     <div class="flex-1 min-w-0">
                         <div class="flex items-center justify-between">
                             <div class="flex items-center gap-1 text-[15px]">
-                                <span class="font-bold truncate">${appData.user.name}</span>${verify}${collabHtml}
-                                <span class="text-gray-500 truncate">@${appData.user.handle}</span>
+                                <span class="font-bold truncate">${name}</span>${verified}${collabHtml}
+                                <span class="text-gray-500 truncate">@${handle}</span>
                                 <span class="text-gray-500 text-xs">· ${timeAgo(post.timestamp)}</span>
                             </div>
-                            <button class="text-gray-400 hover:text-blue-500 px-2" onclick="event.stopPropagation(); toggleMenu('${post.id}')">•••</button>
+                            ${menuBtn}
                         </div>
                         ${trendHtml}
                         <div class="text-[15px] whitespace-pre-wrap leading-6">${post.content}</div>
@@ -901,10 +1017,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="post-menu" id="menu-${post.id}">
-                    <button onclick="event.stopPropagation(); togglePin('${post.id}')">${post.pinned ? 'Unpin' : 'Pin to profile'}</button>
-                    <button class="delete" onclick="event.stopPropagation(); deletePost('${post.id}')">Delete post</button>
-                </div>
+                ${menuHtml}
             `;
             setTimeout(() => updatePostDOM(post), 0);
             return div;
@@ -939,10 +1052,18 @@
                 <div class="px-4 py-3 hover:bg-gray-100 cursor-pointer border-b border-gray-50 transition-colors" onclick="openPostDetail('${p.id}')">
                     <div class="text-xs text-gray-500 flex justify-between"><span>${i+1} · Trending</span><span>···</span></div>
                     <div class="font-bold text-sm line-clamp-1 mt-0.5">${p.content}</div>
-                    <div class="text-xs text-gray-500 mt-0.5">${formatNumber(p.stats.views)} views</div>
+                    <div class="text-xs text-gray-500 mt-0.5 flex items-center gap-1"><span class="odometer" data-value="${p.stats.views}">${generateOdometerHTML(formatNumber(p.stats.views))}</span> views</div>
                 </div>
             `).join('');
             walls.forEach(w => { if(w) w.innerHTML = html; });
+            
+            // Animate trending odometers
+            sorted.forEach(p => {
+                walls.forEach(w => {
+                    const el = w.querySelector(`[onclick="openPostDetail('${p.id}')"] .odometer`);
+                    if(el) renderOdometer(el, p.stats.views);
+                });
+            });
         }
 
         function createBot() {
@@ -976,7 +1097,7 @@
             appData.posts.unshift({
                 id: Date.now().toString(), content: txt, media: currentMedia[mode], timestamp: Date.now(),
                 stats: { views: 0, likes: 0, reposts: 0, replies: 0 }, interacted: { like: false, repost: false },
-                collab: collab, comments: [], pinned: false, poll: poll
+                collab: collab, comments: [], pinned: false, poll: poll, isBot: false
             });
             
             document.getElementById(`${mode}-input`).value = ''; 
