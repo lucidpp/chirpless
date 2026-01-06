@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="X Sim">
     <meta name="theme-color" content="#ffffff">
     <title>X Simulator</title>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -29,7 +30,7 @@
             overscroll-behavior-y: none;
         }
 
-        /* --- BULLETPROOF ODOMETER --- */
+        /* --- ODOMETER ANIMATION --- */
         .odometer {
             display: inline-flex;
             flex-direction: row;
@@ -39,69 +40,61 @@
             overflow: hidden;
             vertical-align: bottom;
             font-variant-numeric: tabular-nums;
-            position: relative;
             white-space: nowrap;
+            position: relative;
         }
 
         .odometer-digit-container {
             display: inline-block;
             height: 100%;
-            width: 0.65em; /* Fixed width prevents jitter */
+            width: 0.65em;
             position: relative;
             overflow: hidden;
         }
 
-        .odometer-suffix, .odometer-comma {
-            display: inline-block;
-            font-size: 0.9em;
-            font-weight: 600;
+        .odometer-suffix {
+            font-size: 0.75em;
+            font-weight: 700;
+            vertical-align: 0.3em;
+            margin-left: 1px;
         }
-        
-        .odometer-suffix { vertical-align: super; font-size: 0.7em; }
+
+        .odometer-punct {
+            font-size: 1em;
+            font-weight: 400;
+            vertical-align: baseline;
+        }
 
         .digit-track {
             position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            display: flex;
-            flex-direction: column;
+            top: 0; left: 0; width: 100%;
+            display: flex; flex-direction: column;
             will-change: transform;
-            /* 11 items: 0 1 2 3 4 5 6 7 8 9 0 */
-            height: 1100%; 
+            height: 1100%; /* 0-9-0 */
             transition: transform var(--anim-duration) var(--anim-curve);
         }
 
         .digit-value {
-            height: 9.09%; /* 100 / 11 */
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            height: 9.09%; display: flex; align-items: center; justify-content: center;
         }
 
-        /* Reset class for wrapping 9->0 */
         .track-reset { transition: none !important; }
 
-        /* --- LIKE ANIMATION --- */
-        .like-btn-inner {
-            transition: transform 0.2s;
+        /* --- INTERACTIONS --- */
+        .action-icon-wrapper {
+            padding: 8px; border-radius: 9999px; transition: background 0.2s; margin: -8px; 
             display: flex; align-items: center; justify-content: center;
         }
+        .action-group:hover .action-icon-wrapper.like { background-color: rgba(29, 155, 240, 0.1); }
         
-        .action-group:active .like-btn-inner { transform: scale(0.8); }
-
-        .liked .icon-like {
-            fill: #f91880; /* Pink/Red for likes usually, but user asked Blue previously. Sticking to standard X Pink for "Heart", Blue for "Verify" */
-            stroke: #f91880;
-            animation: heart-pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-        
-        /* User previously requested Blue Likes specifically. Overriding to Blue. */
         .liked-blue .icon-like {
-            fill: var(--x-blue);
-            stroke: var(--x-blue);
+            fill: var(--x-blue); stroke: var(--x-blue);
             animation: heart-pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
+        .liked-blue .action-count { color: var(--x-blue); }
+
+        .reposted .icon-repost { stroke: #00ba7c; fill: rgba(0, 186, 124, 0.1); }
+        .reposted .action-count { color: #00ba7c; }
 
         @keyframes heart-pop {
             0% { transform: scale(1); }
@@ -109,24 +102,25 @@
             100% { transform: scale(1); }
         }
 
-        /* --- UI ELEMENTS --- */
-        .action-icon-wrapper { padding: 8px; border-radius: 9999px; transition: background 0.2s; margin: -8px; }
-        .action-group:hover .action-icon-wrapper { background: rgba(29, 155, 240, 0.1); }
-        .action-group:hover .action-count { color: var(--x-blue); }
-        
-        .trending-badge { font-size: 11px; font-weight: 700; color: #536471; display: flex; align-items: center; gap: 4px; margin-bottom: 4px; }
-        .trending-rank { color: #1d9bf0; }
-
-        .tab-active { font-weight: 700; color: black; border-bottom: 4px solid #1d9bf0; }
+        /* --- UTILS --- */
+        .tab-active { font-weight: 700; color: var(--x-black); border-bottom: 4px solid #1d9bf0; }
+        .trending-badge { font-size: 11px; font-weight: 700; margin-bottom: 4px; display: flex; align-items: center; gap: 4px; }
+        .verified-badge { color: #1d9bf0; margin-left: 2px; display: inline-block; vertical-align: text-bottom; }
+        .pinned-indicator { font-size: 11px; font-weight: 700; color: #536471; display: flex; align-items: center; gap: 4px; margin-bottom: 4px; }
         
         /* Video Player */
         .custom-player { position: relative; background: black; width: 100%; aspect-ratio: 16/9; border-radius: 12px; overflow: hidden; }
         .custom-player video { width: 100%; height: 100%; object-fit: contain; }
-        .player-controls { position: absolute; bottom: 0; left: 0; right: 0; padding: 12px; background: linear-gradient(transparent, rgba(0,0,0,0.7)); opacity: 0; transition: opacity 0.2s; display: flex; align-items: center; justify-content: space-between; }
-        .custom-player:hover .player-controls, .custom-player.paused .player-controls { opacity: 1; }
         .play-overlay { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: none; }
         .play-icon { width: 50px; height: 50px; background: rgba(29,155,240,0.9); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; opacity: 0; transition: transform 0.2s; }
         .custom-player.paused .play-icon { opacity: 1; }
+        
+        /* Menu */
+        .post-menu { position: absolute; top: 10px; right: 10px; background: white; box-shadow: 0 0 10px rgba(0,0,0,0.1); border-radius: 8px; z-index: 20; display: none; flex-direction: column; overflow: hidden; border: 1px solid #eff3f4; }
+        .post-menu button { padding: 8px 16px; text-align: left; font-size: 13px; font-weight: 600; width: 150px; transition: background 0.1s; }
+        .post-menu button:hover { background: #f7f9f9; }
+        .post-menu button.delete { color: #f4212e; }
+        .post-menu.show { display: flex; }
     </style>
 </head>
 <body class="flex justify-center min-h-screen">
@@ -135,8 +129,7 @@
     <header class="hidden md:flex flex-col items-end w-[275px] pr-6 h-screen sticky top-0">
         <div class="w-[250px] flex flex-col h-full pb-4 pt-2">
             <div class="w-12 h-12 flex items-center justify-center hover:bg-gray-100 rounded-full cursor-pointer transition-colors mb-2" onclick="navTo('home')">
-                <!-- No Logo, just blank clickable area per request -->
-                <div class="w-6 h-6 bg-black rounded-full"></div> 
+                <div class="w-7 h-7 bg-black rounded-full"></div> 
             </div>
             
             <nav class="space-y-2 w-full text-xl">
@@ -144,12 +137,12 @@
                     <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
                     <span class="font-bold">Home</span>
                 </a>
-                <a class="flex items-center gap-4 p-3 rounded-full hover:bg-gray-100 cursor-pointer">
+                <a onclick="navTo('trending')" class="flex items-center gap-4 p-3 rounded-full hover:bg-gray-100 cursor-pointer">
                     <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                    <span>Explore</span>
+                    <span>Trending</span>
                 </a>
                 <a onclick="navTo('collab')" class="flex items-center gap-4 p-3 rounded-full hover:bg-gray-100 cursor-pointer">
-                    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle></svg>
                     <span>Collab</span>
                 </a>
                 <a onclick="navTo('profile')" class="flex items-center gap-4 p-3 rounded-full hover:bg-gray-100 cursor-pointer">
@@ -163,7 +156,7 @@
             <div class="mt-auto flex items-center gap-3 p-3 hover:bg-gray-100 rounded-full cursor-pointer" onclick="navTo('profile')">
                 <img id="sidebar-avatar" class="w-10 h-10 rounded-full bg-gray-200 object-cover">
                 <div class="hidden xl:block">
-                    <div class="font-bold text-sm" id="sidebar-name">User</div>
+                    <div class="font-bold text-sm flex items-center"><span id="sidebar-name">User</span><span id="sidebar-verified"></span></div>
                     <div class="text-gray-500 text-sm" id="sidebar-handle">@handle</div>
                 </div>
             </div>
@@ -176,13 +169,13 @@
         <!-- HEADER MOBILE -->
         <div class="sticky top-0 z-50 bg-white/85 backdrop-blur-md border-b border-gray-100 md:hidden flex justify-between items-center px-4 h-14">
             <img id="mobile-header-avatar" class="w-8 h-8 rounded-full bg-gray-200" onclick="navTo('profile')">
-            <div class="w-6 h-6 bg-black rounded-full"></div> <!-- Logo placeholder -->
+            <div class="w-6 h-6 bg-black rounded-full"></div>
             <div class="w-8"></div>
         </div>
 
-        <!-- VIEWS -->
+        <!-- VIEW: HOME -->
         <div id="view-home" class="view-section">
-            <div class="flex border-b border-gray-100">
+            <div class="flex border-b border-gray-100 sticky top-14 md:top-0 bg-white z-40">
                 <div class="flex-1 h-12 flex items-center justify-center hover:bg-gray-50 cursor-pointer tab-active">For you</div>
                 <div class="flex-1 h-12 flex items-center justify-center hover:bg-gray-50 cursor-pointer text-gray-500">Following</div>
             </div>
@@ -193,9 +186,15 @@
                     <textarea id="desktop-input" placeholder="What is happening?!" class="w-full text-xl outline-none resize-none h-12 focus:h-24 transition-all placeholder-gray-500"></textarea>
                     <div id="desktop-media-preview" class="hidden mt-2 rounded-xl overflow-hidden relative"></div>
                     <div class="flex justify-between items-center mt-2 pt-2 border-t border-gray-100">
-                        <div class="flex gap-2 text-[#1d9bf0]">
+                        <div class="flex gap-2 text-[#1d9bf0] items-center">
                             <label class="p-2 hover:bg-blue-50 rounded-full cursor-pointer"><input type="file" accept="image/*" hidden onchange="handleMedia('desktop', 'image')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg></label>
                             <label class="p-2 hover:bg-blue-50 rounded-full cursor-pointer"><input type="file" accept="video/*" hidden onchange="handleMedia('desktop', 'video')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 7l-7 5 7 5V7z"></path><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg></label>
+                            
+                            <!-- Desktop AI Collab Select -->
+                            <select id="desktop-collab-select" class="ml-2 bg-transparent text-sm font-bold text-[#1d9bf0] outline-none cursor-pointer hover:bg-blue-50 p-1 rounded max-w-[150px]">
+                                <option value="none">✨ Collab</option>
+                                <!-- JS Populated -->
+                            </select>
                         </div>
                         <button id="desktop-post-btn" onclick="submitPost('desktop')" class="bg-[#1d9bf0] text-white font-bold px-4 py-1.5 rounded-full disabled:opacity-50" disabled>Post</button>
                     </div>
@@ -204,6 +203,7 @@
             <div id="feed-list"></div>
         </div>
 
+        <!-- VIEW: PROFILE -->
         <div id="view-profile" class="view-section hidden">
             <div class="h-32 bg-gray-200"></div>
             <div class="px-4 relative">
@@ -218,27 +218,37 @@
                     <h1 class="font-black text-xl flex items-center gap-1"><span id="profile-name">Name</span><span id="profile-verify"></span></h1>
                     <div class="text-gray-500 text-sm">@<span id="profile-handle">handle</span></div>
                     <div class="flex gap-4 mt-3 text-sm">
-                        <span class="hover:underline cursor-pointer"><span class="font-bold text-black" id="profile-following">0</span> <span class="text-gray-500">Following</span></span>
-                        <span class="hover:underline cursor-pointer" onclick="editFollowers()"><span class="font-bold text-black" id="profile-followers">0</span> <span class="text-gray-500">Followers</span></span>
+                        <span class="hover:underline cursor-pointer"><span class="font-bold text-black odometer" id="profile-following">0</span> <span class="text-gray-500">Following</span></span>
+                        <span class="hover:underline cursor-pointer" onclick="editFollowers()"><span class="font-bold text-black odometer" id="profile-followers">0</span> <span class="text-gray-500">Followers</span></span>
                     </div>
                 </div>
             </div>
             <div id="profile-list" class="mt-4 border-t border-gray-100"></div>
         </div>
 
+        <!-- VIEW: COLLAB -->
         <div id="view-collab" class="view-section hidden p-4">
             <h1 class="font-bold text-xl mb-4">Bot Collabs</h1>
+            <p class="text-gray-500 text-sm mb-4">Create bots to boost your engagement rate.</p>
             <button onclick="createBot()" class="w-full py-3 bg-black text-white rounded-full font-bold mb-4">Create New Bot</button>
             <div id="bot-list" class="space-y-2"></div>
         </div>
 
-        <!-- POST DETAIL -->
+        <!-- VIEW: TRENDING (Mobile) -->
+        <div id="view-trending" class="view-section hidden">
+            <div class="p-4 border-b border-gray-100 font-bold text-xl">Trending</div>
+            <div id="mobile-trending-list"></div>
+        </div>
+
+        <!-- VIEW: POST DETAIL -->
         <div id="view-post-detail" class="view-section hidden">
             <div class="flex items-center gap-6 px-4 h-14 border-b border-gray-100 sticky top-0 bg-white/85 backdrop-blur z-50">
                 <button onclick="navTo('home')">←</button>
                 <span class="font-bold text-lg">Post</span>
             </div>
             <div id="post-detail-content"></div>
+            <div class="p-4 border-b border-gray-100 font-bold text-lg">Replies</div>
+            <div id="post-replies-list" class="pb-20"></div>
         </div>
 
     </main>
@@ -258,6 +268,7 @@
     <!-- MOBILE NAV -->
     <nav class="fixed bottom-0 w-full h-[53px] bg-white border-t border-gray-100 flex justify-around items-center md:hidden z-50">
         <button onclick="navTo('home')"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg></button>
+        <button onclick="navTo('trending')"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg></button>
         <button onclick="navTo('collab')"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle></svg></button>
         <button onclick="navTo('profile')"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg></button>
     </nav>
@@ -276,113 +287,336 @@
             </div>
             <textarea id="mobile-input" placeholder="What is happening?!" class="w-full text-xl outline-none resize-none h-32"></textarea>
             <div id="mobile-media-preview" class="hidden mt-2 rounded-xl overflow-hidden relative max-h-60"></div>
-            <div class="mt-4 pt-3 border-t border-gray-100 flex gap-4 text-[#1d9bf0]">
+            <div class="mt-4 pt-3 border-t border-gray-100 flex gap-4 text-[#1d9bf0] items-center">
                 <label><input type="file" accept="image/*" hidden onchange="handleMedia('mobile', 'image')">📷</label>
                 <label><input type="file" accept="video/*" hidden onchange="handleMedia('mobile', 'video')">🎥</label>
+                <select id="mobile-collab-select" class="ml-auto bg-transparent text-sm font-bold text-[#1d9bf0] outline-none cursor-pointer hover:bg-blue-50 p-1 rounded max-w-[150px]">
+                    <option value="none">✨ Collab</option>
+                    <!-- JS populated -->
+                </select>
             </div>
         </div>
     </div>
 
-    <script>
-        // --- CONSTANTS ---
-        const VERIFIED = `<svg class="w-4 h-4 text-[#1d9bf0] inline-block ml-1 align-text-bottom" viewBox="0 0 24 24" fill="currentColor"><path d="M22.5 12.5c0-1.58-.875-2.95-2.148-3.6.154-.435.238-.905.238-1.4 0-2.21-1.71-3.998-3.818-3.998-.47 0-.92.175-1.297.503C14.78 2.67 13.438 2 12 2s-2.78.67-3.475 2.005c-.377-.328-.827-.503-1.297-.503-2.108 0-3.818 1.788-3.818 3.998 0 .495.084.965.238 1.4-1.273.65-2.148 2.02-2.148 3.6 0 1.58.875 2.95 2.148 3.6-.154.435-.238.905-.238 1.4 0 2.21 1.71 3.998 3.818 3.998.47 0 .92-.175 1.297-.503.695 1.335 2.037 2.005 3.475 2.005s2.78-.67 3.475-2.005c.377.328.827.503 1.297.503 2.108 0 3.818-1.788 3.818-3.998 0-.495-.084-.965-.238-1.4 1.273-.65 2.148-2.02 2.148-3.6zM9.763 16.296l-4.24-4.24 1.414-1.414 2.826 2.826 6.364-6.364 1.414 1.414-7.778 7.778z"></path></svg>`;
-        
-        let appData = {
-            user: { name: "User", handle: "user", followers: 100, following: 20, avatar: `https://ui-avatars.com/api/?name=User&background=random` },
-            posts: [],
-            bots: [],
-            lastActive: Date.now()
-        };
-        let currentMedia = { desktop: null, mobile: null };
+    <!-- ONBOARDING -->
+    <div id="onboarding-modal" class="fixed inset-0 bg-white z-[100] flex flex-col items-center justify-center p-6 hidden">
+        <div class="w-10 h-10 mb-8 bg-black rounded-full"></div>
+        <h1 class="text-3xl font-black mb-8 text-left w-full max-w-sm">Create your account</h1>
+        <div class="w-full max-w-sm space-y-6">
+            <div class="relative"><input type="text" id="setup-name" class="w-full border p-4 rounded outline-none" placeholder="Name"></div>
+            <div class="relative"><input type="text" id="setup-handle" class="w-full border p-4 rounded outline-none" placeholder="Handle"></div>
+            <div class="relative"><input type="number" id="setup-followers" class="w-full border p-4 rounded outline-none" placeholder="Initial Followers" value="100"></div>
+        </div>
+        <button onclick="completeSetup()" class="mt-8 bg-black text-white font-bold py-4 px-8 rounded-full w-full max-w-sm">Next</button>
+    </div>
 
-        // --- INIT ---
+    <script>
+        const VERIFIED = `<svg class="verified-badge w-5 h-5 text-[#1d9bf0] inline-block ml-1 align-text-bottom" viewBox="0 0 24 24" fill="currentColor"><path d="M22.5 12.5c0-1.58-.875-2.95-2.148-3.6.154-.435.238-.905.238-1.4 0-2.21-1.71-3.998-3.818-3.998-.47 0-.92.175-1.297.503C14.78 2.67 13.438 2 12 2s-2.78.67-3.475 2.005c-.377-.328-.827-.503-1.297-.503-2.108 0-3.818 1.788-3.818 3.998 0 .495.084.965.238 1.4-1.273.65-2.148 2.02-2.148 3.6 0 1.58.875 2.95 2.148 3.6-.154.435-.238.905-.238 1.4 0 2.21 1.71 3.998 3.818 3.998.47 0 .92-.175 1.297-.503.695 1.335 2.037 2.005 3.475 2.005s2.78-.67 3.475-2.005c.377.328.827.503 1.297.503 2.108 0 3.818-1.788 3.818-3.998 0-.495-.084-.965-.238-1.4 1.273-.65 2.148-2.02 2.148-3.6zM9.763 16.296l-4.24-4.24 1.414-1.414 2.826 2.826 6.364-6.364 1.414 1.414-7.778 7.778z"></path></svg>`;
+        const DECAY_CONSTANT = 21600; // 6 hours
+        
+        const AI_NAMES = ["TechGuru", "CryptoWhale", "MemeLord", "Artist_X", "NewsBot", "Traveler"];
+        const AI_REPLIES = ["Big if true.", "🚀 to the moon!", "This is the content I signed up for.", "Following.", "Interesting perspective.", "Can you elaborate?", "Underrated tweet.", "First!", "Wait, really?", "Facts."];
+        
+        let appData = { user: { name: "", handle: "", followers: 0, following: 0, avatar: "" }, posts: [], bots: [], lastActive: Date.now() };
+        let currentMedia = { desktop: null, mobile: null };
+        const els = {};
+
         function init() {
+            // Populate DOM references
+            els.feed = document.getElementById('feed-list');
+            els.profile = document.getElementById('profile-list');
+            els.trendingWall = document.getElementById('trending-wall');
+            els.mobileTrending = document.getElementById('mobile-trending-list');
+            els.onboarding = document.getElementById('onboarding-modal');
+            els.botList = document.getElementById('bot-list');
+            els.postDetail = document.getElementById('post-detail-content');
+            els.replyList = document.getElementById('post-replies-list');
+
             const saved = localStorage.getItem('x_sim_v3');
             if (saved) {
                 appData = JSON.parse(saved);
+                if (!appData.bots) appData.bots = [];
                 simulateTimeAway();
+                renderAll();
             } else {
-                // Default starter post
-                createPost("Welcome to X Simulator! 🚀", null, true);
+                els.onboarding.classList.remove('hidden');
             }
-            
-            // Render initial state
-            renderAll();
-            
-            // Loop
-            setInterval(() => {
-                simulateLive();
-                renderFeeds(); // Re-render feeds to update odometers
-                renderTrending();
-            }, 1000);
 
+            // Loops
+            setInterval(simulateLive, 1000);
+            setInterval(renderTrending, 2000);
+            
             // Inputs
-            ['desktop', 'mobile'].forEach(mode => {
-                document.getElementById(`${mode}-input`).addEventListener('input', (e) => {
-                    document.getElementById(`${mode}-post-btn`).disabled = e.target.value.trim() === '';
+            ['desktop', 'mobile'].forEach(m => {
+                document.getElementById(`${m}-input`).addEventListener('input', e => {
+                    document.getElementById(`${m}-post-btn`).disabled = e.target.value.trim() === '';
                 });
             });
 
-            // Save on exit
-            window.addEventListener('beforeunload', () => {
-                appData.lastActive = Date.now();
-                localStorage.setItem('x_sim_v3', JSON.stringify(appData));
+            window.addEventListener('beforeunload', saveState);
+            document.addEventListener('visibilitychange', () => {
+                if (document.hidden) saveState();
+                else { appData.lastActive = parseInt(localStorage.getItem('x_sim_last_active')) || Date.now(); simulateTimeAway(); }
             });
         }
 
-        // --- DOM RENDERERS ---
-        function renderAll() {
-            renderProfileData();
-            renderFeeds();
-            renderBots();
-            renderTrending();
+        function saveState() {
+            appData.lastActive = Date.now();
+            localStorage.setItem('x_sim_v3', JSON.stringify(appData));
+            localStorage.setItem('x_sim_last_active', appData.lastActive);
         }
 
-        function renderProfileData() {
-            const els = ['sidebar-avatar', 'mobile-header-avatar', 'desktop-compose-avatar', 'profile-lg-avatar'];
-            els.forEach(id => {
-                const el = document.getElementById(id);
-                if(el) el.src = appData.user.avatar;
+        function completeSetup() {
+            const name = document.getElementById('setup-name').value || "User";
+            const handle = document.getElementById('setup-handle').value.replace('@','') || "user";
+            const followers = parseInt(document.getElementById('setup-followers').value) || 100;
+            
+            appData.user = { name, handle, followers, following: Math.floor(followers * 0.4), avatar: `https://ui-avatars.com/api/?name=${name}&background=random` };
+            // Default AutoBot
+            appData.bots.push({ name: "AutoBot", followers: 10000, id: Date.now() });
+            
+            appData.posts.push({
+                id: Date.now().toString(), content: "Just joined! #NewHere", timestamp: Date.now(),
+                stats: { views: 0, likes: 0, reposts: 0, replies: 0 }, interacted: { like: false, repost: false },
+                collab: 'none', comments: [], pinned: false
             });
+            els.onboarding.classList.add('hidden');
+            saveState(); renderAll();
+        }
 
-            document.getElementById('sidebar-name').innerText = appData.user.name;
-            document.getElementById('sidebar-handle').innerText = '@' + appData.user.handle;
-            
-            document.getElementById('profile-name').innerText = appData.user.name;
-            document.getElementById('profile-handle').innerText = appData.user.handle;
-            
-            if(appData.user.followers >= 100000) {
-                document.getElementById('profile-verify').innerHTML = VERIFIED;
+        // --- ANIMATION ENGINE ---
+        function formatNumber(num) {
+            if (num < 1000) return num.toLocaleString();
+            if (num >= 1000000000) return (num / 1000000000).toFixed(1) + 'B';
+            if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+            return (num / 1000).toFixed(1) + 'K';
+        }
+
+        function renderOdometer(element, value) {
+            if (!element) return;
+            const currentStr = element.getAttribute('data-value-str') || "";
+            const newStr = formatNumber(value);
+            if (currentStr === newStr) return;
+
+            const oldClean = currentStr.replace(/[^0-9]/g, '').length;
+            const newClean = newStr.replace(/[^0-9]/g, '').length;
+            const formatChanged = (currentStr.includes('K') !== newStr.includes('K')) || (oldClean !== newClean);
+
+            if (formatChanged || !element.children.length) {
+                element.innerHTML = generateOdometerHTML(newStr);
+            } else {
+                const digits = element.querySelectorAll('.digit-track');
+                const newChars = newStr.split('');
+                let digitIdx = 0;
+                newChars.forEach(char => {
+                    if (!/[0-9]/.test(char)) return;
+                    const digit = parseInt(char);
+                    if (digitIdx < digits.length) {
+                        const track = digits[digitIdx];
+                        const currentDigit = parseInt(track.getAttribute('data-digit'));
+                        if (currentDigit !== digit) {
+                            if (currentDigit === 9 && digit === 0) {
+                                track.classList.add('track-reset'); track.style.transform = `translateY(-${10 * 9.09}%)`;
+                                setTimeout(() => { track.classList.add('track-reset'); track.style.transform = `translateY(0%)`; track.setAttribute('data-digit', 0); void track.offsetHeight; track.classList.remove('track-reset'); }, 300);
+                            } else {
+                                track.classList.remove('track-reset'); track.style.transform = `translateY(-${digit * 9.09}%)`; track.setAttribute('data-digit', digit);
+                            }
+                        }
+                        digitIdx++;
+                    }
+                });
             }
+            element.setAttribute('data-value-str', newStr);
+        }
 
-            document.getElementById('profile-followers').innerText = formatNumber(appData.user.followers);
-            document.getElementById('profile-following').innerText = formatNumber(appData.user.following);
+        function generateOdometerHTML(str) {
+            return str.split('').map(char => {
+                if (/[0-9]/.test(char)) {
+                    const digit = parseInt(char);
+                    const tapeHtml = [0,1,2,3,4,5,6,7,8,9,0].map(d => `<span class="digit-value">${d}</span>`).join('');
+                    return `<span class="odometer-digit-container"><span class="digit-track" style="transform: translateY(-${digit * 9.09}%)" data-digit="${digit}">${tapeHtml}</span></span>`;
+                } else if (/[KMB]/.test(char)) { return `<span class="odometer-suffix">${char}</span>`; }
+                else { return `<span class="odometer-punct">${char}</span>`; }
+            }).join('');
+        }
+
+        // --- COLLAB LOGIC ---
+        function updateCollabSelects() {
+            const options = `<option value="none">✨ Collab</option>` + appData.bots.map(b => `<option value="${b.id}">${b.name} (${formatNumber(b.followers)})</option>`).join('');
+            document.getElementById('desktop-collab-select').innerHTML = options;
+            document.getElementById('mobile-collab-select').innerHTML = options;
+        }
+
+        // --- SIMULATION ---
+        function simulateTimeAway() {
+            const now = Date.now();
+            const elapsed = (now - appData.lastActive) / 1000;
+            if (elapsed < 1) return;
+            appData.posts.forEach(post => {
+                const age = (now - post.timestamp) / 1000;
+                // Decay logic: Posts die after ~24 hours (86400s). 
+                // Hard fall off at 48 hours.
+                if (age > 172800) return;
+
+                const decay = Math.exp(-age / DECAY_CONSTANT); 
+                
+                let baseRate = (appData.user.followers / 100) + (Math.log10(Math.max(10, appData.user.followers)) * 5);
+                
+                // Bot logic
+                let botBoost = 0;
+                if (post.collab && post.collab !== 'none') {
+                    const bot = appData.bots.find(b => b.id == post.collab);
+                    if (bot) botBoost = bot.followers / 500;
+                }
+                
+                const speed = (baseRate + botBoost) * decay;
+                const added = Math.floor(speed * elapsed);
+                
+                if (added > 0) {
+                    post.stats.views += added;
+                    post.stats.likes += Math.floor(added * 0.08); 
+                    post.stats.reposts += Math.floor(added * 0.03);
+                    
+                    // Bulk follower gain
+                    const newFollowers = Math.floor(added * 0.0005);
+                    if(newFollowers > 0) appData.user.followers += newFollowers;
+                }
+            });
+            appData.lastActive = now;
+        }
+
+        function simulateLive() {
+            appData.posts.forEach(post => {
+                const age = (Date.now() - post.timestamp) / 1000;
+                // Hard stop after 48h
+                if (age > 172800) return;
+
+                const decay = Math.exp(-age / DECAY_CONSTANT);
+                if (decay < 0.01) return;
+                
+                let baseViews = (appData.user.followers * 0.001) + (Math.log10(appData.user.followers) * 0.1);
+                
+                // Bot boost
+                let botBoost = 0;
+                if (post.collab && post.collab !== 'none') {
+                    const bot = appData.bots.find(b => b.id == post.collab);
+                    if(bot) botBoost = bot.followers * 0.0005;
+                }
+
+                let amount = (baseViews + botBoost) * decay;
+
+                let viewsToAdd = 0;
+                if(amount > 1) {
+                    viewsToAdd = Math.ceil(amount * (0.8 + Math.random() * 0.4));
+                } else {
+                    if(Math.random() < amount) viewsToAdd = 1;
+                }
+
+                if (viewsToAdd > 0) {
+                    post.stats.views += viewsToAdd;
+                    if(Math.random() < 0.2) post.stats.likes += Math.ceil(viewsToAdd * 0.1);
+                    if(Math.random() < 0.05) post.stats.reposts += Math.ceil(viewsToAdd * 0.02);
+                    if(Math.random() < 0.02) generateAIReplies(post, 1);
+                    
+                    // Follower Conversion
+                    if(Math.random() < 0.05) { // 5% chance per tick on active posts
+                        appData.user.followers += Math.ceil(viewsToAdd * 0.002); // Small conversion rate
+                        updateProfileHeader(); // Refresh follower count
+                    }
+
+                    updatePostDOM(post);
+                }
+            });
+        }
+
+        function generateAIReplies(post, count) {
+            if(!post.comments) post.comments = [];
+            for(let i=0; i<count; i++) {
+                const name = AI_NAMES[Math.floor(Math.random() * AI_NAMES.length)];
+                const text = AI_REPLIES[Math.floor(Math.random() * AI_REPLIES.length)];
+                post.comments.unshift({ name, text, time: Date.now() });
+                post.stats.replies++;
+            }
+        }
+
+        // --- DOM UPDATES ---
+        function updatePostDOM(post) {
+            const selector = `[data-post-id="${post.id}"]`;
+            document.querySelectorAll(selector).forEach(el => {
+                renderOdometer(el.querySelector('.odometer[data-type="views"]'), post.stats.views);
+                renderOdometer(el.querySelector('.odometer[data-type="likes"]'), post.stats.likes);
+                renderOdometer(el.querySelector('.odometer[data-type="reposts"]'), post.stats.reposts);
+                renderOdometer(el.querySelector('.odometer[data-type="replies"]'), post.stats.replies);
+                
+                const likeBtn = el.querySelector('.action-group:nth-child(3)');
+                const repostBtn = el.querySelector('.action-group:nth-child(2)');
+                
+                if(post.interacted.like) likeBtn.classList.add('liked-blue'); else likeBtn.classList.remove('liked-blue');
+                if(post.interacted.repost) repostBtn.classList.add('reposted'); else repostBtn.classList.remove('reposted');
+
+                const footer = el.querySelector('.trending-footer');
+                const rank = getTrendingRank(post.id);
+                if(rank && footer) {
+                    footer.innerHTML = `<span class="text-[#1d9bf0]">#${rank} on Trending</span>`;
+                    footer.classList.remove('hidden');
+                } else if (footer) footer.classList.add('hidden');
+            });
+            
+            if(document.getElementById('view-post-detail').classList.contains('hidden') === false) {
+               const list = document.getElementById('post-replies-list');
+               if(list && list.children.length !== post.comments.length) renderReplies(post);
+            }
+        }
+
+        function renderAll() {
+            renderProfileHeader(); renderFeeds(); renderBots(); renderTrending(); updateCollabSelects();
+        }
+
+        function renderProfileHeader() {
+            const els = ['sidebar-avatar', 'mobile-header-avatar', 'desktop-compose-avatar', 'profile-lg-avatar'];
+            els.forEach(id => { const el = document.getElementById(id); if(el) el.src = appData.user.avatar; });
+            const verify = appData.user.followers >= 100000 ? VERIFIED : '';
+            ['sidebar-name', 'profile-name'].forEach(id => { document.getElementById(id).innerHTML = appData.user.name; });
+            ['sidebar-verified', 'profile-verify'].forEach(id => { document.getElementById(id).innerHTML = verify; });
+            document.getElementById('sidebar-handle').innerText = '@' + appData.user.handle;
+            document.getElementById('profile-handle').innerText = '@' + appData.user.handle;
+            
+            // Apply Odometer to followers
+            updateProfileHeader();
+        }
+        
+        function updateProfileHeader() {
+            renderOdometer(document.getElementById('profile-followers'), appData.user.followers);
+            renderOdometer(document.getElementById('profile-following'), appData.user.following);
         }
 
         function renderFeeds() {
-            const feedContainer = document.getElementById('feed-list');
-            const profileContainer = document.getElementById('profile-list');
-            
-            // Clear current (inefficient but safe for keeping sync)
-            feedContainer.innerHTML = '';
-            profileContainer.innerHTML = '';
-
-            const sorted = [...appData.posts].sort((a,b) => b.timestamp - a.timestamp);
-
-            sorted.forEach(post => {
-                feedContainer.appendChild(createPostElement(post));
-                profileContainer.appendChild(createPostElement(post));
+            els.feed.innerHTML = ''; els.profile.innerHTML = '';
+            // Sorting: Pinned first, then date
+            const sorted = [...appData.posts].sort((a,b) => {
+                if(a.pinned && !b.pinned) return -1;
+                if(!a.pinned && b.pinned) return 1;
+                return b.timestamp - a.timestamp;
             });
+            sorted.forEach(post => { els.feed.appendChild(createPostHTML(post)); els.profile.appendChild(createPostHTML(post)); });
         }
 
-        function createPostElement(post) {
+        function createPostHTML(post) {
             const div = document.createElement('div');
-            div.className = "p-4 border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors";
+            div.className = "p-4 border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors relative";
+            div.dataset.postId = post.id;
             div.onclick = () => openPostDetail(post.id);
-
-            const verifyBadge = appData.user.followers >= 100000 ? VERIFIED : '';
-            const trendingRank = getTrendingRank(post.id);
-            const trendingHtml = trendingRank ? `<div class="trending-badge"><span class="trending-rank">#${trendingRank} on Trending</span></div>` : '';
+            
+            const verify = appData.user.followers >= 100000 ? VERIFIED : '';
+            const rank = getTrendingRank(post.id);
+            const trendHtml = rank ? `<div class="trending-badge"><span class="text-[#1d9bf0]">#${rank} on Trending</span></div>` : '<div class="trending-footer hidden text-xs font-bold mt-1"></div>';
+            const pinnedHtml = post.pinned ? `<div class="pinned-indicator"><svg width="12" height="12" viewBox="0 0 24 24" fill="#536471"><path d="M16 4.5C16 3.12 14.88 2 13.5 2H10.5C9.12 2 8 3.12 8 4.5V8H6V10H8V16L6 18V19H9.5V22H14.5V19H18V18L16 16V10H18V8H16V4.5Z"></path></svg> Pinned</div>` : '';
+            
+            let collabHtml = '';
+            if(post.collab && post.collab !== 'none') {
+                const bot = appData.bots.find(b => b.id == post.collab);
+                if(bot) collabHtml = `<span class="text-gray-500 text-sm ml-1">& ${bot.name}</span>`;
+            }
 
             let mediaHtml = '';
             if(post.media) {
@@ -390,147 +624,120 @@
                 else mediaHtml = `<div class="mt-3 rounded-xl overflow-hidden border border-gray-200 aspect-video custom-player paused" onclick="event.stopPropagation(); toggleVideo(this)"><video src="${post.media.data}" loop playsinline></video><div class="play-overlay"><div class="play-icon">▶</div></div></div>`;
             }
 
-            // Odometer HTML generators
-            const odo = (val) => `<span class="odometer" data-value="${val}">${generateOdometerHtml(val)}</span>`;
-
             div.innerHTML = `
+                ${pinnedHtml}
                 <div class="flex gap-3">
                     <img src="${appData.user.avatar}" class="w-10 h-10 rounded-full bg-gray-200 shrink-0">
                     <div class="flex-1 min-w-0">
-                        <div class="flex items-center gap-1 text-[15px]">
-                            <span class="font-bold truncate">${appData.user.name}</span>${verifyBadge}
-                            <span class="text-gray-500 truncate">@${appData.user.handle}</span>
-                            <span class="text-gray-500 text-xs">· ${timeAgo(post.timestamp)}</span>
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-1 text-[15px]">
+                                <span class="font-bold truncate">${appData.user.name}</span>${verify}${collabHtml}
+                                <span class="text-gray-500 truncate">@${appData.user.handle}</span>
+                                <span class="text-gray-500 text-xs">· ${timeAgo(post.timestamp)}</span>
+                            </div>
+                            <button class="text-gray-400 hover:text-blue-500 px-2" onclick="event.stopPropagation(); toggleMenu('${post.id}')">•••</button>
                         </div>
-                        ${trendingHtml}
+                        ${trendHtml}
                         <div class="text-[15px] whitespace-pre-wrap leading-6">${post.content}</div>
                         ${mediaHtml}
                         <div class="flex justify-between mt-3 max-w-md text-gray-500 text-xs">
-                            <div class="action-group flex items-center gap-1 group hover:text-blue-500">
+                            <div class="action-group flex items-center gap-1 group">
                                 <div class="action-icon-wrapper"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg></div>
-                                ${odo(post.stats.replies)}
+                                <span class="odometer" data-type="replies">0</span>
                             </div>
-                            <div class="action-group flex items-center gap-1 group hover:text-green-500 ${post.interacted.repost ? 'reposted' : ''}" onclick="event.stopPropagation(); interact('${post.id}', 'repost')">
+                            <div class="action-group flex items-center gap-1 group ${post.interacted.repost ? 'reposted' : ''}" onclick="event.stopPropagation(); interact('${post.id}', 'repost')">
                                 <div class="action-icon-wrapper"><svg class="icon-repost" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="17 1 21 5 17 9"></polyline><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><polyline points="7 23 3 19 7 15"></polyline><path d="M21 13v2a4 4 0 0 1-4 4H3"></path></svg></div>
-                                <span class="action-count">${odo(post.stats.reposts)}</span>
+                                <span class="odometer action-count" data-type="reposts">0</span>
                             </div>
-                            <div class="action-group flex items-center gap-1 group hover:text-blue-500 ${post.interacted.like ? 'liked-blue' : ''}" onclick="event.stopPropagation(); interact('${post.id}', 'like')">
+                            <div class="action-group flex items-center gap-1 group ${post.interacted.like ? 'liked-blue' : ''}" onclick="event.stopPropagation(); interact('${post.id}', 'like')">
                                 <div class="action-icon-wrapper like-btn-inner"><svg class="icon-like" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg></div>
-                                <span class="action-count">${odo(post.stats.likes)}</span>
+                                <span class="odometer action-count" data-type="likes">0</span>
                             </div>
-                            <div class="action-group flex items-center gap-1 group hover:text-blue-500">
+                            <div class="action-group flex items-center gap-1 group">
                                 <div class="action-icon-wrapper"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg></div>
-                                ${odo(post.stats.views)}
+                                <span class="odometer" data-type="views">0</span>
                             </div>
                         </div>
                     </div>
                 </div>
+                <div class="post-menu" id="menu-${post.id}">
+                    <button onclick="event.stopPropagation(); togglePin('${post.id}')">${post.pinned ? 'Unpin' : 'Pin to profile'}</button>
+                    <button class="delete" onclick="event.stopPropagation(); deletePost('${post.id}')">Delete post</button>
+                </div>
             `;
+            setTimeout(() => updatePostDOM(post), 0);
             return div;
         }
 
-        // --- ODOMETER LOGIC (Bulletproof) ---
-        function formatNumber(num) {
-            if (num < 1000) return num.toString();
-            if (num >= 1000000000) return (num / 1000000000).toFixed(1) + 'B';
-            if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
-            return (num / 1000).toFixed(1) + 'K';
+        // --- MENU LOGIC ---
+        function toggleMenu(id) {
+            document.querySelectorAll('.post-menu').forEach(m => { if(m.id !== `menu-${id}`) m.classList.remove('show'); });
+            const menu = document.getElementById(`menu-${id}`);
+            menu.classList.toggle('show');
+        }
+        function togglePin(id) { const post = appData.posts.find(p => p.id === id); if(post) { post.pinned = !post.pinned; saveState(); renderFeeds(); } }
+        function deletePost(id) { if(confirm('Delete this post?')) { appData.posts = appData.posts.filter(p => p.id !== id); saveState(); renderFeeds(); } }
+        window.onclick = function(e) { if (!e.target.matches('.post-menu button') && !e.target.innerText === '•••') { document.querySelectorAll('.post-menu').forEach(m => m.classList.remove('show')); } }
+
+        function getTrendingRank(id) {
+            // Trending score heavily penalizes age. 
+            // Score = Views / (AgeHours ^ 2)
+            // This ensures new viral posts pop up, old viral posts fall off.
+            const scores = appData.posts.map(p => {
+                const ageHours = (Date.now() - p.timestamp) / 3600000;
+                const score = p.stats.views / Math.pow(ageHours + 1, 2.5); // Steep falloff
+                return { id: p.id, score };
+            }).sort((a,b) => b.score - a.score);
+            
+            const idx = scores.findIndex(s => s.id === id);
+            return (idx !== -1 && scores[idx].score > 20) ? idx + 1 : null;
         }
 
-        function generateOdometerHtml(value) {
-            const str = formatNumber(value);
-            return str.split('').map(char => {
-                if(isNaN(parseInt(char))) return `<span class="odometer-suffix">${char}</span>`;
-                return `
-                    <span class="odometer-digit-container">
-                        <span class="digit-track" style="transform: translateY(-${parseInt(char) * 9.09}%)">
-                            ${[0,1,2,3,4,5,6,7,8,9,0].map(d => `<span class="digit-value">${d}</span>`).join('')}
-                        </span>
-                    </span>
-                `;
-            }).join('');
+        function renderTrending() {
+            const walls = [els.trendingWall, els.mobileTrending];
+            const sorted = [...appData.posts].map(p => ({ ...p, score: p.stats.views / Math.pow((Date.now() - p.timestamp)/3600000 + 1, 2.5) })).sort((a,b) => b.score - a.score).slice(0,5);
+            
+            const html = sorted.map((p,i) => `
+                <div class="px-4 py-3 hover:bg-gray-100 cursor-pointer border-b border-gray-50 transition-colors" onclick="openPostDetail('${p.id}')">
+                    <div class="text-xs text-gray-500 flex justify-between"><span>${i+1} · Trending</span><span>···</span></div>
+                    <div class="font-bold text-sm line-clamp-1 mt-0.5">${p.content}</div>
+                    <div class="text-xs text-gray-500 mt-0.5">${formatNumber(p.stats.views)} views</div>
+                </div>
+            `).join('');
+            walls.forEach(w => { if(w) w.innerHTML = html; });
         }
 
-        // --- SIMULATION LOGIC ---
-        function simulateTimeAway() {
-            const now = Date.now();
-            const elapsed = (now - appData.lastActive) / 1000;
-            if(elapsed < 1) return;
-
-            appData.posts.forEach(post => {
-                // Calc decay integral
-                const age = (now - post.timestamp) / 1000;
-                // Simple physics: View Rate = (Followers * 0.1) * e^(-age / 6hours)
-                // Integral of e^-kt is -1/k e^-kt
-                // We just approximate bulk addition here for stability
-                const decayFactor = Math.exp(-age / 21600); 
-                const baseViews = Math.max(10, appData.user.followers * 0.5) * elapsed * decayFactor;
-                
-                if (baseViews > 1) {
-                    const added = Math.floor(baseViews);
-                    post.stats.views += added;
-                    post.stats.likes += Math.floor(added * 0.05); // 5% likes
-                    post.stats.reposts += Math.floor(added * 0.02);
-                }
-            });
-            // Passive follower growth
-            if (elapsed > 3600) appData.user.followers += Math.floor(elapsed / 3600);
+        function createBot() {
+            const name = prompt("Bot Name");
+            if(name) { appData.bots.push({name, followers: parseInt(prompt("Followers","10000")), id:Date.now()}); saveState(); renderBots(); updateCollabSelects(); }
         }
-
-        function simulateLive() {
-            appData.posts.forEach(post => {
-                const age = (Date.now() - post.timestamp) / 1000;
-                const decay = Math.exp(-age / 21600); // 6 hour half-life roughly
-                
-                // Base probability per tick
-                let chance = (appData.user.followers / 1000) * decay;
-                
-                // Bot boost
-                const botPower = appData.bots.reduce((a,b) => a + b.followers, 0);
-                chance += (botPower / 5000) * decay;
-
-                if(Math.random() < chance) {
-                    const add = Math.ceil(Math.random() * 5); // burst
-                    post.stats.views += add;
-                    if(Math.random() < 0.1) post.stats.likes++;
-                    if(Math.random() < 0.02) post.stats.reposts++;
-                }
-            });
+        function renderBots() {
+            els.botList.innerHTML = appData.bots.map((b,i) => `<div class="flex justify-between p-3 bg-gray-50 rounded items-center"><div><div class="font-bold text-sm">${b.name}</div><div class="text-xs text-gray-500">${formatNumber(b.followers)} followers</div></div><button class="text-red-500 text-xs font-bold" onclick="deleteBot(${i})">Delete</button></div>`).join('');
         }
-
-        // --- ACTIONS ---
-        function createPost(txt, media, skipRender) {
-            const newPost = {
-                id: Date.now().toString(),
-                content: txt,
-                media: media,
-                timestamp: Date.now(),
-                stats: { views: 0, likes: 0, reposts: 0, replies: 0 },
-                interacted: { like: false, repost: false }
-            };
-            appData.posts.unshift(newPost);
-            if(!skipRender) renderFeeds();
-        }
+        function deleteBot(i) { appData.bots.splice(i,1); saveState(); renderBots(); updateCollabSelects(); }
 
         function submitPost(mode) {
             const txt = document.getElementById(`${mode}-input`).value;
-            const media = currentMedia[mode];
-            if(!txt && !media) return;
-            createPost(txt, media);
-            // Reset UI
-            document.getElementById(`${mode}-input`).value = '';
-            document.getElementById(`${mode}-media-preview`).classList.add('hidden');
-            currentMedia[mode] = null;
-            if(mode === 'mobile') closeCompose();
+            if(!txt) return;
+            const collab = document.getElementById(`${mode}-collab-select`)?.value || 'none';
+            appData.posts.unshift({
+                id: Date.now().toString(), content: txt, media: currentMedia[mode], timestamp: Date.now(),
+                stats: { views: 0, likes: 0, reposts: 0, replies: 0 }, interacted: { like: false, repost: false },
+                collab: collab, comments: [], pinned: false
+            });
+            document.getElementById(`${mode}-input`).value = ''; clearMedia(mode); if(mode === 'mobile') closeCompose();
+            saveState(); renderAll();
         }
 
         function interact(id, type) {
             const post = appData.posts.find(p => p.id === id);
-            if(!post) return;
-            const active = !post.interacted[type];
-            post.interacted[type] = active;
-            post.stats[type + 's'] += active ? 1 : -1;
-            renderFeeds(); // Re-render to update classes and numbers
+            if(post) {
+                const active = !post.interacted[type];
+                post.interacted[type] = active;
+                post.stats[type + 's'] += active ? 1 : -1;
+                updatePostDOM(post);
+                saveState();
+            }
         }
 
         function handleMedia(mode, type) {
@@ -541,102 +748,76 @@
                 currentMedia[mode] = { type, data: e.target.result };
                 const el = document.getElementById(`${mode}-media-preview`);
                 el.classList.remove('hidden');
-                el.innerHTML = type === 'image' 
-                    ? `<img src="${e.target.result}" class="w-full h-full object-cover">`
-                    : `<video src="${e.target.result}" controls class="w-full h-full"></video>`;
+                el.innerHTML = type === 'image' ? `<img src="${e.target.result}" class="w-full h-full object-cover">` : `<video src="${e.target.result}" controls class="w-full h-full"></video>`;
+                const btn = document.createElement('button');
+                btn.className = "absolute top-2 right-2 bg-black/70 text-white rounded-full p-1";
+                btn.innerHTML = 'X';
+                btn.onclick = () => clearMedia(mode);
+                el.appendChild(btn);
                 document.getElementById(`${mode}-post-btn`).disabled = false;
             };
             reader.readAsDataURL(file);
         }
-
-        // --- VIDEO PLAYER ---
-        function toggleVideo(container) {
-            const v = container.querySelector('video');
-            if(v.paused) { v.play(); container.classList.remove('paused'); }
-            else { v.pause(); container.classList.add('paused'); }
+        function clearMedia(mode) {
+            currentMedia[mode] = null;
+            document.getElementById(`${mode}-media-preview`).classList.add('hidden');
+            document.getElementById(`${mode}-post-btn`).disabled = true;
         }
 
-        // --- TRENDING ---
-        function getTrendingRank(id) {
-            // Sort by views, get index
-            const sorted = [...appData.posts].sort((a,b) => b.stats.views - a.stats.views);
-            const idx = sorted.findIndex(p => p.id === id);
-            if(idx < 5 && sorted[idx].stats.views > 50) return idx + 1;
-            return null;
-        }
-
-        function renderTrending() {
-            const container = document.getElementById('trending-wall');
-            const top5 = [...appData.posts].sort((a,b) => b.stats.views - a.stats.views).slice(0,5);
-            container.innerHTML = top5.map((p, i) => `
-                <div class="px-4 py-3 hover:bg-gray-100 cursor-pointer border-b border-gray-50" onclick="openPostDetail('${p.id}')">
-                    <div class="text-xs text-gray-500">Trending in Tech</div>
-                    <div class="font-bold text-sm line-clamp-1">${p.content}</div>
-                    <div class="text-xs text-gray-500">${formatNumber(p.stats.views)} views</div>
-                </div>
-            `).join('');
-        }
-
-        // --- NAVIGATION ---
         function navTo(page) {
-            ['home', 'profile', 'collab', 'post-detail'].forEach(v => document.getElementById(`view-${v}`).classList.add('hidden'));
-            document.getElementById(`view-${page === 'trending' ? 'home' : page}`).classList.remove('hidden');
+            ['home', 'profile', 'collab', 'trending', 'post-detail'].forEach(v => document.getElementById(`view-${v}`).classList.add('hidden'));
+            document.getElementById(`view-${page}`).classList.remove('hidden');
             window.scrollTo(0,0);
         }
-
         function openPostDetail(id) {
             const post = appData.posts.find(p => p.id === id);
-            if(!post) return;
-            navTo('post-detail');
-            // Simplified Detail View Render (reuses createPostElement logic visually)
-            const container = document.getElementById('post-detail-content');
-            container.innerHTML = '';
-            container.appendChild(createPostElement(post)); 
-        }
-
-        function createBot() {
-            const name = prompt("Bot Name");
-            const followers = parseInt(prompt("Followers", "1000"));
-            if(name) {
-                appData.bots.push({ name, followers });
-                renderBots();
+            if(post) {
+                navTo('post-detail');
+                els.postDetail.innerHTML = '';
+                els.postDetail.appendChild(createPostHTML(post));
+                renderReplies(post);
             }
         }
-
-        function renderBots() {
-            document.getElementById('bot-list').innerHTML = appData.bots.map((b,i) => `
-                <div class="flex justify-between p-3 bg-gray-50 rounded">
-                    <div><b>${b.name}</b> <span class="text-xs text-gray-500">${formatNumber(b.followers)}</span></div>
-                    <button class="text-red-500 text-xs" onclick="appData.bots.splice(${i},1); renderBots()">Delete</button>
+        
+        function renderReplies(post) {
+            const list = document.getElementById('post-replies-list');
+            list.innerHTML = post.comments.map(c => `
+                <div class="ai-reply-item flex gap-3">
+                    <div class="w-8 h-8 rounded-full bg-gray-200 flex-shrink-0"></div>
+                    <div>
+                        <div class="flex items-center gap-1">
+                            <span class="font-bold text-sm">${c.name}</span>
+                            <span class="text-gray-500 text-xs">· ${timeAgo(c.time)}</span>
+                        </div>
+                        <div class="text-sm text-gray-900">${c.text}</div>
+                    </div>
                 </div>
             `).join('');
         }
 
-        function editProfile() {
-            appData.user.name = prompt("Name", appData.user.name) || appData.user.name;
-            renderAll();
+        function toggleVideo(container) {
+            const v = container.querySelector('video');
+            if(v.paused) { v.play(); container.classList.remove('paused'); } else { v.pause(); container.classList.add('paused'); }
         }
-        function editFollowers() {
-            const f = parseInt(prompt("Followers", appData.user.followers));
-            if(!isNaN(f)) { appData.user.followers = f; renderAll(); }
-        }
-        function resetData() {
-            if(confirm("Reset all?")) {
-                localStorage.removeItem('x_sim_v3');
-                location.reload();
-            }
-        }
-        function openCompose() { document.getElementById('compose-modal').classList.remove('hidden'); }
+        function openCompose() { document.getElementById('compose-modal').classList.remove('hidden'); updateCollabSelects(); }
         function closeCompose() { document.getElementById('compose-modal').classList.add('hidden'); }
+        function resetData() { if(confirm("Reset?")) { localStorage.removeItem('x_sim_v3'); location.reload(); } }
+        function editProfile() { appData.user.name = prompt("Name", appData.user.name) || appData.user.name; saveState(); renderAll(); }
+        function editFollowers() { const f = prompt("Followers", appData.user.followers); if(f) { appData.user.followers = parseInt(f); saveState(); renderAll(); } }
         function timeAgo(ts) {
             const s = Math.floor((Date.now()-ts)/1000);
-            if(s<60) return s+'s';
-            if(s<3600) return Math.floor(s/60)+'m';
-            return Math.floor(s/3600)+'h';
+            if(s<60) return s+'s'; if(s<3600) return Math.floor(s/60)+'m'; return Math.floor(s/3600)+'h';
+        }
+
+        function updateCollabSelects() {
+            const options = `<option value="none">✨ Collab</option>` + appData.bots.map(b => `<option value="${b.id}">${b.name} (${formatNumber(b.followers)})</option>`).join('');
+            const d = document.getElementById('desktop-collab-select');
+            const m = document.getElementById('mobile-collab-select');
+            if(d) d.innerHTML = options;
+            if(m) m.innerHTML = options;
         }
 
         document.addEventListener('DOMContentLoaded', init);
-
     </script>
 </body>
 </html>
