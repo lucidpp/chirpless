@@ -149,10 +149,6 @@
         .post-menu button:hover { background: #f7f9f9; }
         .post-menu button.delete { color: #f4212e; }
         .post-menu.show { display: flex; }
-
-        /* Media Upload Label */
-        .upload-label { cursor: pointer; display: flex; align-items: center; justify-content: center; width: 100%; height: 100px; border: 2px dashed #eff3f4; border-radius: 8px; color: #1d9bf0; font-weight: 600; transition: background 0.2s; }
-        .upload-label:hover { background: #f7f9f9; }
     </style>
 </head>
 <body class="flex justify-center min-h-screen">
@@ -208,8 +204,8 @@
         <!-- VIEW: HOME -->
         <div id="view-home" class="view-section">
             <div class="flex border-b border-gray-100 sticky top-14 md:top-0 bg-white z-40">
-                <div id="tab-foryou" class="flex-1 h-12 flex items-center justify-center cursor-pointer tab-active">For you</div>
-                <div id="tab-following" class="flex-1 h-12 flex items-center justify-center cursor-pointer text-gray-500">Following</div>
+                <div id="tab-foryou" class="flex-1 h-12 flex items-center justify-center cursor-pointer tab-active" onclick="switchFeedTab('foryou')">For you</div>
+                <div id="tab-following" class="flex-1 h-12 flex items-center justify-center cursor-pointer tab-inactive" onclick="switchFeedTab('following')">Following</div>
             </div>
             <!-- Desktop Compose -->
             <div class="hidden md:flex gap-3 p-4 border-b border-gray-100">
@@ -249,7 +245,7 @@
         <!-- VIEW: PROFILE -->
         <div id="view-profile" class="view-section hidden">
             <div class="h-32 bg-gray-200 relative overflow-hidden">
-                <img id="profile-banner" class="w-full h-full object-cover hidden">
+                <!-- Banner Removed from visual to save space, keeping logic simple -->
             </div>
             <div class="px-4 relative">
                 <div class="w-32 h-32 rounded-full border-4 border-white bg-white absolute -top-16 overflow-hidden">
@@ -257,7 +253,7 @@
                 </div>
                 <div class="flex justify-end gap-2 py-3">
                     <button onclick="resetData()" class="px-4 py-1.5 border border-red-200 text-red-600 rounded-full font-bold text-sm hover:bg-red-50">Reset Data</button>
-                    <button onclick="openEditProfileModal()" class="px-4 py-1.5 border border-gray-300 rounded-full font-bold text-sm hover:bg-gray-100">Edit profile</button>
+                    <button onclick="editProfile()" class="px-4 py-1.5 border border-gray-300 rounded-full font-bold text-sm hover:bg-gray-100">Edit profile</button>
                 </div>
                 <div class="mt-2">
                     <h1 class="font-black text-xl flex items-center gap-1"><span id="profile-name">Name</span><span id="profile-verify"></span></h1>
@@ -275,7 +271,7 @@
         <!-- VIEW: COLLAB -->
         <div id="view-collab" class="view-section hidden p-4">
             <h1 class="font-bold text-xl mb-4">Bot Collabs</h1>
-            <p class="text-gray-500 text-sm mb-4">Create bots to boost your engagement rate. Bots will help simulate engagement.</p>
+            <p class="text-gray-500 text-sm mb-4">Create bots to boost your engagement rate.</p>
             <button onclick="createBot()" class="w-full py-3 bg-black text-white rounded-full font-bold mb-4">Create New Bot</button>
             <div id="bot-list" class="space-y-2"></div>
         </div>
@@ -366,29 +362,6 @@
         <button onclick="completeSetup()" class="mt-8 bg-black text-white font-bold py-4 px-8 rounded-full w-full max-w-sm">Next</button>
     </div>
 
-    <!-- EDIT PROFILE MODAL -->
-    <div id="edit-profile-modal" class="fixed inset-0 bg-black/40 z-[90] hidden flex items-center justify-center p-4">
-        <div class="bg-white w-full max-w-md rounded-2xl p-6 relative">
-            <h2 class="text-xl font-bold mb-4">Edit Profile</h2>
-            <div class="space-y-4">
-                <label class="upload-label">
-                    <input type="file" accept="image/*" hidden onchange="handleProfileMedia('banner')">
-                    <span>Upload Banner</span>
-                </label>
-                <label class="upload-label" style="height: 60px;">
-                    <input type="file" accept="image/*" hidden onchange="handleProfileMedia('avatar')">
-                    <span>Upload Avatar</span>
-                </label>
-                <input type="text" id="edit-name" class="w-full border p-3 rounded" placeholder="Name">
-                <textarea id="edit-bio" class="w-full border p-3 rounded" placeholder="Bio" rows="3"></textarea>
-            </div>
-            <div class="flex justify-end gap-3 mt-6">
-                <button onclick="document.getElementById('edit-profile-modal').classList.add('hidden')" class="px-4 py-2 rounded-full border">Cancel</button>
-                <button onclick="saveEditProfile()" class="px-4 py-2 rounded-full bg-black text-white font-bold">Save</button>
-            </div>
-        </div>
-    </div>
-
     <script>
         const VERIFIED = `<svg class="verified-badge w-5 h-5 text-[#1d9bf0] inline-block ml-1 align-text-bottom" viewBox="0 0 24 24" fill="currentColor"><path d="M22.5 12.5c0-1.58-.875-2.95-2.148-3.6.154-.435.238-.905.238-1.4 0-2.21-1.71-3.998-3.818-3.998-.47 0-.92.175-1.297.503C14.78 2.67 13.438 2 12 2s-2.78.67-3.475 2.005c-.377-.328-.827-.503-1.297-.503-2.108 0-3.818 1.788-3.818 3.998 0 .495.084.965.238 1.4-1.273.65-2.148 2.02-2.148 3.6 0 1.58.875 2.95 2.148 3.6-.154.435-.238.905-.238 1.4 0 2.21 1.71 3.998 3.818 3.998.47 0 .92-.175 1.297-.503.695 1.335 2.037 2.005 3.475 2.005s2.78-.67 3.475-2.005c.377.328.827.503 1.297.503 2.108 0 3.818-1.788 3.818-3.998 0-.495-.084-.965-.238-1.4 1.273-.65 2.148-2.02 2.148-3.6zM9.763 16.296l-4.24-4.24 1.414-1.414 2.826 2.826 6.364-6.364 1.414 1.414-7.778 7.778z"></path></svg>`;
         const DECAY_CONSTANT = 21600; 
@@ -396,13 +369,13 @@
         const AI_REPLIES = ["Big if true.", "🚀 to the moon!", "This is the content I signed up for.", "Following.", "Interesting perspective.", "Can you elaborate?", "Underrated tweet.", "First!", "Wait, really?", "Facts."];
         const COLLAB_BOOSTS = { 'viral': 1.5, 'trend': 3.0, 'hype': 5.0, 'none': 1.0 };
         const COLLAB_NAMES = { 'viral': 'ViralGPT', 'trend': 'TrendSetter', 'hype': 'HypeBeast' };
+        // Limit
+        const MAX_POSTS = 5; 
 
-        let appData = { user: { name: "", handle: "", followers: 0, following: 0, avatar: "", banner: "", bio: "" }, posts: [], bots: [], lastActive: Date.now(), currentTab: 'foryou' };
-        let tempProfileMedia = { avatar: null, banner: null };
+        let appData = { user: { name: "", handle: "", followers: 0, following: 0, avatar: "", bio: "" }, posts: [], bots: [], lastActive: Date.now(), currentTab: 'foryou' };
         const els = {};
 
         function init() {
-            // Populate DOM references
             els.feed = document.getElementById('feed-list');
             els.profile = document.getElementById('profile-list');
             els.trendingWall = document.getElementById('trending-wall');
@@ -413,6 +386,14 @@
             els.replyList = document.getElementById('post-replies-list');
 
             try {
+                // DATA WIPE CHECK FOR FIRST RUN OF NEW VERSION
+                // Check if user has "v3" data but it's huge (previous versions)
+                const raw = localStorage.getItem('x_sim_v3');
+                if(raw && raw.length > 500000) { // If > 500KB, it's likely bloated
+                    console.log("Detected bloated data, wiping for safety.");
+                    localStorage.removeItem('x_sim_v3');
+                }
+
                 const saved = localStorage.getItem('x_sim_v3');
                 if (saved) {
                     const parsed = JSON.parse(saved);
@@ -421,16 +402,20 @@
                     if (!Array.isArray(appData.bots)) appData.bots = [];
                     if (!appData.currentTab) appData.currentTab = 'foryou';
                     
+                    // Enforce limit on load
+                    if(appData.posts.length > MAX_POSTS) {
+                        appData.posts = appData.posts.slice(0, MAX_POSTS);
+                    }
+                    
                     simulateTimeAway();
                     renderAll();
                     updateTabUI();
-                    
                     sessionStorage.removeItem('recovered');
                 } else {
                     if(els.onboarding) els.onboarding.classList.remove('hidden');
                 }
             } catch (e) {
-                console.error("Save file corrupted, attempting safe recovery", e);
+                console.error("Save file corrupted, resetting", e);
                 localStorage.removeItem('x_sim_v3'); 
                 if(els.onboarding) els.onboarding.classList.remove('hidden');
             }
@@ -453,19 +438,21 @@
         function saveState() {
             appData.lastActive = Date.now();
             
-            // STRICT 4-POST LIMIT to save storage
-            if(appData.posts.length > 4) {
-                appData.posts = appData.posts.slice(0, 4);
+            // STRICT LIMIT
+            if(appData.posts.length > MAX_POSTS) {
+                appData.posts = appData.posts.slice(0, MAX_POSTS);
             }
-            // Ensure no media ever saved
-            appData.posts.forEach(p => { if(p.media) delete p.media; });
-
-            try {
+            
+            // SECURITY CHECK: Size
+            const str = JSON.stringify(appData);
+            if(str.length > 1000000) { // 1MB limit check
+                alert("Data too large! Resetting posts to prevent crash.");
+                appData.posts = []; // Nuke posts
                 localStorage.setItem('x_sim_v3', JSON.stringify(appData));
-                localStorage.setItem('x_sim_last_active', appData.lastActive);
-            } catch (e) {
-                console.warn("Storage error");
+            } else {
+                localStorage.setItem('x_sim_v3', str);
             }
+            localStorage.setItem('x_sim_last_active', appData.lastActive);
         }
 
         function completeSetup() {
@@ -779,11 +766,6 @@
             document.getElementById('profile-handle').innerText = '@' + appData.user.handle;
             document.getElementById('profile-bio').innerText = appData.user.bio || "";
             
-            if(appData.user.banner) {
-                const b = document.getElementById('profile-banner');
-                b.src = appData.user.banner;
-                b.classList.remove('hidden');
-            }
             updateProfileHeader();
         }
         
@@ -999,27 +981,16 @@
             }
         }
 
-        // --- PROFILE EDITING ---
         function openEditProfileModal() {
             document.getElementById('edit-name').value = appData.user.name;
             document.getElementById('edit-bio').value = appData.user.bio || "";
             document.getElementById('edit-profile-modal').classList.remove('hidden');
         }
-        function handleProfileMedia(type) {
-            const file = event.target.files[0];
-            if(!file) return;
-            const reader = new FileReader();
-            reader.onload = (e) => { tempProfileMedia[type] = e.target.result; };
-            reader.readAsDataURL(file);
-        }
         function saveEditProfile() {
             appData.user.name = document.getElementById('edit-name').value;
             appData.user.bio = document.getElementById('edit-bio').value;
-            if(tempProfileMedia.avatar) appData.user.avatar = tempProfileMedia.avatar;
-            if(tempProfileMedia.banner) appData.user.banner = tempProfileMedia.banner;
             saveState(); renderAll();
             document.getElementById('edit-profile-modal').classList.add('hidden');
-            tempProfileMedia = { avatar: null, banner: null };
         }
 
         function navTo(page) {
@@ -1056,7 +1027,7 @@
         function openCompose() { document.getElementById('compose-modal').classList.remove('hidden'); updateCollabSelects(); }
         function closeCompose() { document.getElementById('compose-modal').classList.add('hidden'); }
         function resetData() { if(confirm("Reset?")) { localStorage.removeItem('x_sim_v3'); location.reload(); } }
-        function editProfile() { openEditProfileModal(); } // Redirect to new modal
+        function editProfile() { openEditProfileModal(); } 
         function editFollowers() { const f = prompt("Followers", appData.user.followers); if(f) { appData.user.followers = parseInt(f); saveState(); renderAll(); } }
         function timeAgo(ts) {
             const s = Math.floor((Date.now()-ts)/1000);
