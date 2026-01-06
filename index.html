@@ -17,6 +17,7 @@
             --x-black: #0f1419;
             --x-gray: #536471;
             --x-light-gray: #eff3f4;
+            --x-border: #eff3f4;
             --anim-duration: 300ms;
             --anim-curve: cubic-bezier(0.2, 0.8, 0.2, 1);
         }
@@ -102,6 +103,39 @@
             100% { transform: scale(1); }
         }
 
+        /* --- POLLS --- */
+        .poll-option {
+            position: relative;
+            height: 32px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+            cursor: pointer;
+            overflow: hidden;
+            transition: background 0.2s;
+        }
+        .poll-option.voted { cursor: default; }
+        .poll-bg {
+            position: absolute; top: 0; left: 0; bottom: 0;
+            background-color: rgba(29, 155, 240, 0.12);
+            width: 0%;
+            transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 0;
+        }
+        .poll-bg.winner { background-color: rgba(29, 155, 240, 0.25); }
+        .poll-label {
+            position: relative; z-index: 1; padding: 0 12px;
+            width: 100%; display: flex; justify-content: space-between;
+            font-weight: 500; font-size: 15px;
+        }
+        .poll-btn-style {
+            border: 1px solid #1d9bf0; color: #1d9bf0; font-weight: 700;
+            border-radius: 9999px; height: 32px; display: flex; align-items: center; justify-content: center;
+            width: 100%; transition: background 0.2s;
+        }
+        .poll-btn-style:hover { background-color: rgba(29, 155, 240, 0.1); }
+
         /* --- UTILS --- */
         .tab-active { font-weight: 700; color: var(--x-black); border-bottom: 4px solid #1d9bf0; }
         .trending-badge { font-size: 11px; font-weight: 700; margin-bottom: 4px; display: flex; align-items: center; gap: 4px; }
@@ -184,11 +218,20 @@
                 <img id="desktop-compose-avatar" class="w-10 h-10 rounded-full bg-gray-200">
                 <div class="flex-1">
                     <textarea id="desktop-input" placeholder="What is happening?!" class="w-full text-xl outline-none resize-none h-12 focus:h-24 transition-all placeholder-gray-500"></textarea>
+                    
+                    <!-- Media/Poll Previews -->
                     <div id="desktop-media-preview" class="hidden mt-2 rounded-xl overflow-hidden relative"></div>
+                    <div id="desktop-poll-creator" class="hidden mt-2 border border-gray-200 rounded-xl p-3">
+                        <input type="text" class="w-full border-b border-gray-100 p-2 outline-none mb-2" placeholder="Choice 1" id="desktop-poll-1">
+                        <input type="text" class="w-full border-b border-gray-100 p-2 outline-none" placeholder="Choice 2" id="desktop-poll-2">
+                        <button onclick="clearPoll('desktop')" class="text-red-500 text-sm mt-2 font-bold">Remove Poll</button>
+                    </div>
+
                     <div class="flex justify-between items-center mt-2 pt-2 border-t border-gray-100">
                         <div class="flex gap-2 text-[#1d9bf0] items-center">
                             <label class="p-2 hover:bg-blue-50 rounded-full cursor-pointer"><input type="file" accept="image/*" hidden onchange="handleMedia('desktop', 'image')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg></label>
                             <label class="p-2 hover:bg-blue-50 rounded-full cursor-pointer"><input type="file" accept="video/*" hidden onchange="handleMedia('desktop', 'video')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 7l-7 5 7 5V7z"></path><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg></label>
+                            <button class="p-2 hover:bg-blue-50 rounded-full cursor-pointer" onclick="togglePollCreator('desktop')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg></button>
                             
                             <!-- Desktop AI Collab Select -->
                             <select id="desktop-collab-select" class="ml-2 bg-transparent text-sm font-bold text-[#1d9bf0] outline-none cursor-pointer hover:bg-blue-50 p-1 rounded max-w-[150px]">
@@ -287,9 +330,17 @@
             </div>
             <textarea id="mobile-input" placeholder="What is happening?!" class="w-full text-xl outline-none resize-none h-32"></textarea>
             <div id="mobile-media-preview" class="hidden mt-2 rounded-xl overflow-hidden relative max-h-60"></div>
+            
+            <div id="mobile-poll-creator" class="hidden mt-2 border border-gray-200 rounded-xl p-3">
+                <input type="text" class="w-full border-b border-gray-100 p-2 outline-none mb-2" placeholder="Choice 1" id="mobile-poll-1">
+                <input type="text" class="w-full border-b border-gray-100 p-2 outline-none" placeholder="Choice 2" id="mobile-poll-2">
+                <button onclick="clearPoll('mobile')" class="text-red-500 text-sm mt-2 font-bold">Remove Poll</button>
+            </div>
+
             <div class="mt-4 pt-3 border-t border-gray-100 flex gap-4 text-[#1d9bf0] items-center">
                 <label><input type="file" accept="image/*" hidden onchange="handleMedia('mobile', 'image')">📷</label>
                 <label><input type="file" accept="video/*" hidden onchange="handleMedia('mobile', 'video')">🎥</label>
+                <button onclick="togglePollCreator('mobile')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg></button>
                 <select id="mobile-collab-select" class="ml-auto bg-transparent text-sm font-bold text-[#1d9bf0] outline-none cursor-pointer hover:bg-blue-50 p-1 rounded max-w-[150px]">
                     <option value="none">✨ Collab</option>
                     <!-- JS populated -->
@@ -317,6 +368,9 @@
         const AI_NAMES = ["TechGuru", "CryptoWhale", "MemeLord", "Artist_X", "NewsBot", "Traveler"];
         const AI_REPLIES = ["Big if true.", "🚀 to the moon!", "This is the content I signed up for.", "Following.", "Interesting perspective.", "Can you elaborate?", "Underrated tweet.", "First!", "Wait, really?", "Facts."];
         
+        const COLLAB_BOOSTS = { 'viral': 1.5, 'trend': 3.0, 'hype': 5.0, 'none': 1.0 };
+        const COLLAB_NAMES = { 'viral': 'ViralGPT', 'trend': 'TrendSetter', 'hype': 'HypeBeast' };
+
         let appData = { user: { name: "", handle: "", followers: 0, following: 0, avatar: "" }, posts: [], bots: [], lastActive: Date.now() };
         let currentMedia = { desktop: null, mobile: null };
         const els = {};
@@ -378,7 +432,7 @@
             appData.posts.push({
                 id: Date.now().toString(), content: "Just joined! #NewHere", timestamp: Date.now(),
                 stats: { views: 0, likes: 0, reposts: 0, replies: 0 }, interacted: { like: false, repost: false },
-                collab: 'none', comments: [], pinned: false
+                collab: 'none', comments: [], pinned: false, poll: null
             });
             els.onboarding.classList.add('hidden');
             saveState(); renderAll();
@@ -440,11 +494,34 @@
             }).join('');
         }
 
-        // --- COLLAB LOGIC ---
+        // --- POLLS ---
+        function togglePollCreator(mode) {
+            const el = document.getElementById(`${mode}-poll-creator`);
+            el.classList.toggle('hidden');
+        }
+        function clearPoll(mode) {
+            document.getElementById(`${mode}-poll-creator`).classList.add('hidden');
+            document.getElementById(`${mode}-poll-1`).value = '';
+            document.getElementById(`${mode}-poll-2`).value = '';
+        }
+        function vote(postId, optionIdx) {
+            const post = appData.posts.find(p => p.id === postId);
+            if(post && post.poll && post.poll.voted === null) {
+                post.poll.voted = optionIdx;
+                post.poll.options[optionIdx].votes++;
+                post.poll.total++;
+                updatePostDOM(post);
+                saveState();
+            }
+        }
+
+        // --- COLLAB ---
         function updateCollabSelects() {
             const options = `<option value="none">✨ Collab</option>` + appData.bots.map(b => `<option value="${b.id}">${b.name} (${formatNumber(b.followers)})</option>`).join('');
-            document.getElementById('desktop-collab-select').innerHTML = options;
-            document.getElementById('mobile-collab-select').innerHTML = options;
+            const d = document.getElementById('desktop-collab-select');
+            const m = document.getElementById('mobile-collab-select');
+            if(d) d.innerHTML = options;
+            if(m) m.innerHTML = options;
         }
 
         // --- SIMULATION ---
@@ -454,30 +531,25 @@
             if (elapsed < 1) return;
             appData.posts.forEach(post => {
                 const age = (now - post.timestamp) / 1000;
-                // Decay logic: Posts die after ~24 hours (86400s). 
-                // Hard fall off at 48 hours.
-                if (age > 172800) return;
+                if (age > 172800) return; // 48h hard limit
 
                 const decay = Math.exp(-age / DECAY_CONSTANT); 
                 
                 let baseRate = (appData.user.followers / 100) + (Math.log10(Math.max(10, appData.user.followers)) * 5);
+                let botPower = appData.bots.reduce((a,b) => a + b.followers, 0);
+                baseRate += (botPower / 500);
                 
-                // Bot logic
-                let botBoost = 0;
-                if (post.collab && post.collab !== 'none') {
-                    const bot = appData.bots.find(b => b.id == post.collab);
-                    if (bot) botBoost = bot.followers / 500;
-                }
-                
-                const speed = (baseRate + botBoost) * decay;
+                const boost = COLLAB_BOOSTS[post.collab || 'none'];
+                const speed = baseRate * boost * decay;
                 const added = Math.floor(speed * elapsed);
                 
                 if (added > 0) {
                     post.stats.views += added;
                     post.stats.likes += Math.floor(added * 0.08); 
                     post.stats.reposts += Math.floor(added * 0.03);
+                    generateAIReplies(post, Math.floor(added * 0.01));
+                    simulatePollVotes(post, added);
                     
-                    // Bulk follower gain
                     const newFollowers = Math.floor(added * 0.0005);
                     if(newFollowers > 0) appData.user.followers += newFollowers;
                 }
@@ -488,7 +560,6 @@
         function simulateLive() {
             appData.posts.forEach(post => {
                 const age = (Date.now() - post.timestamp) / 1000;
-                // Hard stop after 48h
                 if (age > 172800) return;
 
                 const decay = Math.exp(-age / DECAY_CONSTANT);
@@ -496,7 +567,6 @@
                 
                 let baseViews = (appData.user.followers * 0.001) + (Math.log10(appData.user.followers) * 0.1);
                 
-                // Bot boost
                 let botBoost = 0;
                 if (post.collab && post.collab !== 'none') {
                     const bot = appData.bots.find(b => b.id == post.collab);
@@ -517,16 +587,28 @@
                     if(Math.random() < 0.2) post.stats.likes += Math.ceil(viewsToAdd * 0.1);
                     if(Math.random() < 0.05) post.stats.reposts += Math.ceil(viewsToAdd * 0.02);
                     if(Math.random() < 0.02) generateAIReplies(post, 1);
+                    simulatePollVotes(post, viewsToAdd);
                     
-                    // Follower Conversion
-                    if(Math.random() < 0.05) { // 5% chance per tick on active posts
-                        appData.user.followers += Math.ceil(viewsToAdd * 0.002); // Small conversion rate
-                        updateProfileHeader(); // Refresh follower count
+                    if(Math.random() < 0.05) { 
+                        appData.user.followers += Math.ceil(viewsToAdd * 0.002);
+                        updateProfileHeader();
                     }
 
                     updatePostDOM(post);
                 }
             });
+        }
+
+        function simulatePollVotes(post, newViews) {
+            if(post.poll) {
+                // Not every view votes. Say 5% vote.
+                const newVotes = Math.ceil(newViews * 0.05 * Math.random());
+                for(let i=0; i<newVotes; i++) {
+                    const opt = Math.floor(Math.random() * post.poll.options.length);
+                    post.poll.options[opt].votes++;
+                    post.poll.total++;
+                }
+            }
         }
 
         function generateAIReplies(post, count) {
@@ -548,9 +630,29 @@
                 renderOdometer(el.querySelector('.odometer[data-type="reposts"]'), post.stats.reposts);
                 renderOdometer(el.querySelector('.odometer[data-type="replies"]'), post.stats.replies);
                 
+                // Poll Update
+                if(post.poll && post.poll.voted !== null) {
+                    const pollContainer = el.querySelector('.poll-container');
+                    if(pollContainer && !pollContainer.classList.contains('results-shown')) {
+                        // Switch from buttons to results
+                        pollContainer.classList.add('results-shown');
+                        pollContainer.innerHTML = renderPollResults(post);
+                    } else if (pollContainer) {
+                        // Just update numbers
+                        post.poll.options.forEach((opt, idx) => {
+                            const pct = post.poll.total > 0 ? Math.round((opt.votes/post.poll.total)*100) : 0;
+                            const bar = pollContainer.querySelector(`[data-opt-idx="${idx}"] .poll-bg`);
+                            if(bar) bar.style.width = pct + '%';
+                            const odo = pollContainer.querySelector(`[data-opt-idx="${idx}"] .odometer`);
+                            if(odo) renderOdometer(odo, pct);
+                        });
+                        const totalOdo = pollContainer.querySelector('.total-votes-odo');
+                        if(totalOdo) renderOdometer(totalOdo, post.poll.total);
+                    }
+                }
+
                 const likeBtn = el.querySelector('.action-group:nth-child(3)');
                 const repostBtn = el.querySelector('.action-group:nth-child(2)');
-                
                 if(post.interacted.like) likeBtn.classList.add('liked-blue'); else likeBtn.classList.remove('liked-blue');
                 if(post.interacted.repost) repostBtn.classList.add('reposted'); else repostBtn.classList.remove('reposted');
 
@@ -580,8 +682,6 @@
             ['sidebar-verified', 'profile-verify'].forEach(id => { document.getElementById(id).innerHTML = verify; });
             document.getElementById('sidebar-handle').innerText = '@' + appData.user.handle;
             document.getElementById('profile-handle').innerText = '@' + appData.user.handle;
-            
-            // Apply Odometer to followers
             updateProfileHeader();
         }
         
@@ -592,13 +692,29 @@
 
         function renderFeeds() {
             els.feed.innerHTML = ''; els.profile.innerHTML = '';
-            // Sorting: Pinned first, then date
             const sorted = [...appData.posts].sort((a,b) => {
                 if(a.pinned && !b.pinned) return -1;
                 if(!a.pinned && b.pinned) return 1;
                 return b.timestamp - a.timestamp;
             });
             sorted.forEach(post => { els.feed.appendChild(createPostHTML(post)); els.profile.appendChild(createPostHTML(post)); });
+        }
+
+        function renderPollResults(post) {
+            const max = Math.max(...post.poll.options.map(o => o.votes));
+            return post.poll.options.map((opt, idx) => {
+                const pct = post.poll.total > 0 ? Math.round((opt.votes / post.poll.total) * 100) : 0;
+                const isWin = opt.votes === max && max > 0;
+                return `
+                    <div class="poll-option voted" data-opt-idx="${idx}">
+                        <div class="poll-bg ${isWin ? 'winner' : ''}" style="width: ${pct}%"></div>
+                        <div class="poll-label">
+                            <span>${opt.text} ${isWin ? '✔' : ''}</span>
+                            <span><span class="odometer" data-value="${pct}">${generateOdometerHTML(pct.toString())}</span>%</span>
+                        </div>
+                    </div>
+                `;
+            }).join('') + `<div class="text-xs text-gray-500 mt-2"><span class="odometer total-votes-odo" data-value="${post.poll.total}">${generateOdometerHTML(post.poll.total.toString())}</span> votes</div>`;
         }
 
         function createPostHTML(post) {
@@ -624,6 +740,19 @@
                 else mediaHtml = `<div class="mt-3 rounded-xl overflow-hidden border border-gray-200 aspect-video custom-player paused" onclick="event.stopPropagation(); toggleVideo(this)"><video src="${post.media.data}" loop playsinline></video><div class="play-overlay"><div class="play-icon">▶</div></div></div>`;
             }
 
+            let pollHtml = '';
+            if(post.poll) {
+                if(post.poll.voted !== null) {
+                    pollHtml = `<div class="mt-3 poll-container results-shown">${renderPollResults(post)}</div>`;
+                } else {
+                    pollHtml = `<div class="mt-3 poll-container">` + post.poll.options.map((opt, i) => `
+                        <div class="poll-option" onclick="event.stopPropagation(); vote('${post.id}', ${i})">
+                            <div class="poll-btn-style">${opt.text}</div>
+                        </div>
+                    `).join('') + `</div>`;
+                }
+            }
+
             div.innerHTML = `
                 ${pinnedHtml}
                 <div class="flex gap-3">
@@ -640,6 +769,7 @@
                         ${trendHtml}
                         <div class="text-[15px] whitespace-pre-wrap leading-6">${post.content}</div>
                         ${mediaHtml}
+                        ${pollHtml}
                         <div class="flex justify-between mt-3 max-w-md text-gray-500 text-xs">
                             <div class="action-group flex items-center gap-1 group">
                                 <div class="action-icon-wrapper"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg></div>
@@ -680,12 +810,11 @@
         window.onclick = function(e) { if (!e.target.matches('.post-menu button') && !e.target.innerText === '•••') { document.querySelectorAll('.post-menu').forEach(m => m.classList.remove('show')); } }
 
         function getTrendingRank(id) {
-            // Trending score heavily penalizes age. 
-            // Score = Views / (AgeHours ^ 2)
-            // This ensures new viral posts pop up, old viral posts fall off.
+            // Decay formula: Score = Views / (AgeHours ^ 2.5)
+            // Posts fall off chart after ~24h
             const scores = appData.posts.map(p => {
                 const ageHours = (Date.now() - p.timestamp) / 3600000;
-                const score = p.stats.views / Math.pow(ageHours + 1, 2.5); // Steep falloff
+                const score = p.stats.views / Math.pow(ageHours + 1, 2.5); 
                 return { id: p.id, score };
             }).sort((a,b) => b.score - a.score);
             
@@ -718,14 +847,28 @@
 
         function submitPost(mode) {
             const txt = document.getElementById(`${mode}-input`).value;
-            if(!txt) return;
             const collab = document.getElementById(`${mode}-collab-select`)?.value || 'none';
+            
+            let poll = null;
+            if(!document.getElementById(`${mode}-poll-creator`).classList.contains('hidden')) {
+                const o1 = document.getElementById(`${mode}-poll-1`).value;
+                const o2 = document.getElementById(`${mode}-poll-2`).value;
+                if(o1 && o2) {
+                    poll = { options: [{text:o1, votes:0}, {text:o2, votes:0}], total:0, voted: null };
+                }
+            }
+
+            if(!txt && !currentMedia[mode] && !poll) return;
+
             appData.posts.unshift({
                 id: Date.now().toString(), content: txt, media: currentMedia[mode], timestamp: Date.now(),
                 stats: { views: 0, likes: 0, reposts: 0, replies: 0 }, interacted: { like: false, repost: false },
-                collab: collab, comments: [], pinned: false
+                collab: collab, comments: [], pinned: false, poll: poll
             });
-            document.getElementById(`${mode}-input`).value = ''; clearMedia(mode); if(mode === 'mobile') closeCompose();
+            
+            document.getElementById(`${mode}-input`).value = ''; 
+            clearMedia(mode); clearPoll(mode);
+            if(mode === 'mobile') closeCompose();
             saveState(); renderAll();
         }
 
