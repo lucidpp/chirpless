@@ -3,27 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    
-    <!-- BRANDING & METADATA -->
-    <title>Chirpless.com</title>
-    <meta name="description" content="Chirpless - The lightweight, offline social media simulator. Create posts, gain followers, and trend without the noise.">
-    <meta property="og:title" content="Chirpless.com">
-    <meta property="og:description" content="The lightweight, offline social media simulator.">
-    <meta property="og:image" content="site.png">
-    <link rel="icon" href="site.png" type="image/png">
-
-    <!-- PWA Settings -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <meta name="apple-mobile-web-app-title" content="Chirpless">
+    <meta name="apple-mobile-web-app-title" content="X Sim">
     <meta name="theme-color" content="#ffffff">
-    
+    <title>Chirpless</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
         :root {
-            --x-blue: #1d9bf0;
+            --x-main: #f91880;
             --x-black: #0f1419;
             --x-gray: #536471;
             --x-light-gray: #eff3f4;
@@ -96,13 +86,13 @@
             padding: 8px; border-radius: 9999px; transition: background 0.2s; margin: -8px; 
             display: flex; align-items: center; justify-content: center;
         }
-        .action-group:hover .action-icon-wrapper.like { background-color: rgba(29, 155, 240, 0.1); }
+        .action-group:hover .action-icon-wrapper.like { background-color: rgba(249, 24, 128, 0.1); }
         
         .liked-blue .icon-like {
-            fill: var(--x-blue); stroke: var(--x-blue);
+            fill: var(--x-main); stroke: var(--x-main);
             animation: heart-pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
-        .liked-blue .action-count { color: var(--x-blue); }
+        .liked-blue .action-count { color: var(--x-main); }
 
         .reposted .icon-repost { stroke: #00ba7c; fill: rgba(0, 186, 124, 0.1); }
         .reposted .action-count { color: #00ba7c; }
@@ -193,7 +183,7 @@
                 </a>
             </nav>
 
-            <button onclick="openCompose()" class="mt-4 bg-[#1d9bf0] text-white font-bold py-3.5 rounded-full w-[90%] shadow-md hover:bg-[#1a8cd8] transition-colors">Post</button>
+            <button onclick="openCompose()" class="mt-4 bg-[#f91880] text-white font-bold py-3.5 rounded-full w-[90%] shadow-md hover:bg-[#e0245e] transition-colors">Post</button>
 
             <div class="mt-auto flex items-center gap-3 p-3 hover:bg-gray-100 rounded-full cursor-pointer" onclick="navTo('profile')">
                 <img id="sidebar-avatar" class="w-10 h-10 rounded-full bg-gray-200 object-cover">
@@ -234,22 +224,22 @@
                             <input type="text" class="w-full border-b border-gray-100 p-2 outline-none mb-2 poll-option-input" placeholder="Choice 2">
                         </div>
                         <div class="flex justify-between items-center mt-2">
-                            <button onclick="addPollOption('desktop')" class="text-[#1d9bf0] text-sm font-bold">+ Add option</button>
+                            <button onclick="addPollOption('desktop')" class="text-[#f91880] text-sm font-bold">+ Add option</button>
                             <button onclick="clearPoll('desktop')" class="text-red-500 text-sm font-bold">Remove</button>
                         </div>
                     </div>
 
                     <div class="flex justify-between items-center mt-2 pt-2 border-t border-gray-100">
-                        <div class="flex gap-2 text-[#1d9bf0] items-center">
+                        <div class="flex gap-2 text-[#f91880] items-center">
                             <button class="p-2 hover:bg-blue-50 rounded-full cursor-pointer" onclick="togglePollCreator('desktop')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg></button>
                             
                             <!-- Desktop AI Collab Select -->
-                            <select id="desktop-collab-select" class="ml-2 bg-transparent text-sm font-bold text-[#1d9bf0] outline-none cursor-pointer hover:bg-blue-50 p-1 rounded max-w-[150px]">
+                            <select id="desktop-collab-select" class="ml-2 bg-transparent text-sm font-bold text-[#f91880] outline-none cursor-pointer hover:bg-blue-50 p-1 rounded max-w-[150px]">
                                 <option value="none">✨ Collab</option>
                                 <!-- JS Populated -->
                             </select>
                         </div>
-                        <button id="desktop-post-btn" onclick="submitPost('desktop')" class="bg-[#1d9bf0] text-white font-bold px-4 py-1.5 rounded-full disabled:opacity-50" disabled>Post</button>
+                        <button id="desktop-post-btn" onclick="submitPost('desktop')" class="bg-[#f91880] text-white font-bold px-4 py-1.5 rounded-full disabled:opacity-50" disabled>Post</button>
                     </div>
                 </div>
             </div>
@@ -266,7 +256,6 @@
                     <img id="profile-lg-avatar" class="w-full h-full object-cover">
                 </div>
                 <div class="flex justify-end gap-2 py-3">
-                    <!-- Reset button removed -->
                     <button onclick="editProfile()" class="px-4 py-1.5 border border-gray-300 rounded-full font-bold text-sm hover:bg-gray-100">Edit profile</button>
                 </div>
                 <div class="mt-2">
@@ -330,7 +319,7 @@
     </nav>
 
     <!-- FAB -->
-    <button onclick="openCompose()" class="fixed bottom-20 right-4 w-14 h-14 bg-[#1d9bf0] rounded-full text-white shadow-lg flex items-center justify-center md:hidden z-50">
+    <button onclick="openCompose()" class="fixed bottom-20 right-4 w-14 h-14 bg-[#f91880] rounded-full text-white shadow-lg flex items-center justify-center md:hidden z-50">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"></path></svg>
     </button>
 
@@ -339,7 +328,7 @@
         <div class="bg-white w-full h-full md:h-auto md:w-[600px] md:rounded-2xl p-4 flex flex-col">
             <div class="flex justify-between mb-4">
                 <button onclick="closeCompose()">Cancel</button>
-                <button id="mobile-post-btn" onclick="submitPost('mobile')" class="bg-[#1d9bf0] text-white font-bold px-4 py-1.5 rounded-full disabled:opacity-50" disabled>Post</button>
+                <button id="mobile-post-btn" onclick="submitPost('mobile')" class="bg-[#f91880] text-white font-bold px-4 py-1.5 rounded-full disabled:opacity-50" disabled>Post</button>
             </div>
             <textarea id="mobile-input" maxlength="400" placeholder="What is happening?!" class="w-full text-xl outline-none resize-none h-32"></textarea>
             
@@ -349,14 +338,14 @@
                     <input type="text" class="w-full border-b border-gray-100 p-2 outline-none mb-2 poll-option-input" placeholder="Choice 2">
                 </div>
                 <div class="flex justify-between items-center mt-2">
-                    <button onclick="addPollOption('mobile')" class="text-[#1d9bf0] text-sm font-bold">+ Add option</button>
+                    <button onclick="addPollOption('mobile')" class="text-[#f91880] text-sm font-bold">+ Add option</button>
                     <button onclick="clearPoll('mobile')" class="text-red-500 text-sm font-bold">Remove</button>
                 </div>
             </div>
 
-            <div class="mt-4 pt-3 border-t border-gray-100 flex gap-4 text-[#1d9bf0] items-center">
+            <div class="mt-4 pt-3 border-t border-gray-100 flex gap-4 text-[#f91880] items-center">
                 <button onclick="togglePollCreator('mobile')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg></button>
-                <select id="mobile-collab-select" class="ml-auto bg-transparent text-sm font-bold text-[#1d9bf0] outline-none cursor-pointer hover:bg-blue-50 p-1 rounded max-w-[150px]">
+                <select id="mobile-collab-select" class="ml-auto bg-transparent text-sm font-bold text-[#f91880] outline-none cursor-pointer hover:bg-blue-50 p-1 rounded max-w-[150px]">
                     <option value="none">✨ Collab</option>
                     <!-- JS populated -->
                 </select>
@@ -366,7 +355,7 @@
 
     <!-- ONBOARDING -->
     <div id="onboarding-modal" class="fixed inset-0 bg-white z-[100] flex flex-col items-center justify-center p-6 hidden">
-        <img src="site.png" class="w-12 h-12 mb-8 object-contain" onerror="this.style.display='none'; this.parentElement.innerHTML='<div class=\'w-12 h-12 mb-8 bg-black rounded-full\'></div>'">
+        <div class="w-10 h-10 mb-8 bg-black rounded-full"></div>
         <h1 class="text-3xl font-black mb-8 text-left w-full max-w-sm">Create your account</h1>
         <div class="w-full max-w-sm space-y-6">
             <div class="relative"><input type="text" id="setup-name" class="w-full border p-4 rounded outline-none" placeholder="Name"></div>
@@ -400,15 +389,14 @@
     </div>
 
     <script>
-        const VERIFIED = `<svg class="verified-badge w-5 h-5 text-[#1d9bf0] inline-block ml-1 align-text-bottom" viewBox="0 0 24 24" fill="currentColor"><path d="M22.5 12.5c0-1.58-.875-2.95-2.148-3.6.154-.435.238-.905.238-1.4 0-2.21-1.71-3.998-3.818-3.998-.47 0-.92.175-1.297.503C14.78 2.67 13.438 2 12 2s-2.78.67-3.475 2.005c-.377-.328-.827-.503-1.297-.503-2.108 0-3.818 1.788-3.818 3.998 0 .495.084.965.238 1.4-1.273.65-2.148 2.02-2.148 3.6 0 1.58.875 2.95 2.148 3.6-.154.435-.238.905-.238 1.4 0 2.21 1.71 3.998 3.818 3.998.47 0 .92.175 1.297-.503.695 1.335 2.037 2.005 3.475 2.005s2.78-.67 3.475-2.005c.377.328.827.503 1.297.503 2.108 0 3.818-1.788 3.818-3.998 0-.495-.084-.965-.238-1.4 1.273-.65 2.148-2.02 2.148-3.6zM9.763 16.296l-4.24-4.24 1.414-1.414 2.826 2.826 6.364-6.364 1.414 1.414-7.778 7.778z"></path></svg>`;
+        const VERIFIED = `<svg class="verified-badge w-5 h-5 text-[#f91880] inline-block ml-1 align-text-bottom" viewBox="0 0 24 24" fill="currentColor"><path d="M22.5 12.5c0-1.58-.875-2.95-2.148-3.6.154-.435.238-.905.238-1.4 0-2.21-1.71-3.998-3.818-3.998-.47 0-.92.175-1.297.503C14.78 2.67 13.438 2 12 2s-2.78.67-3.475 2.005c-.377-.328-.827-.503-1.297-.503-2.108 0-3.818 1.788-3.818 3.998 0 .495.084.965.238 1.4 1.273-.65 2.148-2.02 2.148-3.6zM9.763 16.296l-4.24-4.24 1.414-1.414 2.826 2.826 6.364-6.364 1.414 1.414-7.778 7.778z"></path></svg>`;
         const DECAY_CONSTANT = 21600; 
         const AI_NAMES = ["TechGuru", "CryptoWhale", "MemeLord", "Artist_X", "NewsBot", "Traveler"];
         const AI_REPLIES = ["Big if true.", "🚀", "Interesting.", "Following.", "Perspective.", "Elaborate?", "Underrated.", "First!", "Really?", "Facts."];
         const COLLAB_BOOSTS = { 'viral': 1.5, 'trend': 3.0, 'hype': 5.0, 'none': 1.0 };
-        const COLLAB_NAMES = { 'viral': 'ViralGPT', 'trend': 'TrendSetter', 'hype': 'HypeBeast' };
         
         // STRICT LIMITS
-        const MAX_POSTS = 5; 
+        const MAX_POSTS = 1; 
 
         let appData = { user: { name: "", handle: "", followers: 0, following: 0, avatar: "", bio: "" }, posts: [], bots: [], lastActive: Date.now(), currentTab: 'foryou' };
         let tempProfileMedia = { avatar: null, banner: null };
@@ -426,14 +414,6 @@
             els.replyList = document.getElementById('post-replies-list');
 
             try {
-                // DATA WIPE CHECK FOR FIRST RUN OF NEW VERSION
-                // Check if user has "v3" data but it's huge (previous versions)
-                const raw = localStorage.getItem('x_sim_v3');
-                if(raw && raw.length > 500000) { // If > 500KB, it's likely bloated
-                    console.log("Detected bloated data, wiping for safety.");
-                    localStorage.removeItem('x_sim_v3');
-                }
-
                 const saved = localStorage.getItem('x_sim_v3');
                 if (saved) {
                     const parsed = JSON.parse(saved);
@@ -450,7 +430,6 @@
                     simulateTimeAway();
                     renderAll();
                     updateTabUI();
-                    sessionStorage.removeItem('recovered');
                 } else {
                     if(els.onboarding) els.onboarding.classList.remove('hidden');
                 }
@@ -478,18 +457,16 @@
         function saveState() {
             appData.lastActive = Date.now();
             
-            // STRICT 5-POST LIMIT
+            // STRICT 1-POST LIMIT
             if(appData.posts.length > MAX_POSTS) {
                 appData.posts = appData.posts.slice(0, MAX_POSTS);
             }
-            // Ensure no media ever saved
-            appData.posts.forEach(p => { if(p.media) delete p.media; });
 
             try {
                 // Check string size
                 const str = JSON.stringify(appData);
                 if(str.length > 1000000) { // 1MB limit check
-                    appData.posts = [];
+                    appData.posts = []; // Nuke to survive
                     localStorage.setItem('x_sim_v3', JSON.stringify(appData));
                 } else {
                     localStorage.setItem('x_sim_v3', str);
@@ -725,7 +702,7 @@
                     const rand = Math.random();
                     let cumulative = 0;
                     for(let j=0; j<post.poll.options.length; j++) {
-                        cumulative += post.poll.options[j].weight;
+                        cumulative += post.poll.options[j].weight || 0.25;
                         if(rand < cumulative) {
                             post.poll.options[j].votes++;
                             post.poll.total++;
@@ -757,6 +734,7 @@
                 if(post.poll) {
                     const pollContainer = el.querySelector('.poll-container');
                     if(pollContainer) {
+                        // Always render/update bars if user voted or poll ended
                         if (post.poll.voted !== null || post.poll.ended) {
                            if(!pollContainer.classList.contains('results-shown')) {
                                pollContainer.classList.add('results-shown');
@@ -843,6 +821,30 @@
             
             const userPosts = appData.posts.filter(p => !p.isBot).sort((a,b) => b.timestamp - a.timestamp);
             userPosts.forEach(p => els.profile.appendChild(createPostHTML(p)));
+        }
+
+        function renderPollResults(post) {
+            const max = Math.max(...post.poll.options.map(o => o.votes));
+            const endButton = !post.poll.ended 
+                ? `<button onclick="event.stopPropagation(); endPoll('${post.id}')" class="end-poll-btn text-red-500 font-bold hover:underline">End Poll</button>` 
+                : `<span class="text-gray-500 font-bold">Final Results</span>`;
+
+            return post.poll.options.map((opt, idx) => {
+                const pct = post.poll.total > 0 ? Math.round((opt.votes / post.poll.total) * 100) : 0;
+                const isWin = opt.votes === max && max > 0;
+                return `
+                    <div class="poll-option voted" data-opt-idx="${idx}">
+                        <div class="poll-bg ${isWin ? 'winner' : ''}" style="width: ${pct}%"></div>
+                        <div class="poll-label">
+                            <span>${opt.text} ${isWin ? '✔' : ''}</span>
+                            <span><span class="odometer" data-value="${pct}">${generateOdometerHTML(pct.toString())}</span>%</span>
+                        </div>
+                    </div>
+                `;
+            }).join('') + `<div class="text-xs text-gray-500 mt-2 flex justify-between">
+                <span><span class="odometer total-votes-odo" data-value="${post.poll.total}">${generateOdometerHTML(post.poll.total.toString())}</span> votes</span>
+                ${endButton}
+            </div>`;
         }
 
         function createPostHTML(post) {
@@ -1008,6 +1010,7 @@
 
             if(!txt && !poll) return;
 
+            // PREPEND new post
             appData.posts.unshift({
                 id: Date.now().toString(), content: txt, timestamp: Date.now(),
                 stats: { views: 0, likes: 0, reposts: 0, replies: 0 }, interacted: { like: false, repost: false },
