@@ -423,7 +423,8 @@
 
     <script>
         // --- Configuration ---
-        const API_KEY = "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";
+        // Updated to the RouteWay API Key you provided
+        const API_KEY = "sk-N5zwHQYVUHO-bLsSzRQX19zfk_FAnHzX5h71aKogH3hIrd19X4oUOBNsl3h9aEwz65LHb4LhzHNc";
         
         // --- Setup Markdown ---
         const renderer = new marked.Renderer();
@@ -468,7 +469,8 @@
             'chirpless-x7': {
                 id: 'chirpless-x7',
                 name: 'Chirpless X7',
-                apiModel: 'meta-llama/llama-3.3-70b-instruct:free',
+                // Updated to Llama 3.3 70B Instruct Free as requested
+                apiModel: 'llama-3.3-70b-instruct:free',
                 systemPrompt: "You are Chirpless X7. You are a helpful, smart, standard AI assistant.",
                 icon: 'ph-cpu',
                 color: 'text-purple-600'
@@ -710,13 +712,12 @@
             try {
                 const currentModelConfig = MODELS[state.currentModel];
                 
-                const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+                // Updated endpoint to RouteWay API
+                const response = await fetch("https://api.routeway.ai/v1/chat/completions", {
                     method: "POST",
                     headers: {
                         "Authorization": `Bearer ${API_KEY}`,
-                        "Content-Type": "application/json",
-                        "HTTP-Referer": window.location.origin,
-                        "X-Title": "Chirpless AI"
+                        "Content-Type": "application/json"
                     },
                     body: JSON.stringify({
                         "model": currentModelConfig.apiModel,
@@ -724,14 +725,17 @@
                             { "role": "system", "content": currentModelConfig.systemPrompt },
                             ...state.messages
                         ],
-                        "top_p": 1,
-                        "temperature": 0.7
+                        // removed OpenRouter specific params just in case RouteWay doesn't support them, 
+                        // keeping it standard to the curl example
+                        // "top_p": 1, 
+                        // "temperature": 0.7 
                     })
                 });
 
                 if (!response.ok) {
                     const err = await response.json().catch(()=>({}));
-                    throw new Error(err.error?.message || "Connection failed");
+                    const errorMessage = err.error?.message || `Connection failed (${response.status})`;
+                    throw new Error(errorMessage);
                 }
 
                 const data = await response.json();
