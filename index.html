@@ -419,13 +419,22 @@
         // --- Enhanced Markdown Renderer ---
         const renderer = new marked.Renderer();
         renderer.code = function(code, language) {
-            // Fix: Ensure code is a string to prevent "e.replace is not a function" error
-            const validCode = code ? String(code) : '';
+            // Fix for Marked.js v5+: 'code' might be an object (token) containing text and lang
+            let codeContent = code;
+            let codeLang = language;
+
+            if (typeof code === 'object' && code !== null) {
+                codeContent = code.text || '';
+                codeLang = code.lang || language;
+            }
+
+            // Fix: Ensure code is a string
+            const validCode = codeContent ? String(codeContent) : '';
             
-            const validLang = !!(language && hljs.getLanguage(language));
+            const validLang = !!(codeLang && hljs.getLanguage(codeLang));
             let highlighted;
             try {
-               highlighted = validLang ? hljs.highlight(validCode, { language }).value : hljs.highlightAuto(validCode).value;
+               highlighted = validLang ? hljs.highlight(validCode, { language: codeLang }).value : hljs.highlightAuto(validCode).value;
             } catch (err) {
                // Fallback simple escaping
                highlighted = validCode.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -437,7 +446,7 @@
             return `
                 <div class="my-6 rounded-xl overflow-hidden border border-gray-200 shadow-sm group bg-white">
                     <div class="code-header flex justify-between items-center px-4 py-2 bg-gray-50 border-b border-gray-100">
-                        <span class="font-mono text-xs lowercase bg-gray-200 px-2 py-0.5 rounded text-gray-600 font-bold">${language || 'code'}</span>
+                        <span class="font-mono text-xs lowercase bg-gray-200 px-2 py-0.5 rounded text-gray-600 font-bold">${codeLang || 'code'}</span>
                         <div class="code-actions flex gap-3">
                             <button onclick="refineCode(this)" data-code="${escapedCode}" class="code-action-btn text-xs font-medium flex items-center gap-1 text-gray-500 hover:text-black transition-colors">
                                 <i class="ph-bold ph-magic-wand"></i> Refine
@@ -448,7 +457,7 @@
                         </div>
                     </div>
                     <div class="bg-[#f9f9f9] p-4 overflow-x-auto">
-                        <pre><code class="hljs ${language || ''} bg-transparent p-0 text-sm leading-relaxed font-mono">${highlighted}</code></pre>
+                        <pre><code class="hljs ${codeLang || ''} bg-transparent p-0 text-sm leading-relaxed font-mono">${highlighted}</code></pre>
                     </div>
                 </div>
             `;
