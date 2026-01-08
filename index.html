@@ -32,7 +32,7 @@
             background-color: #ffffff;
             color: #0d0d0d;
             -webkit-font-smoothing: antialiased;
-            overscroll-behavior-y: none; /* Prevent pull-to-refresh on mobile */
+            overscroll-behavior-y: none;
         }
 
         /* Custom Scrollbar */
@@ -51,7 +51,7 @@
             background: #9ca3af;
         }
 
-        /* Typewriter Cursor Effect */
+        /* Typewriter Cursor */
         .typing-cursor::after {
             content: '●';
             animation: blink 1s step-start infinite;
@@ -59,12 +59,9 @@
             margin-left: 4px;
             font-size: 0.8em;
         }
+        @keyframes blink { 50% { opacity: 0; } }
 
-        @keyframes blink {
-            50% { opacity: 0; }
-        }
-
-        /* Single Bouncing Ball Animation */
+        /* Bouncing Ball Animation */
         .bouncing-ball-container {
             display: flex;
             align-items: center;
@@ -72,7 +69,6 @@
             width: 24px;
             height: 24px;
         }
-        
         .bouncing-ball {
             width: 10px;
             height: 10px;
@@ -80,7 +76,6 @@
             border-radius: 50%;
             animation: singleBounce 0.6s infinite alternate cubic-bezier(0.5, 0.05, 1, 0.5);
         }
-
         @keyframes singleBounce {
             from { transform: translateY(0); }
             to { transform: translateY(-10px); }
@@ -95,7 +90,6 @@
             border-radius: 50%;
             animation: pulse-ring 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
         }
-        
         @keyframes pulse-ring {
             0% { transform: scale(0.5); opacity: 0; }
             50% { opacity: 1; }
@@ -114,7 +108,7 @@
             transform: scale(0.95);
         }
 
-        /* Markdown Styles */
+        /* Markdown & Code Styles */
         .prose pre {
             background-color: #f9f9f9 !important;
             border: 1px solid #e5e7eb;
@@ -122,6 +116,7 @@
             margin: 16px 0;
             padding: 0 !important;
             overflow: hidden;
+            position: relative;
         }
         .prose code {
             font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
@@ -138,6 +133,34 @@
             color: #333;
         }
         
+        /* Code Header UI */
+        .code-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 16px;
+            background-color: #f1f3f5;
+            border-bottom: 1px solid #e5e7eb;
+            font-size: 0.75rem;
+            color: #4b5563;
+            font-weight: 600;
+        }
+        .code-actions {
+            display: flex;
+            gap: 12px;
+        }
+        .code-action-btn {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            color: #6b7280;
+            transition: color 0.2s;
+            cursor: pointer;
+        }
+        .code-action-btn:hover {
+            color: #111827;
+        }
+
         /* Fade In Animation */
         @keyframes fade-in-up {
             from { opacity: 0; transform: translateY(10px); }
@@ -173,27 +196,9 @@
             transform: translateY(0);
         }
 
-        .code-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 8px 16px;
-            background-color: #f8fafc;
-            border-bottom: 1px solid #e5e7eb;
-            font-size: 0.75rem;
-            color: #64748b;
-            font-weight: 500;
-        }
-
-        /* Mobile Bottom Nav Active State */
-        .nav-item.active i {
-            color: #000;
-            font-weight: bold;
-        }
-        .nav-item.active span {
-            color: #000;
-            font-weight: 600;
-        }
+        /* Active Mobile Nav */
+        .nav-item.active i { color: #000; font-weight: bold; }
+        .nav-item.active span { color: #000; font-weight: 600; }
         
         /* Heart Animation */
         .heart-liked {
@@ -205,34 +210,43 @@
             50% { transform: scale(1.3); }
             100% { transform: scale(1); }
         }
+
+        /* Particle Explosion */
+        .particle {
+            position: absolute;
+            width: 6px;
+            height: 6px;
+            background-color: #ef4444;
+            border-radius: 50%;
+            pointer-events: none;
+            opacity: 0;
+        }
+        @keyframes particle-explode {
+            0% { transform: translate(0, 0) scale(1); opacity: 1; }
+            100% { transform: translate(var(--tx), var(--ty)) scale(0); opacity: 0; }
+        }
     </style>
 </head>
 <body class="h-screen flex overflow-hidden bg-white">
 
-    <!-- Skinny White Sidebar (Desktop) -->
+    <!-- Skinny White Sidebar -->
     <aside class="w-[80px] bg-white border-r border-gray-100 flex-col hidden md:flex z-20 flex-shrink-0 items-center py-6 gap-4">
-        
-        <!-- New Chat -->
         <button onclick="startNewChat()" class="sidebar-btn w-12 h-12 rounded-full border border-gray-200 flex items-center justify-center text-gray-600 hover:text-black hover:border-black transition-colors shadow-sm" title="New Chat">
             <i class="ph ph-plus text-xl"></i>
         </button>
-
-        <!-- Navigation -->
         <div class="flex-1 flex flex-col gap-4 mt-4 w-full items-center">
-            <button onclick="switchView('chat')" id="nav-chat" class="sidebar-btn w-10 h-10 rounded-2xl flex items-center justify-center text-gray-500 hover:text-black transition-colors bg-black text-white shadow-md" title="Chirpless Chat">
+            <button onclick="switchView('chat')" id="nav-chat" class="sidebar-btn w-10 h-10 rounded-2xl flex items-center justify-center text-gray-500 hover:text-black transition-colors bg-black text-white shadow-md" title="Chat">
                 <i class="ph-fill ph-chat-circle-text text-xl"></i>
             </button>
-            <button onclick="switchView('explore')" id="nav-explore" class="sidebar-btn w-10 h-10 rounded-2xl flex items-center justify-center text-gray-400 hover:text-black transition-colors hover:bg-gray-100" title="Explore Models">
+            <button onclick="switchView('explore')" id="nav-explore" class="sidebar-btn w-10 h-10 rounded-2xl flex items-center justify-center text-gray-400 hover:text-black transition-colors hover:bg-gray-100" title="Explore">
                 <i class="ph ph-squares-four text-xl"></i>
             </button>
-            <button onclick="openHistoryDrawer()" id="nav-history" class="sidebar-btn w-10 h-10 rounded-2xl flex items-center justify-center text-gray-400 hover:text-black transition-colors hover:bg-gray-100" title="Chat History">
+            <button onclick="openHistoryDrawer()" id="nav-history" class="sidebar-btn w-10 h-10 rounded-2xl flex items-center justify-center text-gray-400 hover:text-black transition-colors hover:bg-gray-100" title="History">
                 <i class="ph ph-clock-counter-clockwise text-xl"></i>
             </button>
         </div>
-
-        <!-- Profile (Click to Edit) -->
         <div class="mt-auto">
-            <button onclick="openProfileModal()" class="sidebar-btn w-10 h-10 rounded-full bg-gray-100 overflow-hidden border-2 border-transparent hover:border-gray-300 transition-all relative group" title="Customize Profile">
+            <button onclick="openProfileModal()" class="sidebar-btn w-10 h-10 rounded-full bg-gray-100 overflow-hidden border-2 border-transparent hover:border-gray-300 transition-all relative group" title="Profile">
                 <img id="sidebar-pfp" src="https://api.dicebear.com/7.x/avataaars/svg?seed=User" class="w-full h-full object-cover">
                 <div class="absolute inset-0 bg-black/10 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                     <i class="ph-fill ph-gear text-white text-xs"></i>
@@ -243,41 +257,27 @@
 
     <!-- Main Content -->
     <main class="flex-1 flex flex-col relative h-full bg-white w-full">
-        
-        <!-- Banner (Only shows if set) -->
         <div id="user-banner" class="hidden h-32 w-full bg-cover bg-center shrink-0"></div>
 
         <!-- Top Bar -->
         <header class="h-14 flex items-center justify-between px-4 sticky top-0 bg-white/95 backdrop-blur-sm z-10 w-full border-b border-transparent transition-all" id="main-header">
-            <!-- Mobile Menu Toggle Spacer -->
             <div class="w-8 md:hidden"></div>
-            
-            <!-- Model Selector -->
             <div class="flex-1 flex justify-center">
                 <div class="relative group cursor-pointer" onclick="toggleModelDropdown()">
                     <div class="flex items-center gap-2 text-sm font-semibold text-gray-700 hover:bg-gray-100 px-4 py-2 rounded-full transition-colors border border-transparent hover:border-gray-200">
                         <span id="current-model-name">Chirpless X7</span>
                         <i class="ph-fill ph-caret-down text-gray-400 text-xs"></i>
                     </div>
-
-                    <!-- Dropdown -->
                     <div id="model-dropdown" class="hidden absolute top-full left-1/2 transform -translate-x-1/2 mt-2 w-72 bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden p-2 z-50">
                         <div class="px-3 py-2 text-xs font-bold text-gray-400 uppercase tracking-wider">Select Model</div>
-                        <div id="model-list" class="flex flex-col gap-1">
-                            <!-- Populated by JS -->
-                        </div>
+                        <div id="model-list" class="flex flex-col gap-1"></div>
                     </div>
                 </div>
             </div>
-
-            <!-- Header Actions -->
             <div class="flex items-center gap-2">
-                <!-- BETA Call Button -->
-                <button onclick="openCallMode()" class="w-8 h-8 flex items-center justify-center text-gray-500 hover:text-green-500 hover:bg-green-50 rounded-full transition-colors" title="Start Call (BETA)">
+                <button onclick="openCallMode()" class="w-8 h-8 flex items-center justify-center text-gray-500 hover:text-green-500 hover:bg-green-50 rounded-full transition-colors" title="Start Call">
                     <i class="ph-fill ph-phone-call text-xl"></i>
                 </button>
-                
-                <!-- Mobile History Toggle -->
                 <button class="md:hidden w-8 h-8 flex items-center justify-center text-gray-500" onclick="openHistoryDrawer()">
                      <i class="ph ph-clock-counter-clockwise text-xl"></i>
                 </button>
@@ -286,34 +286,21 @@
         </header>
 
         <!-- VIEWS -->
-        
-        <!-- Chat View -->
         <div id="view-chat" class="flex-1 flex flex-col h-full overflow-hidden relative w-full max-w-full">
-            
-            <!-- Messages Area (Flex-1 ensures it takes available space above input) -->
             <div id="chat-container" class="flex-1 overflow-y-auto p-4 md:p-0 w-full scroll-smooth">
                 <div class="max-w-3xl mx-auto w-full min-h-full flex flex-col justify-end">
-                    
-                    <!-- Welcome Message -->
                     <div class="flex flex-col items-center justify-center flex-1 text-center space-y-6 mt-10 md:mt-0 mb-10" id="empty-state">
                         <div class="w-20 h-20 bg-gradient-to-br from-gray-50 to-gray-100 border border-gray-200 rounded-[2rem] flex items-center justify-center shadow-sm mb-2 transform hover:scale-105 transition-transform duration-500">
                             <i class="ph-fill ph-feather text-4xl text-black"></i>
                         </div>
                         <h2 class="text-3xl font-bold text-gray-900 tracking-tight">How can I help you?</h2>
                     </div>
-                    
-                    <!-- Messages List -->
-                    <div id="messages-list" class="flex flex-col gap-6 py-6 px-4 md:px-0 w-full">
-                        <!-- Dynamic Messages -->
-                    </div>
-
-                    <!-- Bouncing Ball Indicator (Moves with chat) -->
+                    <div id="messages-list" class="flex flex-col gap-6 py-6 px-4 md:px-0 w-full"></div>
                     <div id="loading-indicator" class="hidden px-4 md:px-0 py-2">
                         <div class="flex gap-4">
                             <div class="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center flex-shrink-0 bg-white">
                                 <i class="ph-fill ph-feather text-black text-sm"></i>
                             </div>
-                            <!-- New Bouncing Ball -->
                             <div class="flex items-center h-8">
                                 <div class="bouncing-ball-container">
                                     <div class="bouncing-ball"></div>
@@ -324,41 +311,22 @@
                     </div>
                 </div>
             </div>
-
-            <!-- Input Area (Flex-0 ensures it stays at bottom and pushes chat up) -->
             <div class="flex-shrink-0 bg-white pt-2 pb-24 md:pb-6 px-4 border-t border-transparent z-20">
                 <div class="max-w-3xl mx-auto">
                     <form onsubmit="sendMessage(event)" class="relative flex items-end gap-2 bg-[#f4f4f4] rounded-[32px] border border-transparent focus-within:border-gray-300 focus-within:bg-white focus-within:ring-2 focus-within:ring-black/5 transition-all p-2 shadow-sm">
-                        
-                        <!-- Hidden File Input -->
                         <input type="file" id="file-upload" class="hidden" />
-                        
-                        <!-- Attachment Button -->
                         <button type="button" onclick="document.getElementById('file-upload').click()" class="p-3 text-gray-400 hover:text-gray-900 rounded-full hover:bg-gray-200 transition-colors ml-1 mb-0.5">
                             <i class="ph ph-plus text-lg"></i>
                         </button>
-                        
-                        <textarea 
-                            id="user-input" 
-                            rows="1" 
-                            placeholder="Message Chirpless..." 
-                            class="w-full bg-transparent border-none focus:ring-0 py-3.5 px-2 max-h-52 resize-none text-gray-800 placeholder-gray-500 font-normal leading-relaxed text-base"
-                            oninput="this.style.height = ''; this.style.height = this.scrollHeight + 'px'"
-                            onkeydown="if(event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); sendMessage(event); }"
-                        ></textarea>
-
-                        <!-- Mic Button -->
+                        <textarea id="user-input" rows="1" placeholder="Message Chirpless..." class="w-full bg-transparent border-none focus:ring-0 py-3.5 px-2 max-h-52 resize-none text-gray-800 placeholder-gray-500 font-normal leading-relaxed text-base" oninput="this.style.height = ''; this.style.height = this.scrollHeight + 'px'" onkeydown="if(event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); sendMessage(event); }"></textarea>
                         <button type="button" id="mic-btn" onclick="toggleSpeechRecognition()" class="p-3 text-gray-400 hover:text-black rounded-full hover:bg-gray-200 transition-colors mb-0.5">
                             <i class="ph-fill ph-microphone text-xl" id="mic-icon"></i>
                         </button>
-                        
                         <button type="submit" class="p-3 bg-black text-white rounded-full hover:bg-gray-800 disabled:opacity-30 disabled:cursor-not-allowed transition-all mb-0.5 mr-0.5 shadow-md hover:scale-105 active:scale-95 flex-shrink-0" id="send-btn" disabled>
                             <i class="ph-fill ph-arrow-up text-xl"></i>
                         </button>
                     </form>
-                    <div class="text-center mt-3 text-xs text-gray-400 font-medium hidden md:block">
-                        Chirpless can make mistakes. Check important info.
-                    </div>
+                    <div class="text-center mt-3 text-xs text-gray-400 font-medium hidden md:block">Chirpless can make mistakes. Check important info.</div>
                 </div>
             </div>
         </div>
@@ -367,56 +335,33 @@
         <div id="view-explore" class="hidden flex-1 overflow-y-auto p-6 md:p-10 bg-gray-50 w-full mb-[60px] md:mb-0">
             <div class="max-w-4xl mx-auto">
                 <div class="flex items-center gap-4 mb-8">
-                    <div class="w-12 h-12 bg-black rounded-2xl flex items-center justify-center shadow-lg transform -rotate-3">
-                        <i class="ph-fill ph-compass text-white text-2xl"></i>
-                    </div>
-                    <div>
-                        <h1 class="text-3xl font-bold text-gray-900">Explore Models</h1>
-                        <p class="text-gray-500">Select the intelligence level that fits your workflow.</p>
-                    </div>
+                    <div class="w-12 h-12 bg-black rounded-2xl flex items-center justify-center shadow-lg transform -rotate-3"><i class="ph-fill ph-compass text-white text-2xl"></i></div>
+                    <div><h1 class="text-3xl font-bold text-gray-900">Explore Models</h1><p class="text-gray-500">Select the intelligence level that fits your workflow.</p></div>
                 </div>
-                
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
                     <!-- X1 -->
                     <div onclick="selectModel('chirpless-x1')" class="bg-white p-6 rounded-3xl border border-gray-100 hover:border-blue-200 hover:shadow-xl hover:shadow-blue-100/50 transition-all cursor-pointer group h-full flex flex-col">
-                        <div class="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                            <i class="ph-fill ph-lightning text-2xl"></i>
-                        </div>
+                        <div class="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"><i class="ph-fill ph-lightning text-2xl"></i></div>
                         <h3 class="text-lg font-bold text-gray-900">Chirpless X1</h3>
                         <p class="text-sm text-gray-500 mt-2 mb-6 leading-relaxed flex-1">A fast, lightweight model for simple queries and casual chat. Friendly and approachable.</p>
-                        <div class="flex items-center justify-between mt-auto pt-4 border-t border-gray-50">
-                            <span class="text-xs font-bold text-blue-600 bg-blue-50 px-3 py-1 rounded-full">BASIC</span>
-                            <i class="ph-bold ph-arrow-right text-gray-300 group-hover:text-blue-500 transition-colors"></i>
-                        </div>
+                        <div class="flex items-center justify-between mt-auto pt-4 border-t border-gray-50"><span class="text-xs font-bold text-blue-600 bg-blue-50 px-3 py-1 rounded-full">BASIC</span><i class="ph-bold ph-arrow-right text-gray-300 group-hover:text-blue-500 transition-colors"></i></div>
                     </div>
-
                     <!-- X7 -->
                     <div onclick="selectModel('chirpless-x7')" class="bg-white p-6 rounded-3xl border-2 border-purple-50 hover:border-purple-200 hover:shadow-xl hover:shadow-purple-100/50 transition-all cursor-pointer group relative overflow-hidden h-full flex flex-col">
                         <div class="absolute top-0 right-0 bg-purple-100 text-purple-700 text-[10px] font-bold px-3 py-1.5 rounded-bl-2xl">POPULAR</div>
-                        <div class="w-12 h-12 bg-purple-50 text-purple-600 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                            <i class="ph-fill ph-cpu text-2xl"></i>
-                        </div>
+                        <div class="w-12 h-12 bg-purple-50 text-purple-600 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"><i class="ph-fill ph-cpu text-2xl"></i></div>
                         <h3 class="text-lg font-bold text-gray-900">Chirpless X7</h3>
                         <p class="text-sm text-gray-500 mt-2 mb-6 leading-relaxed flex-1">The standard for reasoning and creativity. Balanced performance for complex tasks.</p>
-                        <div class="flex items-center justify-between mt-auto pt-4 border-t border-gray-50">
-                            <span class="text-xs font-bold text-purple-600 bg-purple-50 px-3 py-1 rounded-full">STANDARD</span>
-                            <i class="ph-bold ph-arrow-right text-gray-300 group-hover:text-purple-500 transition-colors"></i>
-                        </div>
+                        <div class="flex items-center justify-between mt-auto pt-4 border-t border-gray-50"><span class="text-xs font-bold text-purple-600 bg-purple-50 px-3 py-1 rounded-full">STANDARD</span><i class="ph-bold ph-arrow-right text-gray-300 group-hover:text-purple-500 transition-colors"></i></div>
                     </div>
-
                     <!-- XLz1 -->
                     <div onclick="selectModel('chirpless-xlz1')" class="bg-gray-900 p-6 rounded-3xl border border-gray-800 hover:shadow-2xl hover:shadow-amber-500/20 transition-all cursor-pointer group relative overflow-hidden h-full flex flex-col">
                         <div class="absolute inset-0 bg-gradient-to-br from-gray-800 to-black opacity-50"></div>
                         <div class="relative z-10 flex flex-col h-full">
-                            <div class="w-12 h-12 bg-gray-800 text-amber-400 rounded-2xl flex items-center justify-center mb-4 border border-gray-700 group-hover:scale-110 transition-transform">
-                                <i class="ph-fill ph-sparkle text-2xl"></i>
-                            </div>
+                            <div class="w-12 h-12 bg-gray-800 text-amber-400 rounded-2xl flex items-center justify-center mb-4 border border-gray-700 group-hover:scale-110 transition-transform"><i class="ph-fill ph-sparkle text-2xl"></i></div>
                             <h3 class="text-lg font-bold text-white">Chirpless XLz1</h3>
                             <p class="text-sm text-gray-400 mt-2 mb-6 leading-relaxed flex-1">Advanced reasoning engine. Capable of deep analysis, coding, and creative problem solving.</p>
-                            <div class="flex items-center justify-between mt-auto pt-4 border-t border-gray-800">
-                                <span class="text-xs font-bold text-amber-400 bg-amber-950/50 border border-amber-900/50 px-3 py-1 rounded-full">PRO</span>
-                                <i class="ph-bold ph-arrow-right text-gray-600 group-hover:text-amber-400 transition-colors"></i>
-                            </div>
+                            <div class="flex items-center justify-between mt-auto pt-4 border-t border-gray-800"><span class="text-xs font-bold text-amber-400 bg-amber-950/50 border border-amber-900/50 px-3 py-1 rounded-full">PRO</span><i class="ph-bold ph-arrow-right text-gray-600 group-hover:text-amber-400 transition-colors"></i></div>
                         </div>
                     </div>
                 </div>
@@ -425,155 +370,71 @@
 
     </main>
 
-    <!-- Mobile Bottom Navigation Bar -->
+    <!-- Mobile Bottom Navigation -->
     <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 h-[60px] md:hidden z-30 flex items-center justify-around px-2 pb-safe">
-        <button onclick="switchView('chat')" id="mobile-nav-chat" class="nav-item flex flex-col items-center justify-center p-2 text-gray-500 w-full active">
-            <i class="ph-fill ph-chat-circle-text text-2xl mb-1"></i>
-            <span class="text-[10px] font-medium">Chat</span>
-        </button>
-        <button onclick="startNewChat()" class="nav-item flex flex-col items-center justify-center p-2 text-black w-full">
-            <div class="w-10 h-10 bg-black rounded-full flex items-center justify-center text-white shadow-lg -mt-6">
-                <i class="ph-bold ph-plus text-xl"></i>
-            </div>
-            <span class="text-[10px] font-medium mt-1">New</span>
-        </button>
-        <button onclick="switchView('explore')" id="mobile-nav-explore" class="nav-item flex flex-col items-center justify-center p-2 text-gray-500 w-full">
-            <i class="ph ph-squares-four text-2xl mb-1"></i>
-            <span class="text-[10px] font-medium">Explore</span>
-        </button>
-        <button onclick="openProfileModal()" class="nav-item flex flex-col items-center justify-center p-2 text-gray-500 w-full">
-            <div class="w-6 h-6 rounded-full overflow-hidden border border-gray-300">
-                 <img id="mobile-nav-pfp" src="https://api.dicebear.com/7.x/avataaars/svg?seed=User" class="w-full h-full object-cover">
-            </div>
-            <span class="text-[10px] font-medium mt-1">Profile</span>
-        </button>
+        <button onclick="switchView('chat')" id="mobile-nav-chat" class="nav-item flex flex-col items-center justify-center p-2 text-gray-500 w-full active"><i class="ph-fill ph-chat-circle-text text-2xl mb-1"></i><span class="text-[10px] font-medium">Chat</span></button>
+        <button onclick="startNewChat()" class="nav-item flex flex-col items-center justify-center p-2 text-black w-full"><div class="w-10 h-10 bg-black rounded-full flex items-center justify-center text-white shadow-lg -mt-6"><i class="ph-bold ph-plus text-xl"></i></div><span class="text-[10px] font-medium mt-1">New</span></button>
+        <button onclick="switchView('explore')" id="mobile-nav-explore" class="nav-item flex flex-col items-center justify-center p-2 text-gray-500 w-full"><i class="ph ph-squares-four text-2xl mb-1"></i><span class="text-[10px] font-medium">Explore</span></button>
+        <button onclick="openProfileModal()" class="nav-item flex flex-col items-center justify-center p-2 text-gray-500 w-full"><div class="w-6 h-6 rounded-full overflow-hidden border border-gray-300"><img id="mobile-nav-pfp" src="https://api.dicebear.com/7.x/avataaars/svg?seed=User" class="w-full h-full object-cover"></div><span class="text-[10px] font-medium mt-1">Profile</span></button>
     </nav>
 
     <!-- Chat History Drawer -->
     <div id="history-drawer" class="fixed inset-y-0 right-0 w-80 bg-white shadow-2xl transform translate-x-full transition-transform duration-300 z-50 flex flex-col border-l border-gray-100">
-        <div class="p-5 border-b border-gray-100 flex items-center justify-between">
-            <h2 class="text-lg font-bold text-gray-900">History</h2>
-            <button onclick="closeHistoryDrawer()" class="p-2 hover:bg-gray-100 rounded-full transition-colors">
-                <i class="ph-bold ph-x text-lg"></i>
-            </button>
-        </div>
-        <div class="flex-1 overflow-y-auto p-2" id="history-list">
-            <!-- Dynamic History Items -->
-        </div>
-        <div class="p-4 border-t border-gray-100">
-            <button onclick="clearAllHistory()" class="w-full py-3 text-red-500 font-medium text-sm hover:bg-red-50 rounded-xl transition-colors">
-                Clear All History
-            </button>
-        </div>
+        <div class="p-5 border-b border-gray-100 flex items-center justify-between"><h2 class="text-lg font-bold text-gray-900">History</h2><button onclick="closeHistoryDrawer()" class="p-2 hover:bg-gray-100 rounded-full transition-colors"><i class="ph-bold ph-x text-lg"></i></button></div>
+        <div class="flex-1 overflow-y-auto p-2" id="history-list"></div>
+        <div class="p-4 border-t border-gray-100"><button onclick="clearAllHistory()" class="w-full py-3 text-red-500 font-medium text-sm hover:bg-red-50 rounded-xl transition-colors">Clear All History</button></div>
     </div>
     <div id="history-overlay" class="fixed inset-0 bg-black/20 backdrop-blur-sm z-40 hidden" onclick="closeHistoryDrawer()"></div>
 
-    <!-- Call Mode Overlay -->
+    <!-- Call Overlay -->
     <div id="call-overlay" class="fixed inset-0 bg-white z-[60] hidden flex flex-col items-center justify-center transition-opacity duration-500 opacity-0">
-        <div class="absolute top-6 right-6">
-            <button onclick="closeCallMode()" class="p-3 bg-gray-100 rounded-full hover:bg-gray-200">
-                <i class="ph-bold ph-x text-xl"></i>
-            </button>
-        </div>
-        
-        <div class="relative w-40 h-40 flex items-center justify-center mb-8">
-            <div class="call-pulse"></div>
-            <div class="w-32 h-32 bg-black rounded-full flex items-center justify-center z-10 shadow-2xl">
-                <i class="ph-fill ph-microphone text-5xl text-white"></i>
-            </div>
-        </div>
-        
-        <h2 class="text-2xl font-bold mb-2">Chirpless Live</h2>
-        <p class="text-gray-500 mb-8" id="call-status">Listening...</p>
-        
-        <div class="flex gap-6">
-             <button onclick="toggleCallMute()" class="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors" id="call-mute-btn">
-                <i class="ph-fill ph-microphone text-2xl"></i>
-            </button>
-            <button onclick="closeCallMode()" class="w-16 h-16 rounded-full bg-red-500 flex items-center justify-center hover:bg-red-600 transition-colors shadow-lg shadow-red-500/30">
-                <i class="ph-fill ph-phone-disconnect text-2xl text-white"></i>
-            </button>
-        </div>
+        <div class="absolute top-6 right-6"><button onclick="closeCallMode()" class="p-3 bg-gray-100 rounded-full hover:bg-gray-200"><i class="ph-bold ph-x text-xl"></i></button></div>
+        <div class="relative w-40 h-40 flex items-center justify-center mb-8"><div class="call-pulse"></div><div class="w-32 h-32 bg-black rounded-full flex items-center justify-center z-10 shadow-2xl"><i class="ph-fill ph-microphone text-5xl text-white"></i></div></div>
+        <h2 class="text-2xl font-bold mb-2">Chirpless Live</h2><p class="text-gray-500 mb-8" id="call-status">Listening...</p>
+        <div class="flex gap-6"><button onclick="toggleCallMute()" class="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors" id="call-mute-btn"><i class="ph-fill ph-microphone text-2xl"></i></button><button onclick="closeCallMode()" class="w-16 h-16 rounded-full bg-red-500 flex items-center justify-center hover:bg-red-600 transition-colors shadow-lg shadow-red-500/30"><i class="ph-fill ph-phone-disconnect text-2xl text-white"></i></button></div>
     </div>
 
     <!-- Profile Settings Modal -->
     <div id="profile-modal" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 hidden flex items-center justify-center opacity-0 transition-opacity duration-300">
         <div class="bg-white rounded-3xl shadow-2xl w-full max-w-md mx-4 transform scale-95 transition-transform duration-300 overflow-hidden" id="profile-modal-content">
-            <div class="px-6 py-5 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
-                <h3 class="text-lg font-bold text-gray-900">Customize Profile</h3>
-                <button onclick="closeProfileModal()" class="w-8 h-8 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center transition-colors">
-                    <i class="ph-bold ph-x text-gray-600"></i>
-                </button>
-            </div>
-            
+            <div class="px-6 py-5 border-b border-gray-100 flex items-center justify-between bg-gray-50/50"><h3 class="text-lg font-bold text-gray-900">Customize Profile</h3><button onclick="closeProfileModal()" class="w-8 h-8 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center transition-colors"><i class="ph-bold ph-x text-gray-600"></i></button></div>
             <div class="p-6 space-y-5">
-                <!-- Preview -->
-                <div class="flex flex-col items-center mb-4">
-                    <div class="relative w-24 h-24 mb-3">
-                        <img id="preview-pfp" src="" class="w-full h-full rounded-full object-cover border-4 border-white shadow-lg">
-                        <div class="absolute bottom-0 right-0 w-8 h-8 bg-black text-white rounded-full flex items-center justify-center border-2 border-white">
-                            <i class="ph-fill ph-camera text-xs"></i>
-                        </div>
-                    </div>
-                    <span id="preview-name" class="font-bold text-xl text-gray-900">User</span>
-                </div>
-
+                <div class="flex flex-col items-center mb-4"><div class="relative w-24 h-24 mb-3"><img id="preview-pfp" src="" class="w-full h-full rounded-full object-cover border-4 border-white shadow-lg"><div class="absolute bottom-0 right-0 w-8 h-8 bg-black text-white rounded-full flex items-center justify-center border-2 border-white"><i class="ph-fill ph-camera text-xs"></i></div></div><span id="preview-name" class="font-bold text-xl text-gray-900">User</span></div>
                 <div class="space-y-4">
-                    <div>
-                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1 ml-1">Username</label>
-                        <input type="text" id="input-username" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-black/5 focus:border-black outline-none font-medium transition-all" placeholder="Enter username">
-                    </div>
-                    
-                    <div>
-                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1 ml-1">Avatar URL</label>
-                        <input type="text" id="input-pfp" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-black/5 focus:border-black outline-none font-medium transition-all" placeholder="https://...">
-                    </div>
-
-                    <div>
-                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1 ml-1">AI Personality</label>
-                        <select id="input-persona" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-black/5 focus:border-black outline-none font-medium transition-all appearance-none">
-                            <option value="default">Default (Helpful)</option>
-                            <option value="sarcastic">Sarcastic & Witty</option>
-                            <option value="professional">Professional & Formal</option>
-                            <option value="pirate">Pirate</option>
-                            <option value="eli5">Explain Like I'm 5</option>
-                        </select>
-                    </div>
-
-                    <div>
-                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1 ml-1">Banner URL (Optional)</label>
-                        <input type="text" id="input-banner" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-black/5 focus:border-black outline-none font-medium transition-all" placeholder="https://...">
-                    </div>
+                    <div><label class="block text-xs font-bold text-gray-500 uppercase mb-1 ml-1">Username</label><input type="text" id="input-username" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-black/5 focus:border-black outline-none font-medium transition-all" placeholder="Enter username"></div>
+                    <div><label class="block text-xs font-bold text-gray-500 uppercase mb-1 ml-1">Avatar URL</label><input type="text" id="input-pfp" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-black/5 focus:border-black outline-none font-medium transition-all" placeholder="https://..."></div>
+                    <div><label class="block text-xs font-bold text-gray-500 uppercase mb-1 ml-1">AI Personality</label><select id="input-persona" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-black/5 focus:border-black outline-none font-medium transition-all appearance-none"><option value="default">Default (Helpful)</option><option value="sarcastic">Sarcastic & Witty</option><option value="professional">Professional & Formal</option><option value="pirate">Pirate</option><option value="eli5">Explain Like I'm 5</option></select></div>
+                    <div><label class="block text-xs font-bold text-gray-500 uppercase mb-1 ml-1">Banner URL (Optional)</label><input type="text" id="input-banner" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-black/5 focus:border-black outline-none font-medium transition-all" placeholder="https://..."></div>
                 </div>
             </div>
-
-            <div class="p-6 pt-2 pb-6">
-                <button onclick="saveProfile()" class="w-full bg-black text-white font-bold py-3.5 rounded-xl hover:bg-gray-900 transform hover:scale-[1.02] transition-all shadow-lg">
-                    Save Changes
-                </button>
-            </div>
+            <div class="p-6 pt-2 pb-6"><button onclick="saveProfile()" class="w-full bg-black text-white font-bold py-3.5 rounded-xl hover:bg-gray-900 transform hover:scale-[1.02] transition-all shadow-lg">Save Changes</button></div>
         </div>
     </div>
     
-    <!-- Toast Container -->
     <div id="toast-container"></div>
 
     <script>
-        // --- Configuration ---
         const API_KEY = "sk-N5zwHQYVUHO-bLsSzRQX19zfk_FAnHzX5h71aKogH3hIrd19X4oUOBNsl3h9aEwz65LHb4LhzHNc";
         
-        // --- Setup Markdown ---
+        // --- Enhanced Markdown Renderer ---
         const renderer = new marked.Renderer();
         renderer.code = function(code, language) {
             const validLang = !!(language && hljs.getLanguage(language));
             const highlighted = validLang ? hljs.highlight(code, { language }).value : hljs.highlightAuto(code).value;
+            // Escape code for attributes
+            const escapedCode = encodeURIComponent(code);
             return `
-                <div class="my-4 rounded-xl overflow-hidden border border-gray-200 shadow-sm">
+                <div class="my-4 rounded-xl overflow-hidden border border-gray-200 shadow-sm group">
                     <div class="code-header">
                         <span class="font-mono text-xs lowercase bg-gray-200 px-2 py-0.5 rounded text-gray-600 font-bold">${language || 'code'}</span>
-                        <button onclick="copyToClipboard(this)" data-code="${encodeURIComponent(code)}" class="flex items-center gap-1.5 text-xs hover:text-black transition-colors font-medium">
-                            <i class="ph-bold ph-copy"></i> Copy code
-                        </button>
+                        <div class="code-actions">
+                            <button onclick="refineCode('${escapedCode}')" class="code-action-btn text-xs font-medium">
+                                <i class="ph-bold ph-magic-wand"></i> Refine
+                            </button>
+                            <button onclick="copyToClipboard(this)" data-code="${escapedCode}" class="code-action-btn text-xs font-medium">
+                                <i class="ph-bold ph-copy"></i> Copy
+                            </button>
+                        </div>
                     </div>
                     <div class="bg-[#f9f9f9] p-4 overflow-x-auto">
                         <pre><code class="hljs ${language || ''} bg-transparent p-0 text-sm leading-relaxed">${highlighted}</code></pre>
@@ -586,13 +447,37 @@
         function copyToClipboard(btn) {
             const code = decodeURIComponent(btn.getAttribute('data-code'));
             navigator.clipboard.writeText(code).then(() => {
-                const originalHTML = btn.innerHTML;
-                btn.innerHTML = `<i class="ph-bold ph-check text-green-600"></i> <span class="text-green-600">Copied!</span>`;
-                setTimeout(() => { btn.innerHTML = originalHTML; }, 2000);
+                const icon = btn.querySelector('i');
+                const text = btn.lastChild;
+                const originalIcon = icon.className;
+                
+                icon.className = 'ph-bold ph-check text-green-600';
+                btn.classList.add('text-green-600');
+                
+                setTimeout(() => {
+                    icon.className = originalIcon;
+                    btn.classList.remove('text-green-600');
+                }, 2000);
             });
         }
 
-        // --- Personalities ---
+        // --- Refine Code Workflow ---
+        function refineCode(encodedCode) {
+            const code = decodeURIComponent(encodedCode);
+            const userRequest = prompt("How would you like to modify or refine this code?");
+            if (userRequest && userRequest.trim() !== "") {
+                const promptText = `I have the following code:\n\n\`\`\`\n${code}\n\`\`\`\n\n${userRequest}. Please provide the updated code.`;
+                const inputEl = document.getElementById('user-input');
+                // Set input and send automatically
+                inputEl.value = promptText;
+                // Add a small visual delay for UX
+                setTimeout(() => {
+                    sendMessage(null, promptText);
+                }, 100);
+            }
+        }
+
+        // --- Logic ---
         const PERSONAS = {
             'default': "You are helpful, friendly, and concise.",
             'sarcastic': "You are sarcastic, witty, and slightly snarky. You give good answers but with a bit of attitude.",
@@ -601,35 +486,12 @@
             'eli5': "You explain everything as if the user is 5 years old. Use simple words and analogies."
         };
 
-        // --- Models ---
         const MODELS = {
-            'chirpless-x1': {
-                id: 'chirpless-x1',
-                name: 'Chirpless X1',
-                apiModel: 'meta-llama/llama-3.2-11b-vision-instruct:free',
-                basePrompt: "You are Chirpless X1.",
-                icon: 'ph-lightning',
-                color: 'text-blue-600'
-            },
-            'chirpless-x7': {
-                id: 'chirpless-x7',
-                name: 'Chirpless X7',
-                apiModel: 'llama-3.3-70b-instruct:free',
-                basePrompt: "You are Chirpless X7.",
-                icon: 'ph-cpu',
-                color: 'text-purple-600'
-            },
-            'chirpless-xlz1': {
-                id: 'chirpless-xlz1',
-                name: 'Chirpless XLz1',
-                apiModel: 'google/gemini-2.0-flash-exp:free',
-                basePrompt: "You are Chirpless XLz1.",
-                icon: 'ph-sparkle',
-                color: 'text-amber-500'
-            }
+            'chirpless-x1': { id: 'chirpless-x1', name: 'Chirpless X1', apiModel: 'meta-llama/llama-3.2-11b-vision-instruct:free', basePrompt: "You are Chirpless X1.", icon: 'ph-lightning', color: 'text-blue-600' },
+            'chirpless-x7': { id: 'chirpless-x7', name: 'Chirpless X7', apiModel: 'llama-3.3-70b-instruct:free', basePrompt: "You are Chirpless X7.", icon: 'ph-cpu', color: 'text-purple-600' },
+            'chirpless-xlz1': { id: 'chirpless-xlz1', name: 'Chirpless XLz1', apiModel: 'google/gemini-2.0-flash-exp:free', basePrompt: "You are Chirpless XLz1.", icon: 'ph-sparkle', color: 'text-amber-500' }
         };
 
-        // --- State ---
         let state = {
             currentModel: 'chirpless-x7',
             messages: [],
@@ -640,24 +502,12 @@
             recognition: null,
             isListening: false,
             isCallMode: false,
-            user: {
-                name: 'User',
-                pfp: 'https://api.dicebear.com/7.x/avataaars/svg?seed=User',
-                banner: '',
-                persona: 'default'
-            }
+            user: { name: 'User', pfp: 'https://api.dicebear.com/7.x/avataaars/svg?seed=User', banner: '', persona: 'default' }
         };
 
-        // --- Initialization ---
         function init() {
             renderModelList();
-            
-            // Send Button Logic
-            document.getElementById('user-input').addEventListener('input', function() {
-                document.getElementById('send-btn').disabled = this.value.trim() === '';
-            });
-
-            // File Upload Listener
+            document.getElementById('user-input').addEventListener('input', function() { document.getElementById('send-btn').disabled = this.value.trim() === ''; });
             document.getElementById('file-upload').addEventListener('change', function(e) {
                 const file = e.target.files[0];
                 if (file) {
@@ -666,97 +516,52 @@
                     this.value = '';
                 }
             });
-            
-            // Load User Settings
             const savedUser = localStorage.getItem('chirpless_user');
-            if (savedUser) {
-                state.user = JSON.parse(savedUser);
-                applyUserProfile();
-            }
-
-            // Load Chat History
+            if (savedUser) { state.user = JSON.parse(savedUser); applyUserProfile(); }
             const savedChats = localStorage.getItem('chirpless_chats');
-            if (savedChats) {
-                state.chats = JSON.parse(savedChats);
-            }
-            
-            // Web Speech API Setup
+            if (savedChats) { state.chats = JSON.parse(savedChats); }
             if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
                 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
                 state.recognition = new SpeechRecognition();
                 state.recognition.continuous = false;
                 state.recognition.interimResults = false;
-                
                 state.recognition.onresult = (event) => {
                     const transcript = event.results[0][0].transcript;
                     document.getElementById('user-input').value += transcript;
                     document.getElementById('send-btn').disabled = false;
-                    
-                    if (state.isCallMode) {
-                        // In call mode, auto send
-                        sendMessage(new Event('submit'), transcript);
-                    }
+                    if (state.isCallMode) sendMessage(new Event('submit'), transcript);
                 };
-                
                 state.recognition.onend = () => {
                     state.isListening = false;
                     updateMicIcon();
-                    if (state.isCallMode && !state.isLoading) {
-                        // Restart listening if in call mode and not loading
-                        state.recognition.start();
-                    }
+                    if (state.isCallMode && !state.isLoading) state.recognition.start();
                 };
-            } else {
-                document.getElementById('mic-btn').style.display = 'none';
-            }
-            
+            } else { document.getElementById('mic-btn').style.display = 'none'; }
             startNewChat(false); 
         }
 
-        // --- Voice & Call Logic ---
-        
         function toggleSpeechRecognition() {
             if (!state.recognition) return;
-            
-            if (state.isListening) {
-                state.recognition.stop();
-            } else {
-                state.recognition.start();
-                state.isListening = true;
-                updateMicIcon();
-            }
+            if (state.isListening) { state.recognition.stop(); } else { state.recognition.start(); state.isListening = true; updateMicIcon(); }
         }
-        
         function updateMicIcon() {
             const icon = document.getElementById('mic-icon');
-            if (state.isListening) {
-                icon.classList.remove('ph-microphone');
-                icon.classList.add('ph-stop', 'text-red-500');
-            } else {
-                icon.classList.remove('ph-stop', 'text-red-500');
-                icon.classList.add('ph-microphone');
-            }
+            if (state.isListening) { icon.classList.remove('ph-microphone'); icon.classList.add('ph-stop', 'text-red-500'); } else { icon.classList.remove('ph-stop', 'text-red-500'); icon.classList.add('ph-microphone'); }
         }
 
         function speakText(text) {
             if ('speechSynthesis' in window) {
-                // Cancel current speech
                 window.speechSynthesis.cancel();
-                
                 const utterance = new SpeechSynthesisUtterance(text);
-                // Try to find a good voice
                 const voices = window.speechSynthesis.getVoices();
-                // Prefer a natural English voice if available
-                const preferredVoice = voices.find(v => v.name.includes("Google") || v.name.includes("Natural"));
+                // Improved voice selection logic
+                const preferredVoice = voices.find(v => v.name.includes("Google US English")) || 
+                                       voices.find(v => v.name.includes("Google")) ||
+                                       voices.find(v => v.name.includes("Microsoft Zira")) ||
+                                       voices.find(v => v.name.includes("Natural"));
                 if (preferredVoice) utterance.voice = preferredVoice;
-                
-                utterance.onend = () => {
-                    if (state.isCallMode) {
-                        // After AI speaks, listen again
-                        try { state.recognition.start(); } catch(e){}
-                    }
-                };
-                
+                utterance.rate = 1.0; 
+                utterance.onend = () => { if (state.isCallMode) try { state.recognition.start(); } catch(e){} };
                 window.speechSynthesis.speak(utterance);
             }
         }
@@ -765,528 +570,204 @@
             state.isCallMode = true;
             document.getElementById('call-overlay').classList.remove('hidden');
             setTimeout(() => document.getElementById('call-overlay').classList.remove('opacity-0'), 10);
-            
-            // Start listening
-            if (state.recognition) {
-                state.recognition.continuous = true; 
-                try { state.recognition.start(); } catch(e){}
-                state.isListening = true;
-            } else {
-                document.getElementById('call-status').innerText = "Microphone not supported";
-            }
+            if (state.recognition) { state.recognition.continuous = true; try { state.recognition.start(); } catch(e){} state.isListening = true; } else { document.getElementById('call-status').innerText = "Microphone not supported"; }
         }
-
         function closeCallMode() {
             state.isCallMode = false;
             document.getElementById('call-overlay').classList.add('opacity-0');
             setTimeout(() => document.getElementById('call-overlay').classList.add('hidden'), 500);
-            
             if (state.recognition) state.recognition.stop();
             window.speechSynthesis.cancel();
         }
-
         function toggleCallMute() {
-            // Placeholder logic for muting self
             const btn = document.getElementById('call-mute-btn');
-            if (btn.classList.contains('bg-gray-100')) {
-                btn.classList.remove('bg-gray-100');
-                btn.classList.add('bg-red-100', 'text-red-500');
-                if(state.recognition) state.recognition.stop();
-            } else {
-                btn.classList.add('bg-gray-100');
-                btn.classList.remove('bg-red-100', 'text-red-500');
-                if(state.recognition) state.recognition.start();
-            }
+            if (btn.classList.contains('bg-gray-100')) { btn.classList.remove('bg-gray-100'); btn.classList.add('bg-red-100', 'text-red-500'); if(state.recognition) state.recognition.stop(); } else { btn.classList.add('bg-gray-100'); btn.classList.remove('bg-red-100', 'text-red-500'); if(state.recognition) state.recognition.start(); }
         }
 
-        // --- Chat Management & Local Storage ---
-        
-        function saveChatsToLocal() {
-            localStorage.setItem('chirpless_chats', JSON.stringify(state.chats));
-        }
-
+        function saveChatsToLocal() { localStorage.setItem('chirpless_chats', JSON.stringify(state.chats)); }
         function startNewChat(savePrevious = true) {
-            if (savePrevious && state.currentChatId && state.messages.length > 0) {
-                 updateCurrentChatInHistory();
-            }
-            
-            state.currentChatId = Date.now().toString();
-            state.messages = [];
-            
-            document.getElementById('messages-list').innerHTML = '';
-            document.getElementById('empty-state').classList.remove('hidden');
-            
-            const newChat = {
-                id: state.currentChatId,
-                title: 'New Chat',
-                model: state.currentModel,
-                date: new Date().toISOString(),
-                messages: []
-            };
-            
-            state.chats.unshift(newChat);
-            saveChatsToLocal();
-            
-            switchView('chat');
-            closeHistoryDrawer();
+            if (savePrevious && state.currentChatId && state.messages.length > 0) updateCurrentChatInHistory();
+            state.currentChatId = Date.now().toString(); state.messages = [];
+            document.getElementById('messages-list').innerHTML = ''; document.getElementById('empty-state').classList.remove('hidden');
+            const newChat = { id: state.currentChatId, title: 'New Chat', model: state.currentModel, date: new Date().toISOString(), messages: [] };
+            state.chats.unshift(newChat); saveChatsToLocal();
+            switchView('chat'); closeHistoryDrawer();
         }
-
         function updateCurrentChatInHistory() {
             const chatIndex = state.chats.findIndex(c => c.id === state.currentChatId);
             if (chatIndex !== -1) {
                 state.chats[chatIndex].messages = [...state.messages];
                 state.chats[chatIndex].model = state.currentModel;
-                
                 const firstUserMsg = state.messages.find(m => m.role === 'user');
-                if (firstUserMsg) {
-                    state.chats[chatIndex].title = firstUserMsg.content.slice(0, 30) + (firstUserMsg.content.length > 30 ? '...' : '');
-                }
+                if (firstUserMsg) state.chats[chatIndex].title = firstUserMsg.content.slice(0, 30) + (firstUserMsg.content.length > 30 ? '...' : '');
                 saveChatsToLocal();
             }
         }
-
         function loadChat(chatId) {
             const chat = state.chats.find(c => c.id === chatId);
             if (!chat) return;
-
-            state.currentChatId = chat.id;
-            state.messages = chat.messages || [];
-            
-            if (chat.model && MODELS[chat.model]) {
-                selectModel(chat.model);
-            }
-
-            const list = document.getElementById('messages-list');
-            list.innerHTML = '';
-            
+            state.currentChatId = chat.id; state.messages = chat.messages || [];
+            if (chat.model && MODELS[chat.model]) selectModel(chat.model);
+            const list = document.getElementById('messages-list'); list.innerHTML = '';
             if (state.messages.length > 0) {
                 document.getElementById('empty-state').classList.add('hidden');
                 state.messages.forEach(msg => {
-                    const div = document.createElement('div');
-                    div.className = "w-full";
-                    
+                    const div = document.createElement('div'); div.className = "w-full";
                     if (msg.role === 'user') {
-                        div.innerHTML = `
-                            <div class="flex justify-end">
-                                <div class="msg-user text-[15px] leading-relaxed max-w-[85%] md:max-w-[70%]">
-                                    ${escapeHtml(msg.content)}
-                                </div>
-                            </div>
-                        `;
+                        div.innerHTML = `<div class="flex justify-end"><div class="msg-user text-[15px] leading-relaxed max-w-[85%] md:max-w-[70%]">${escapeHtml(msg.content)}</div></div>`;
                     } else {
                         const modelConfig = MODELS[state.currentModel];
-                        const uniqueId = 'msg-' + Math.random().toString(36).substr(2, 9);
-                        div.innerHTML = `
-                            <div class="flex gap-4 max-w-full group">
-                                <div class="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center flex-shrink-0 mt-1 bg-white">
-                                    <i class="ph-fill ph-feather text-black text-sm"></i>
-                                </div>
-                                <div class="msg-ai flex-1 overflow-hidden min-w-0">
-                                    <div class="font-bold text-xs mb-1 text-gray-500 uppercase tracking-wide flex items-center gap-2">
-                                        ${modelConfig.name}
-                                        <div class="opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
-                                            <button onclick="toggleLike(this)" class="hover:text-red-500 transition-colors" title="Like">
-                                                <i class="ph ph-heart${msg.liked ? '-fill text-red-500' : ''}"></i>
-                                            </button>
-                                            <button onclick="speakText('${escapeHtml(msg.content).replace(/'/g, "\\'")}')" class="hover:text-blue-500 transition-colors" title="Read Aloud">
-                                                <i class="ph ph-speaker-high"></i>
-                                            </button>
-                                        </div>
-                                    </div>
-                                    <div class="prose text-[15px] leading-relaxed max-w-none text-gray-800">${marked.parse(msg.content)}</div>
-                                </div>
-                            </div>
-                        `;
+                        div.innerHTML = `<div class="flex gap-4 max-w-full group"><div class="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center flex-shrink-0 mt-1 bg-white"><i class="ph-fill ph-feather text-black text-sm"></i></div><div class="msg-ai flex-1 overflow-hidden min-w-0"><div class="font-bold text-xs mb-1 text-gray-500 uppercase tracking-wide flex items-center gap-2">${modelConfig.name}<div class="opacity-0 group-hover:opacity-100 transition-opacity flex gap-2"><button onclick="toggleLike(this)" class="hover:text-red-500 transition-colors relative" title="Like"><i class="ph ph-heart${msg.liked ? '-fill text-red-500' : ''}"></i></button><button onclick="speakText('${escapeHtml(msg.content).replace(/'/g, "\\'")}')" class="hover:text-blue-500 transition-colors" title="Read Aloud"><i class="ph ph-speaker-high"></i></button></div></div><div class="prose text-[15px] leading-relaxed max-w-none text-gray-800">${marked.parse(msg.content)}</div></div></div>`;
                     }
                     list.appendChild(div);
                 });
-                
-                document.querySelectorAll('pre code').forEach((block) => {
-                    hljs.highlightElement(block);
-                });
+                document.querySelectorAll('pre code').forEach((block) => hljs.highlightElement(block));
                 scrollToBottom();
-            } else {
-                 document.getElementById('empty-state').classList.remove('hidden');
-            }
-
-            switchView('chat');
-            closeHistoryDrawer();
+            } else { document.getElementById('empty-state').classList.remove('hidden'); }
+            switchView('chat'); closeHistoryDrawer();
         }
 
+        // --- Heart Explosion Logic ---
         function toggleLike(btn) {
             const icon = btn.querySelector('i');
-            if (icon.classList.contains('ph-heart')) {
+            const isLiked = icon.classList.contains('ph-heart-fill');
+            
+            if (!isLiked) {
                 icon.classList.remove('ph-heart');
                 icon.classList.add('ph-heart-fill', 'heart-liked');
-                // Logic to update message state (omitted for brevity in UI-only)
+                createParticles(btn);
             } else {
                 icon.classList.remove('ph-heart-fill', 'heart-liked');
                 icon.classList.add('ph-heart');
             }
         }
 
-        // --- View & Navigation ---
-        // (Existing switchView, toggleMobileSidebar, etc. remain the same)
+        function createParticles(btn) {
+            const rect = btn.getBoundingClientRect();
+            // Create 12 particles
+            for (let i = 0; i < 12; i++) {
+                const particle = document.createElement('div');
+                particle.classList.add('particle');
+                document.body.appendChild(particle);
+                
+                // Position at button center
+                const x = rect.left + rect.width / 2;
+                const y = rect.top + rect.height / 2;
+                particle.style.left = `${x}px`;
+                particle.style.top = `${y}px`;
+                
+                // Random angle and distance
+                const angle = Math.random() * Math.PI * 2;
+                const velocity = 30 + Math.random() * 50; 
+                const tx = Math.cos(angle) * velocity;
+                const ty = Math.sin(angle) * velocity;
+                
+                // Set custom properties for animation
+                particle.style.setProperty('--tx', `${tx}px`);
+                particle.style.setProperty('--ty', `${ty}px`);
+                
+                // Random color variation (red/pink)
+                const colors = ['#ef4444', '#ec4899', '#f43f5e'];
+                particle.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                
+                // Animate
+                particle.style.animation = `particle-explode 0.6s ease-out forwards`;
+                
+                // Cleanup
+                setTimeout(() => particle.remove(), 600);
+            }
+        }
+
         function switchView(viewName) {
             document.getElementById('view-chat').classList.add('hidden');
             document.getElementById('view-explore').classList.add('hidden');
             document.getElementById(`view-${viewName}`).classList.remove('hidden');
-
             const chatBtn = document.getElementById('nav-chat');
             const exploreBtn = document.getElementById('nav-explore');
             const activeClass = ['bg-black', 'text-white', 'shadow-md', 'hover:bg-gray-800'];
-
             if (viewName === 'chat') {
-                chatBtn.classList.add(...activeClass);
-                chatBtn.classList.remove('text-gray-400', 'hover:bg-gray-100');
-                exploreBtn.classList.remove(...activeClass);
-                exploreBtn.classList.add('text-gray-400', 'hover:bg-gray-100');
-                
-                document.getElementById('mobile-nav-chat').classList.add('active');
-                document.getElementById('mobile-nav-chat').querySelector('i').classList.remove('ph');
-                document.getElementById('mobile-nav-chat').querySelector('i').classList.add('ph-fill');
-                
-                document.getElementById('mobile-nav-explore').classList.remove('active');
-                document.getElementById('mobile-nav-explore').querySelector('i').classList.add('ph');
-                document.getElementById('mobile-nav-explore').querySelector('i').classList.remove('ph-fill');
+                chatBtn.classList.add(...activeClass); chatBtn.classList.remove('text-gray-400', 'hover:bg-gray-100'); exploreBtn.classList.remove(...activeClass); exploreBtn.classList.add('text-gray-400', 'hover:bg-gray-100');
+                document.getElementById('mobile-nav-chat').classList.add('active'); document.getElementById('mobile-nav-chat').querySelector('i').classList.remove('ph'); document.getElementById('mobile-nav-chat').querySelector('i').classList.add('ph-fill');
+                document.getElementById('mobile-nav-explore').classList.remove('active'); document.getElementById('mobile-nav-explore').querySelector('i').classList.add('ph'); document.getElementById('mobile-nav-explore').querySelector('i').classList.remove('ph-fill');
             } else {
-                exploreBtn.classList.add(...activeClass);
-                exploreBtn.classList.remove('text-gray-400', 'hover:bg-gray-100');
-                chatBtn.classList.remove(...activeClass);
-                chatBtn.classList.add('text-gray-400', 'hover:bg-gray-100');
-
-                document.getElementById('mobile-nav-explore').classList.add('active');
-                document.getElementById('mobile-nav-explore').querySelector('i').classList.remove('ph');
-                document.getElementById('mobile-nav-explore').querySelector('i').classList.add('ph-fill');
-                
-                document.getElementById('mobile-nav-chat').classList.remove('active');
-                document.getElementById('mobile-nav-chat').querySelector('i').classList.add('ph');
-                document.getElementById('mobile-nav-chat').querySelector('i').classList.remove('ph-fill');
+                exploreBtn.classList.add(...activeClass); exploreBtn.classList.remove('text-gray-400', 'hover:bg-gray-100'); chatBtn.classList.remove(...activeClass); chatBtn.classList.add('text-gray-400', 'hover:bg-gray-100');
+                document.getElementById('mobile-nav-explore').classList.add('active'); document.getElementById('mobile-nav-explore').querySelector('i').classList.remove('ph'); document.getElementById('mobile-nav-explore').querySelector('i').classList.add('ph-fill');
+                document.getElementById('mobile-nav-chat').classList.remove('active'); document.getElementById('mobile-nav-chat').querySelector('i').classList.add('ph'); document.getElementById('mobile-nav-chat').querySelector('i').classList.remove('ph-fill');
             }
         }
-
-        function toggleModelDropdown() {
-            document.getElementById('model-dropdown').classList.toggle('hidden');
-        }
-        document.addEventListener('click', (e) => {
-            if (!document.querySelector('.group').contains(e.target)) {
-                document.getElementById('model-dropdown').classList.add('hidden');
-            }
-        });
-
-        function selectModel(modelId) {
-            state.currentModel = modelId;
-            updateUIState();
-            switchView('chat');
-            document.getElementById('model-dropdown').classList.add('hidden');
-        }
-
-        function updateUIState() {
-            const model = MODELS[state.currentModel];
-            document.getElementById('current-model-name').innerText = model.name;
-        }
-
+        function toggleModelDropdown() { document.getElementById('model-dropdown').classList.toggle('hidden'); }
+        document.addEventListener('click', (e) => { if (!document.querySelector('.group').contains(e.target)) document.getElementById('model-dropdown').classList.add('hidden'); });
+        function selectModel(modelId) { state.currentModel = modelId; updateUIState(); switchView('chat'); document.getElementById('model-dropdown').classList.add('hidden'); }
+        function updateUIState() { const model = MODELS[state.currentModel]; document.getElementById('current-model-name').innerText = model.name; }
         function renderModelList() {
-            const list = document.getElementById('model-list');
-            list.innerHTML = '';
+            const list = document.getElementById('model-list'); list.innerHTML = '';
             Object.values(MODELS).forEach(model => {
-                const div = document.createElement('div');
-                div.className = "flex items-center gap-3 px-3 py-3 hover:bg-gray-50 rounded-xl cursor-pointer transition-colors";
+                const div = document.createElement('div'); div.className = "flex items-center gap-3 px-3 py-3 hover:bg-gray-50 rounded-xl cursor-pointer transition-colors";
                 div.onclick = (e) => { e.stopPropagation(); selectModel(model.id); };
-                div.innerHTML = `
-                    <div class="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center text-lg ${model.color} border border-gray-100">
-                        <i class="ph-fill ${model.icon}"></i>
-                    </div>
-                    <div class="flex-1">
-                        <div class="text-sm font-bold text-gray-800">${model.name}</div>
-                    </div>
-                    ${state.currentModel === model.id ? '<i class="ph-fill ph-check-circle text-black text-lg"></i>' : ''}
-                `;
+                div.innerHTML = `<div class="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center text-lg ${model.color} border border-gray-100"><i class="ph-fill ${model.icon}"></i></div><div class="flex-1"><div class="text-sm font-bold text-gray-800">${model.name}</div></div>${state.currentModel === model.id ? '<i class="ph-fill ph-check-circle text-black text-lg"></i>' : ''}`;
                 list.appendChild(div);
             });
         }
-        
         function openHistoryDrawer() {
-            const drawer = document.getElementById('history-drawer');
-            const overlay = document.getElementById('history-overlay');
-            const list = document.getElementById('history-list');
-            
-            list.innerHTML = '';
-            const validChats = state.chats.filter(c => c.messages.length > 0 || c.id === state.currentChatId);
-            
-            if (validChats.length === 0) {
-                list.innerHTML = '<div class="text-center text-gray-400 mt-10 text-sm">No history yet</div>';
-            } else {
+            const drawer = document.getElementById('history-drawer'); const overlay = document.getElementById('history-overlay'); const list = document.getElementById('history-list');
+            list.innerHTML = ''; const validChats = state.chats.filter(c => c.messages.length > 0 || c.id === state.currentChatId);
+            if (validChats.length === 0) { list.innerHTML = '<div class="text-center text-gray-400 mt-10 text-sm">No history yet</div>'; } else {
                 validChats.forEach(chat => {
-                    const el = document.createElement('button');
-                    el.className = `w-full text-left p-3 rounded-xl mb-2 transition-colors group flex items-center justify-between ${chat.id === state.currentChatId ? 'bg-gray-100' : 'hover:bg-gray-50'}`;
-                    el.onclick = () => loadChat(chat.id);
-                    
+                    const el = document.createElement('button'); el.className = `w-full text-left p-3 rounded-xl mb-2 transition-colors group flex items-center justify-between ${chat.id === state.currentChatId ? 'bg-gray-100' : 'hover:bg-gray-50'}`; el.onclick = () => loadChat(chat.id);
                     const date = new Date(chat.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-                    
-                    el.innerHTML = `
-                        <div class="min-w-0 flex-1 pr-2">
-                            <div class="font-semibold text-gray-800 truncate text-sm">${chat.title || 'New Chat'}</div>
-                            <div class="text-xs text-gray-400 mt-0.5">${date} • ${MODELS[chat.model]?.name || 'AI'}</div>
-                        </div>
-                        <i class="ph-bold ph-caret-right text-gray-300 group-hover:text-black"></i>
-                    `;
-                    list.appendChild(el);
+                    el.innerHTML = `<div class="min-w-0 flex-1 pr-2"><div class="font-semibold text-gray-800 truncate text-sm">${chat.title || 'New Chat'}</div><div class="text-xs text-gray-400 mt-0.5">${date} • ${MODELS[chat.model]?.name || 'AI'}</div></div><i class="ph-bold ph-caret-right text-gray-300 group-hover:text-black"></i>`; list.appendChild(el);
                 });
             }
-
-            drawer.classList.remove('translate-x-full');
-            overlay.classList.remove('hidden');
+            drawer.classList.remove('translate-x-full'); overlay.classList.remove('hidden');
         }
-
-        function closeHistoryDrawer() {
-            document.getElementById('history-drawer').classList.add('translate-x-full');
-            document.getElementById('history-overlay').classList.add('hidden');
-        }
-
-        function clearAllHistory() {
-            if(confirm("Are you sure you want to delete all chat history?")) {
-                state.chats = [];
-                localStorage.removeItem('chirpless_chats');
-                startNewChat(false);
-            }
-        }
-
-        // --- Chat Logic ---
+        function closeHistoryDrawer() { document.getElementById('history-drawer').classList.add('translate-x-full'); document.getElementById('history-overlay').classList.add('hidden'); }
+        function clearAllHistory() { if(confirm("Are you sure you want to delete all chat history?")) { state.chats = []; localStorage.removeItem('chirpless_chats'); startNewChat(false); } }
 
         async function sendMessage(e, textOverride) {
-            if (e) e.preventDefault();
-            const inputEl = document.getElementById('user-input');
-            const text = textOverride || inputEl.value.trim();
+            if (e) e.preventDefault(); const inputEl = document.getElementById('user-input'); const text = textOverride || inputEl.value.trim();
             if (!text || state.isLoading) return;
-
-            inputEl.value = '';
-            inputEl.style.height = 'auto';
-            document.getElementById('send-btn').disabled = true;
-
+            inputEl.value = ''; inputEl.style.height = 'auto'; document.getElementById('send-btn').disabled = true;
             document.getElementById('empty-state').classList.add('hidden');
-
-            addMessageToUI('user', text);
-            state.messages.push({ role: 'user', content: text });
-            updateCurrentChatInHistory(); 
-
-            setLoading(true);
-            if (state.isCallMode) document.getElementById('call-status').innerText = "Thinking...";
-
+            addMessageToUI('user', text); state.messages.push({ role: 'user', content: text }); updateCurrentChatInHistory();
+            setLoading(true); if (state.isCallMode) document.getElementById('call-status').innerText = "Thinking...";
             try {
-                const currentModelConfig = MODELS[state.currentModel];
-                const personaPrompt = PERSONAS[state.user.persona] || PERSONAS['default'];
-                
+                const currentModelConfig = MODELS[state.currentModel]; const personaPrompt = PERSONAS[state.user.persona] || PERSONAS['default'];
                 const response = await fetch("https://api.routeway.ai/v1/chat/completions", {
-                    method: "POST",
-                    headers: {
-                        "Authorization": `Bearer ${API_KEY}`,
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify({
-                        "model": currentModelConfig.apiModel,
-                        "messages": [
-                            { "role": "system", "content": `${currentModelConfig.basePrompt} ${personaPrompt}` },
-                            ...state.messages
-                        ],
-                    })
+                    method: "POST", headers: { "Authorization": `Bearer ${API_KEY}`, "Content-Type": "application/json" },
+                    body: JSON.stringify({ model: currentModelConfig.apiModel, messages: [{ "role": "system", "content": `${currentModelConfig.basePrompt} ${personaPrompt}` }, ...state.messages] })
                 });
-
-                if (!response.ok) {
-                    throw new Error(`API Error: ${response.status}`);
-                }
-
-                const data = await response.json();
-                if (!data.choices || !data.choices.length) throw new Error("No response");
+                if (!response.ok) throw new Error(`API Error: ${response.status}`);
+                const data = await response.json(); if (!data.choices || !data.choices.length) throw new Error("No response");
                 const aiText = data.choices[0].message.content;
-
-                setLoading(false);
-                state.messages.push({ role: 'assistant', content: aiText });
-                updateCurrentChatInHistory(); 
-                
-                addMessageToUI('assistant', aiText);
-                
-                if (state.isCallMode) {
-                    document.getElementById('call-status').innerText = "Speaking...";
-                    speakText(aiText);
-                }
-
-            } catch (error) {
-                console.error(error);
-                setLoading(false);
-                addMessageToUI('assistant', `**Error:** ${error.message}`);
-                if (state.isCallMode) document.getElementById('call-status').innerText = "Error: " + error.message;
-            }
+                setLoading(false); state.messages.push({ role: 'assistant', content: aiText }); updateCurrentChatInHistory();
+                addMessageToUI('assistant', aiText); if (state.isCallMode) { document.getElementById('call-status').innerText = "Speaking..."; speakText(aiText); }
+            } catch (error) { console.error(error); setLoading(false); addMessageToUI('assistant', `**Error:** ${error.message}`); if (state.isCallMode) document.getElementById('call-status').innerText = "Error: " + error.message; }
         }
 
         function addMessageToUI(role, text) {
-            const list = document.getElementById('messages-list');
-            const div = document.createElement('div');
-            div.className = "w-full animate-fade-in";
-
-            if (role === 'user') {
-                div.innerHTML = `
-                    <div class="flex justify-end">
-                        <div class="msg-user text-[15px] leading-relaxed max-w-[85%] md:max-w-[70%]">
-                            ${escapeHtml(text)}
-                        </div>
-                    </div>
-                `;
-            } else {
-                const modelConfig = MODELS[state.currentModel];
-                const uniqueId = 'msg-' + Math.random().toString(36).substr(2, 9);
-                div.innerHTML = `
-                    <div class="flex gap-4 max-w-full group">
-                        <div class="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center flex-shrink-0 mt-1 bg-white">
-                            <i class="ph-fill ph-feather text-black text-sm"></i>
-                        </div>
-                        <div class="msg-ai flex-1 overflow-hidden min-w-0">
-                            <div class="font-bold text-xs mb-1 text-gray-500 uppercase tracking-wide flex items-center gap-2">
-                                ${modelConfig.name}
-                                <div class="opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
-                                    <button onclick="toggleLike(this)" class="hover:text-red-500 transition-colors" title="Like">
-                                        <i class="ph ph-heart"></i>
-                                    </button>
-                                    <button onclick="speakText('${escapeHtml(text).replace(/'/g, "\\'")}')" class="hover:text-blue-500 transition-colors" title="Read Aloud">
-                                        <i class="ph ph-speaker-high"></i>
-                                    </button>
-                                </div>
-                            </div>
-                            <div id="${uniqueId}" class="prose text-[15px] leading-relaxed max-w-none text-gray-800"></div>
-                        </div>
-                    </div>
-                `;
-                list.appendChild(div);
-                simulateTyping(text, uniqueId);
-                return;
+            const list = document.getElementById('messages-list'); const div = document.createElement('div'); div.className = "w-full animate-fade-in";
+            if (role === 'user') { div.innerHTML = `<div class="flex justify-end"><div class="msg-user text-[15px] leading-relaxed max-w-[85%] md:max-w-[70%]">${escapeHtml(text)}</div></div>`; }
+            else {
+                const modelConfig = MODELS[state.currentModel]; const uniqueId = 'msg-' + Math.random().toString(36).substr(2, 9);
+                div.innerHTML = `<div class="flex gap-4 max-w-full group"><div class="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center flex-shrink-0 mt-1 bg-white"><i class="ph-fill ph-feather text-black text-sm"></i></div><div class="msg-ai flex-1 overflow-hidden min-w-0"><div class="font-bold text-xs mb-1 text-gray-500 uppercase tracking-wide flex items-center gap-2">${modelConfig.name}<div class="opacity-0 group-hover:opacity-100 transition-opacity flex gap-2"><button onclick="toggleLike(this)" class="hover:text-red-500 transition-colors relative" title="Like"><i class="ph ph-heart"></i></button><button onclick="speakText('${escapeHtml(text).replace(/'/g, "\\'")}')" class="hover:text-blue-500 transition-colors" title="Read Aloud"><i class="ph ph-speaker-high"></i></button></div></div><div id="${uniqueId}" class="prose text-[15px] leading-relaxed max-w-none text-gray-800"></div></div></div>`;
             }
-            list.appendChild(div);
-            scrollToBottom();
+            list.appendChild(div); if(role !== 'user') simulateTyping(text, div.querySelector('.prose').id); else scrollToBottom();
         }
-
-        function scrollToBottom() {
-            const container = document.getElementById('chat-container');
-            container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' });
-        }
-
-        function escapeHtml(text) {
-            const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
-            return text.replace(/[&<>"']/g, function(m) { return map[m]; });
-        }
-
+        function scrollToBottom() { const container = document.getElementById('chat-container'); container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' }); }
+        function escapeHtml(text) { const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }; return text.replace(/[&<>"']/g, function(m) { return map[m]; }); }
         function simulateTyping(text, elementId) {
-            const element = document.getElementById(elementId);
-            element.classList.add('typing-cursor');
-            let i = 0;
-            const speed = 5;
-            function type() {
-                if (i < text.length) {
-                    const chunk = text.substr(i, 5); // Slightly faster chunking
-                    element.innerText += chunk;
-                    i += 5;
-                    scrollToBottom();
-                    setTimeout(type, speed);
-                } else {
-                    element.classList.remove('typing-cursor');
-                    element.innerHTML = marked.parse(text);
-                    document.querySelectorAll('pre code').forEach((block) => {
-                        hljs.highlightElement(block);
-                    });
-                    scrollToBottom();
-                }
-            }
-            type();
+            const element = document.getElementById(elementId); element.classList.add('typing-cursor'); let i = 0; const speed = 5;
+            function type() { if (i < text.length) { element.innerText += text.substr(i, 5); i += 5; scrollToBottom(); setTimeout(type, speed); } else { element.classList.remove('typing-cursor'); element.innerHTML = marked.parse(text); document.querySelectorAll('pre code').forEach((block) => hljs.highlightElement(block)); scrollToBottom(); } } type();
         }
-
         function setLoading(isLoading) {
-            state.isLoading = isLoading;
-            const indicator = document.getElementById('loading-indicator');
-            const loadingText = document.getElementById('loading-text');
-            const container = document.getElementById('chat-container');
-            
-            if (isLoading) {
-                indicator.classList.remove('hidden');
-                setTimeout(() => { container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' }); }, 50);
-                
-                const texts = ["Thinking...", "Connecting...", "Reading...", "Writing..."];
-                let idx = 0;
-                loadingText.innerText = texts[0];
-                state.loadingInterval = setInterval(() => {
-                    idx = (idx + 1) % texts.length;
-                    loadingText.innerText = texts[idx];
-                }, 2000);
-            } else {
-                indicator.classList.add('hidden');
-                clearInterval(state.loadingInterval);
-            }
+            state.isLoading = isLoading; const indicator = document.getElementById('loading-indicator'); const loadingText = document.getElementById('loading-text'); const container = document.getElementById('chat-container');
+            if (isLoading) { indicator.classList.remove('hidden'); setTimeout(() => { container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' }); }, 50); const texts = ["Thinking...", "Connecting...", "Reading...", "Writing..."]; let idx = 0; loadingText.innerText = texts[0]; state.loadingInterval = setInterval(() => { idx = (idx + 1) % texts.length; loadingText.innerText = texts[idx]; }, 2000); } else { indicator.classList.add('hidden'); clearInterval(state.loadingInterval); }
         }
-
-        // --- Profile & Settings ---
-        function openProfileModal() {
-            const modal = document.getElementById('profile-modal');
-            const content = document.getElementById('profile-modal-content');
-            
-            document.getElementById('input-username').value = state.user.name;
-            document.getElementById('input-pfp').value = state.user.pfp;
-            document.getElementById('input-banner').value = state.user.banner || '';
-            document.getElementById('input-persona').value = state.user.persona || 'default';
-            document.getElementById('preview-pfp').src = state.user.pfp;
-            document.getElementById('preview-name').innerText = state.user.name;
-
-            modal.classList.remove('hidden');
-            setTimeout(() => {
-                modal.classList.remove('opacity-0');
-                content.classList.remove('scale-95');
-                content.classList.add('scale-100');
-            }, 10);
-        }
-
-        function closeProfileModal() {
-            const modal = document.getElementById('profile-modal');
-            const content = document.getElementById('profile-modal-content');
-            modal.classList.add('opacity-0');
-            content.classList.remove('scale-100');
-            content.classList.add('scale-95');
-            setTimeout(() => modal.classList.add('hidden'), 300);
-        }
-
-        function saveProfile() {
-            const newName = document.getElementById('input-username').value.trim() || 'User';
-            const newPfp = document.getElementById('input-pfp').value.trim() || 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + newName;
-            const newBanner = document.getElementById('input-banner').value.trim();
-            const newPersona = document.getElementById('input-persona').value;
-
-            state.user = { name: newName, pfp: newPfp, banner: newBanner, persona: newPersona };
-            localStorage.setItem('chirpless_user', JSON.stringify(state.user));
-            applyUserProfile();
-            closeProfileModal();
-        }
-
-        function applyUserProfile() {
-            document.getElementById('sidebar-pfp').src = state.user.pfp;
-            // Banner logic could be updated here
-            const bannerEl = document.getElementById('user-banner');
-            if (state.user.banner) {
-                bannerEl.style.backgroundImage = `url('${state.user.banner}')`;
-                bannerEl.classList.remove('hidden');
-            } else {
-                bannerEl.classList.add('hidden');
-            }
-        }
-        
-        function showToast(message) {
-            const container = document.getElementById('toast-container');
-            const toast = document.createElement('div');
-            toast.className = 'toast';
-            toast.innerText = message;
-            container.appendChild(toast);
-            requestAnimationFrame(() => toast.classList.add('show'));
-            setTimeout(() => {
-                toast.classList.remove('show');
-                setTimeout(() => toast.remove(), 300);
-            }, 3000);
-        }
-
+        function openProfileModal() { const modal = document.getElementById('profile-modal'); const content = document.getElementById('profile-modal-content'); document.getElementById('input-username').value = state.user.name; document.getElementById('input-pfp').value = state.user.pfp; document.getElementById('input-banner').value = state.user.banner || ''; document.getElementById('input-persona').value = state.user.persona || 'default'; document.getElementById('preview-pfp').src = state.user.pfp; document.getElementById('preview-name').innerText = state.user.name; modal.classList.remove('hidden'); setTimeout(() => { modal.classList.remove('opacity-0'); content.classList.remove('scale-95'); content.classList.add('scale-100'); }, 10); }
+        function closeProfileModal() { const modal = document.getElementById('profile-modal'); const content = document.getElementById('profile-modal-content'); modal.classList.add('opacity-0'); content.classList.remove('scale-100'); content.classList.add('scale-95'); setTimeout(() => modal.classList.add('hidden'), 300); }
+        function saveProfile() { const newName = document.getElementById('input-username').value.trim() || 'User'; const newPfp = document.getElementById('input-pfp').value.trim() || 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + newName; const newBanner = document.getElementById('input-banner').value.trim(); const newPersona = document.getElementById('input-persona').value; state.user = { name: newName, pfp: newPfp, banner: newBanner, persona: newPersona }; localStorage.setItem('chirpless_user', JSON.stringify(state.user)); applyUserProfile(); closeProfileModal(); }
+        function applyUserProfile() { document.getElementById('sidebar-pfp').src = state.user.pfp; document.getElementById('mobile-nav-pfp').src = state.user.pfp; const bannerEl = document.getElementById('user-banner'); if (state.user.banner) { bannerEl.style.backgroundImage = `url('${state.user.banner}')`; bannerEl.classList.remove('hidden'); } else { bannerEl.classList.add('hidden'); } }
+        function showToast(message) { const container = document.getElementById('toast-container'); const toast = document.createElement('div'); toast.className = 'toast'; toast.innerText = message; container.appendChild(toast); requestAnimationFrame(() => toast.classList.add('show')); setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 300); }, 3000); }
         init();
     </script>
 </body>
