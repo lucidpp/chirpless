@@ -419,25 +419,36 @@
         // --- Enhanced Markdown Renderer ---
         const renderer = new marked.Renderer();
         renderer.code = function(code, language) {
+            // Fix: Ensure code is a string to prevent "e.replace is not a function" error
+            const validCode = code ? String(code) : '';
+            
             const validLang = !!(language && hljs.getLanguage(language));
-            const highlighted = validLang ? hljs.highlight(code, { language }).value : hljs.highlightAuto(code).value;
+            let highlighted;
+            try {
+               highlighted = validLang ? hljs.highlight(validCode, { language }).value : hljs.highlightAuto(validCode).value;
+            } catch (err) {
+               // Fallback simple escaping
+               highlighted = validCode.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+            }
+
             // Escape code for attributes
-            const escapedCode = encodeURIComponent(code);
+            const escapedCode = encodeURIComponent(validCode);
+            
             return `
-                <div class="my-4 rounded-xl overflow-hidden border border-gray-200 shadow-sm group">
-                    <div class="code-header">
+                <div class="my-6 rounded-xl overflow-hidden border border-gray-200 shadow-sm group bg-white">
+                    <div class="code-header flex justify-between items-center px-4 py-2 bg-gray-50 border-b border-gray-100">
                         <span class="font-mono text-xs lowercase bg-gray-200 px-2 py-0.5 rounded text-gray-600 font-bold">${language || 'code'}</span>
-                        <div class="code-actions">
-                            <button onclick="refineCode('${escapedCode}')" class="code-action-btn text-xs font-medium">
+                        <div class="code-actions flex gap-3">
+                            <button onclick="refineCode(this)" data-code="${escapedCode}" class="code-action-btn text-xs font-medium flex items-center gap-1 text-gray-500 hover:text-black transition-colors">
                                 <i class="ph-bold ph-magic-wand"></i> Refine
                             </button>
-                            <button onclick="copyToClipboard(this)" data-code="${escapedCode}" class="code-action-btn text-xs font-medium">
+                            <button onclick="copyToClipboard(this)" data-code="${escapedCode}" class="code-action-btn text-xs font-medium flex items-center gap-1 text-gray-500 hover:text-black transition-colors">
                                 <i class="ph-bold ph-copy"></i> Copy
                             </button>
                         </div>
                     </div>
                     <div class="bg-[#f9f9f9] p-4 overflow-x-auto">
-                        <pre><code class="hljs ${language || ''} bg-transparent p-0 text-sm leading-relaxed">${highlighted}</code></pre>
+                        <pre><code class="hljs ${language || ''} bg-transparent p-0 text-sm leading-relaxed font-mono">${highlighted}</code></pre>
                     </div>
                 </div>
             `;
@@ -448,7 +459,6 @@
             const code = decodeURIComponent(btn.getAttribute('data-code'));
             navigator.clipboard.writeText(code).then(() => {
                 const icon = btn.querySelector('i');
-                const text = btn.lastChild;
                 const originalIcon = icon.className;
                 
                 icon.className = 'ph-bold ph-check text-green-600';
@@ -462,7 +472,8 @@
         }
 
         // --- Refine Code Workflow ---
-        function refineCode(encodedCode) {
+        function refineCode(btn) {
+            const encodedCode = btn.getAttribute('data-code');
             const code = decodeURIComponent(encodedCode);
             const userRequest = prompt("How would you like to modify or refine this code?");
             if (userRequest && userRequest.trim() !== "") {
@@ -486,10 +497,34 @@
             'eli5': "You explain everything as if the user is 5 years old. Use simple words and analogies."
         };
 
+        // Updated models with strict formatting instructions to ensure code boxes appear
+        const CODE_INSTRUCTION = "IMPORTANT: When providing code (HTML, CSS, JS, etc.), YOU MUST wrap it in Markdown code blocks (e.g., ```html ... ```). Do not write raw code in the text. Always ensure code blocks are separated from text by newlines.";
+
         const MODELS = {
-            'chirpless-x1': { id: 'chirpless-x1', name: 'Chirpless X1', apiModel: 'meta-llama/llama-3.2-11b-vision-instruct:free', basePrompt: "You are Chirpless X1.", icon: 'ph-lightning', color: 'text-blue-600' },
-            'chirpless-x7': { id: 'chirpless-x7', name: 'Chirpless X7', apiModel: 'llama-3.3-70b-instruct:free', basePrompt: "You are Chirpless X7.", icon: 'ph-cpu', color: 'text-purple-600' },
-            'chirpless-xlz1': { id: 'chirpless-xlz1', name: 'Chirpless XLz1', apiModel: 'google/gemini-2.0-flash-exp:free', basePrompt: "You are Chirpless XLz1.", icon: 'ph-sparkle', color: 'text-amber-500' }
+            'chirpless-x1': { 
+                id: 'chirpless-x1', 
+                name: 'Chirpless X1', 
+                apiModel: 'meta-llama/llama-3.2-11b-vision-instruct:free', 
+                basePrompt: `You are Chirpless X1. ${CODE_INSTRUCTION}`, 
+                icon: 'ph-lightning', 
+                color: 'text-blue-600' 
+            },
+            'chirpless-x7': { 
+                id: 'chirpless-x7', 
+                name: 'Chirpless X7', 
+                apiModel: 'llama-3.3-70b-instruct:free', 
+                basePrompt: `You are Chirpless X7. ${CODE_INSTRUCTION}`, 
+                icon: 'ph-cpu', 
+                color: 'text-purple-600' 
+            },
+            'chirpless-xlz1': { 
+                id: 'chirpless-xlz1', 
+                name: 'Chirpless XLz1', 
+                apiModel: 'google/gemini-2.0-flash-exp:free', 
+                basePrompt: `You are Chirpless XLz1. ${CODE_INSTRUCTION}`, 
+                icon: 'ph-sparkle', 
+                color: 'text-amber-500' 
+            }
         };
 
         let state = {
