@@ -475,7 +475,7 @@
                 uses: '91M',
                 icon: 'ph-fish',
                 color: 'text-blue-500',
-                warning: 'Uses Outdated X1 bot',
+                // Warning removed as it's now using the latest model
                 prompt: "You are Tuna, the OG bot. You are a bit chaotic, very simple, and energetic. You are the original mascot."
             },
             'coding-wizard': {
@@ -508,9 +508,9 @@
         };
 
         const MODELS = {
-            'chirpless-x1': { apiModel: 'meta-llama/llama-3.2-11b-vision-instruct:free', baseName: 'Llama 3.2 11B' },
-            'chirpless-x7': { apiModel: 'llama-3.3-70b-instruct:free', baseName: 'Llama 3.3 70B' },
-            'chirpless-xlz1': { apiModel: 'google/gemini-2.0-flash-exp:free', baseName: 'Gemini 2.0 Flash' }
+            'chirpless-x1': { apiModel: 'llama-3.3-70b-instruct:free', baseName: 'Chirpless Core' },
+            'chirpless-x7': { apiModel: 'llama-3.3-70b-instruct:free', baseName: 'Chirpless Advanced' },
+            'chirpless-xlz1': { apiModel: 'google/gemini-2.0-flash-exp:free', baseName: 'Chirpless Ultra' }
         };
 
         let state = {
