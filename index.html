@@ -80,7 +80,7 @@
         main {
             flex: 1; overflow-y: scroll; scroll-behavior: smooth;
             padding-bottom: calc(var(--nav-height) + var(--mini-player-height));
-            overscroll-behavior: contain;
+            overscroll-behavior: contain; /* Prevents whole page bounce */
         }
         main::-webkit-scrollbar { display: none; }
 
@@ -146,14 +146,15 @@
             100% { transform: scale(1); filter: brightness(1); }
         }
 
-        /* --- PROFILE DETAIL VIEW (FIXED OVERLAY) --- */
+        /* --- PROFILE DETAIL VIEW (LAYERED) --- */
         #view-profile-detail { 
             background: var(--bg-color); 
-            z-index: 150; /* Above Nav */
+            z-index: 50; /* Changed: Sits BELOW Nav (100) and MiniPlayer (90) */
             position: fixed; 
             top: 0; left: 0; width: 100%; height: 100%; 
             overflow-y: auto; 
-            padding-bottom: max(120px, env(safe-area-inset-bottom));
+            /* Massive padding bottom to ensure content isn't hidden behind nav */
+            padding-bottom: 180px; 
             overscroll-behavior: contain;
         }
         .profile-header {
@@ -315,9 +316,10 @@
             </div>
         </main>
 
-        <!-- PROFILE DETAIL VIEW (FIXED OVERLAY) -->
+        <!-- PROFILE DETAIL VIEW (Z-Index Fixed) -->
         <div id="view-profile-detail" class="hidden">
-            <div style="position:absolute; top:20px; left:20px; z-index:10;">
+            <!-- Back Button with Safe Area Fix -->
+            <div style="position:absolute; top:max(15px, env(safe-area-inset-top)); left:20px; z-index:10;">
                 <button onclick="closeProfile()" style="background:var(--glass); width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center; border:none; color:var(--text-primary);">
                     <svg class="icon" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
                 </button>
@@ -481,8 +483,8 @@
         let playbackSpeed = 1.0;
         let currentFilter = 'all';
         
-        let savedChirps = JSON.parse(localStorage.getItem('chirps_v13') || '[]');
-        let savedProfileChirps = JSON.parse(localStorage.getItem('profile_chirps_v13') || '[]');
+        let savedChirps = JSON.parse(localStorage.getItem('chirps_v14') || '[]');
+        let savedProfileChirps = JSON.parse(localStorage.getItem('profile_chirps_v14') || '[]');
         
         let currentProfileId = null;
         let currentProfileEpisodes = [];
@@ -581,7 +583,7 @@
                 });
             }
 
-            // Double RAF for robust animation restart
+            // Double RequestAnimationFrame
             requestAnimationFrame(() => {
                 requestAnimationFrame(() => {
                     container.classList.add('active'); 
@@ -624,7 +626,7 @@
             cashEl.innerText = formatCurrency(activeProfileStats.cash);
         }
 
-        /* --- API --- */
+        /* --- API & DATA FETCHING --- */
         async function search(query) {
             let entity = 'podcastEpisode'; 
             if (currentFilter === 'profile') entity = 'podcast';
@@ -652,7 +654,8 @@
             }
         }
 
-        async function fetchProfileEpisodes(collectionId) {
+        // Updated Profile Fetch with Fallback Logic
+        async function fetchProfileEpisodes(collectionId, artistNameFallback) {
              try {
                 const res = await fetch(`https://itunes.apple.com/lookup?id=${collectionId}&media=podcast&entity=podcastEpisode&limit=60`);
                 if(!res.ok) throw new Error("Fetch failed");
@@ -674,6 +677,10 @@
                 }));
              } catch (error) {
                  console.warn("Profile Fetch Error:", error);
+                 // Fallback: Try searching by artist name if ID lookup failed
+                 if(artistNameFallback) {
+                     return await search(artistNameFallback);
+                 }
                  return [];
              }
         }
@@ -682,6 +689,7 @@
         function init() {
             renderLibrary();
             loadHomeContent();
+            
             setInterval(simulateLiveStats, 1400);
 
             document.getElementById('view-profile-detail').addEventListener('scroll', (e) => {
@@ -783,7 +791,7 @@
                     `;
                     el.querySelector('div[style="flex:1"]').appendChild(statContainer);
                     const odo = statContainer.querySelector('.odometer-container');
-                    setTimeout(() => updateOdometer(odo, stats.chirps), 600); // Delayed for keyboard
+                    setTimeout(() => updateOdometer(odo, stats.chirps), 600);
 
                 } else {
                     el.className = 'list-item';
@@ -807,7 +815,7 @@
                     `;
                     el.querySelector('.stats-wrapper').appendChild(statContainer);
                     const odo = statContainer.querySelector('.odometer-container');
-                    setTimeout(() => updateOdometer(odo, stats.listens), 600); // Delayed for keyboard
+                    setTimeout(() => updateOdometer(odo, stats.listens), 600);
                 }
                 container.appendChild(el);
             });
@@ -848,11 +856,16 @@
             document.getElementById('pd-content-episodes').innerHTML = '<div class="spinner"></div>';
             
             const idToFetch = item.collectionId || item.id; 
-            currentProfileEpisodes = await fetchProfileEpisodes(idToFetch);
+            // Pass Artist Name as fallback for the search fix
+            currentProfileEpisodes = await fetchProfileEpisodes(idToFetch, item.artist);
 
-            document.getElementById('pd-content-episodes').innerHTML = '';
-            renderedEpisodeCount = 0;
-            renderMoreEpisodes();
+            if(currentProfileEpisodes.length === 0) {
+                document.getElementById('pd-content-episodes').innerHTML = '<div style="padding:20px; text-align:center; color:var(--text-secondary)">No episodes found.</div>';
+            } else {
+                document.getElementById('pd-content-episodes').innerHTML = '';
+                renderedEpisodeCount = 0;
+                renderMoreEpisodes();
+            }
         }
 
         function renderMoreEpisodes() {
@@ -925,7 +938,7 @@
                 document.getElementById('pd-chirp-btn').classList.add('popping');
                 setTimeout(() => document.getElementById('pd-chirp-btn').classList.remove('popping'), 300);
             }
-            localStorage.setItem('profile_chirps_v13', JSON.stringify(savedProfileChirps));
+            localStorage.setItem('profile_chirps_v14', JSON.stringify(savedProfileChirps));
         }
 
         function updateProfileChirpBtn(active) {
@@ -987,7 +1000,7 @@
                 btn.style.color = 'var(--bg-color)';
                 showToast();
             }
-            localStorage.setItem('chirps_v13', JSON.stringify(savedChirps));
+            localStorage.setItem('chirps_v14', JSON.stringify(savedChirps));
             renderLibrary();
         }
 
