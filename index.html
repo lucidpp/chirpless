@@ -132,7 +132,7 @@
         .odometer-digit { display: inline-block; height: 1.2em; position: relative; }
         .odometer-ribbon {
             display: flex; flex-direction: column;
-            transition: transform 1.2s cubic-bezier(0.16, 1, 0.3, 1); /* Faster for 1.4s updates */
+            transition: transform 1.2s cubic-bezier(0.16, 1, 0.3, 1);
             will-change: transform;
         }
         .odometer-ribbon div { height: 1.2em; display: flex; justify-content: center; align-items: center; }
@@ -475,8 +475,8 @@
         let playbackSpeed = 1.0;
         let currentFilter = 'all';
         
-        let savedChirps = JSON.parse(localStorage.getItem('chirps_v11') || '[]');
-        let savedProfileChirps = JSON.parse(localStorage.getItem('profile_chirps_v11') || '[]');
+        let savedChirps = JSON.parse(localStorage.getItem('chirps_v12') || '[]');
+        let savedProfileChirps = JSON.parse(localStorage.getItem('profile_chirps_v12') || '[]');
         
         let currentProfileId = null;
         let currentProfileEpisodes = [];
@@ -548,6 +548,8 @@
         function updateOdometer(container, value) {
             if(!container) return;
             const formatted = formatNumber(value);
+            
+            // Initial Build
             if(!container.hasChildNodes()) {
                 container.innerHTML = '';
                 container.classList.add('odometer-wrapper');
@@ -557,6 +559,7 @@
                         digitWrapper.className = 'odometer-digit';
                         const ribbon = document.createElement('div');
                         ribbon.className = 'odometer-ribbon';
+                        // Create 0-9 strip
                         for(let i=0; i<=9; i++) {
                             const num = document.createElement('div');
                             num.innerText = i;
@@ -572,32 +575,39 @@
                     }
                 });
             }
+
+            // Double RequestAnimationFrame to Force Browser Reflow/Paint 
+            // This guarantees the animation "resets" and plays every time.
             requestAnimationFrame(() => {
-                container.classList.add('active'); 
-                container.classList.add('pop-effect');
-                const chars = formatted.split('');
-                let digitIndex = 0;
-                Array.from(container.children).forEach(child => {
-                    if(child.classList.contains('odometer-digit')) {
-                        const targetDigit = parseInt(chars[digitIndex]);
-                        const ribbon = child.querySelector('.odometer-ribbon');
-                        if(ribbon && !isNaN(targetDigit)) {
-                            ribbon.style.transform = `translateY(${targetDigit * -1.2}em)`;
+                requestAnimationFrame(() => {
+                    container.classList.add('active'); 
+                    container.classList.add('pop-effect');
+                    
+                    const chars = formatted.split('');
+                    let digitIndex = 0;
+                    
+                    Array.from(container.children).forEach(child => {
+                        if(child.classList.contains('odometer-digit')) {
+                            const targetDigit = parseInt(chars[digitIndex]);
+                            const ribbon = child.querySelector('.odometer-ribbon');
+                            if(ribbon && !isNaN(targetDigit)) {
+                                // Slide to the digit
+                                ribbon.style.transform = `translateY(${targetDigit * -1.2}em)`;
+                            }
                         }
-                    }
-                    digitIndex++;
+                        digitIndex++;
+                    });
+                    
+                    setTimeout(() => container.classList.remove('pop-effect'), 500);
                 });
-                setTimeout(() => container.classList.remove('pop-effect'), 500);
             });
         }
 
         /* --- LIVE SIMULATION ENGINE --- */
         function simulateLiveStats() {
-            // Only update if Profile View is open
             const profileView = document.getElementById('view-profile-detail');
             if(profileView.classList.contains('hidden') || !activeProfileStats) return;
 
-            // Increment numbers randomly
             activeProfileStats.chirps += Math.floor(Math.random() * 5) + 1;
             activeProfileStats.listens += Math.floor(Math.random() * 100) + 10;
             activeProfileStats.cash = activeProfileStats.listens * 0.006;
@@ -606,7 +616,6 @@
             const listensEl = document.getElementById('stat-listens');
             const cashEl = document.getElementById('stat-cash');
 
-            // Trigger updates
             updateOdometer(chirpsEl, activeProfileStats.chirps);
             updateOdometer(listensEl, activeProfileStats.listens);
             cashEl.innerText = formatCurrency(activeProfileStats.cash);
@@ -671,7 +680,6 @@
             renderLibrary();
             loadHomeContent();
             
-            // Live Heartbeat every 1.4s
             setInterval(simulateLiveStats, 1400);
 
             document.getElementById('view-profile-detail').addEventListener('scroll', (e) => {
@@ -732,7 +740,10 @@
         }
 
         function handleSearch(e) {
-            if (e.key === 'Enter') doSearch(e.target.value);
+            if (e.key === 'Enter') {
+                document.getElementById('search-input').blur(); // Close keyboard
+                doSearch(e.target.value);
+            }
         }
 
         async function doSearch(query) {
@@ -770,7 +781,7 @@
                     `;
                     el.querySelector('div[style="flex:1"]').appendChild(statContainer);
                     const odo = statContainer.querySelector('.odometer-container');
-                    setTimeout(() => updateOdometer(odo, stats.chirps), 50);
+                    setTimeout(() => updateOdometer(odo, stats.chirps), 600); // Delayed for keyboard
 
                 } else {
                     el.className = 'list-item';
@@ -794,7 +805,7 @@
                     `;
                     el.querySelector('.stats-wrapper').appendChild(statContainer);
                     const odo = statContainer.querySelector('.odometer-container');
-                    setTimeout(() => updateOdometer(odo, stats.listens), 50);
+                    setTimeout(() => updateOdometer(odo, stats.listens), 600); // Delayed for keyboard
                 }
                 container.appendChild(el);
             });
@@ -912,7 +923,7 @@
                 document.getElementById('pd-chirp-btn').classList.add('popping');
                 setTimeout(() => document.getElementById('pd-chirp-btn').classList.remove('popping'), 300);
             }
-            localStorage.setItem('profile_chirps_v11', JSON.stringify(savedProfileChirps));
+            localStorage.setItem('profile_chirps_v12', JSON.stringify(savedProfileChirps));
         }
 
         function updateProfileChirpBtn(active) {
@@ -974,7 +985,7 @@
                 btn.style.color = 'var(--bg-color)';
                 showToast();
             }
-            localStorage.setItem('chirps_v11', JSON.stringify(savedChirps));
+            localStorage.setItem('chirps_v12', JSON.stringify(savedChirps));
             renderLibrary();
         }
 
