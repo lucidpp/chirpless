@@ -124,13 +124,14 @@
         }
         .list-item:active { background: var(--surface-highlight); }
         .list-img { width: 56px; height: 56px; border-radius: 12px; background: var(--surface-highlight); object-fit: cover; flex-shrink: 0; }
+        .list-rank {
+            font-size: 1.2rem; font-weight: 900; color: var(--text-secondary); width: 30px; text-align: center; font-variant-numeric: tabular-nums;
+        }
         
         /* --- BADGES --- */
-        .verified-badge { width: 18px; height: 18px; margin-left: 6px; vertical-align: text-bottom; display: none; }
-        .verified-badge.visible { display: inline-block; }
-        /* Dark Mode: White Glow */
-        [data-theme="dark"] .verified-badge { fill: #ffffff; filter: drop-shadow(0 0 6px rgba(255,255,255,0.6)); }
-        /* Light Mode: Black Solid */
+        .verified-badge { width: 14px; height: 14px; margin-left: 4px; vertical-align: middle; display: inline-block; }
+        .verified-badge.lg { width: 18px; height: 18px; margin-left: 6px; }
+        [data-theme="dark"] .verified-badge { fill: #ffffff; filter: drop-shadow(0 0 4px rgba(255,255,255,0.5)); }
         [data-theme="light"] .verified-badge { fill: #000000; filter: none; }
 
         .new-badge {
@@ -139,6 +140,13 @@
             padding: 3px 6px; border-radius: 6px; margin-left: 8px;
             vertical-align: middle; display: inline-block;
             box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+
+        .chart-badge {
+            font-size: 0.65rem; font-weight: 700;
+            background: var(--surface-highlight); color: var(--text-secondary);
+            padding: 2px 8px; border-radius: 4px; margin-left: 8px;
+            vertical-align: middle; display: inline-flex; align-items: center; gap: 4px;
         }
 
         /* --- ODOMETER ANIMATION --- */
@@ -322,10 +330,11 @@
                     <div class="chip active" onclick="setFilter('all', this)">All</div>
                     <div class="chip" onclick="setFilter('profile', this)">Profiles</div>
                     <div class="chip" onclick="setFilter('episode', this)">Episodes</div>
+                    <div class="chip" onclick="setFilter('charts', this)">Charts</div>
                 </div>
                 <div id="search-results">
                     <div style="text-align:center; color:var(--text-secondary); margin-top:40px;">
-                        Find creators and stories.
+                        Find creators, stories, and charts.
                     </div>
                 </div>
             </div>
@@ -350,8 +359,7 @@
                 <h1 id="pd-title" style="margin:0; font-size:1.8rem; line-height:1.2;">Title</h1>
                 <p id="pd-artist-container" style="margin:8px 0;">
                     <span id="pd-artist" class="text-secondary clickable-artist" onclick="handleArtistClick(this.innerText)">Artist</span>
-                    <!-- Verification Badge -->
-                    <svg class="verified-badge" id="pd-verified" viewBox="0 0 24 24">
+                    <svg class="verified-badge lg" id="pd-verified" viewBox="0 0 24 24">
                         <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
                     </svg>
                 </p>
@@ -380,9 +388,10 @@
                         <span class="text-xs text-secondary">Total Chirps</span>
                         <span class="font-bold odometer-container" style="font-size:1.5rem" id="stat-chirps"></span>
                     </div>
+                    <!-- Removed Listens Stat Box -->
                     <div class="stat-box">
                         <span class="text-xs text-secondary">Total Cash Earned ($0.006/stream)</span>
-                        <span class="font-bold odometer-container" style="font-size:1.5rem; color:var(--text-primary);" id="stat-cash">--</span>
+                        <span class="font-bold odometer-container" style="font-size:1.8rem; color:var(--text-primary);" id="stat-cash">--</span>
                     </div>
                 </div>
                 <div style="padding:20px; text-align:center; color:var(--text-secondary); font-size:0.8rem; line-height:1.5;">
@@ -506,8 +515,8 @@
         let playbackSpeed = 1.0;
         let currentFilter = 'all';
         
-        let savedChirps = JSON.parse(localStorage.getItem('chirps_v18') || '[]');
-        let savedProfileChirps = JSON.parse(localStorage.getItem('profile_chirps_v18') || '[]');
+        let savedChirps = JSON.parse(localStorage.getItem('chirps_v19') || '[]');
+        let savedProfileChirps = JSON.parse(localStorage.getItem('profile_chirps_v19') || '[]');
         
         let currentProfileId = null;
         let currentProfileEpisodes = [];
@@ -516,6 +525,12 @@
         
         // Active Stats for Simulation
         let activeProfileStats = null;
+
+        /* --- VERIFIED BADGE STRING --- */
+        const VERIFIED_BADGE_HTML = `
+            <svg class="verified-badge" viewBox="0 0 24 24">
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+            </svg>`;
 
         /* --- DETERMINISTIC STATS & FORMATTING --- */
         function seededRandom(str) {
@@ -564,6 +579,29 @@
             return { listens, chirps, cash };
         }
 
+        /* --- CHART LOGIC --- */
+        function getChartRank(id) {
+            // Fake 1-45 rank based on ID hash
+            const rng = seededRandom(id + "_chart");
+            const val = rng();
+            // 20% chance to be on chart
+            if (val > 0.8) {
+                return Math.floor(val * 45) + 1;
+            }
+            return null;
+        }
+
+        function getTopNewRank(id, dateStr) {
+            if (!isNewEpisode(dateStr)) return null;
+            const rng = seededRandom(id + "_newchart");
+            const val = rng();
+            // 30% chance if new
+            if (val > 0.7) {
+                return Math.floor(val * 45) + 1;
+            }
+            return null;
+        }
+
         function formatNumber(num) {
             if (num >= 1000000000) return (num / 1000000000).toFixed(1) + 'b';
             if (num >= 1000000) return (num / 1000000).toFixed(1) + 'm';
@@ -579,8 +617,7 @@
             if (!dateStr) return false;
             const date = new Date(dateStr);
             const now = new Date();
-            // Less than 7 days old
-            return (now - date) < (7 * 24 * 60 * 60 * 1000);
+            return (now - date) < (14 * 24 * 60 * 60 * 1000); // 14 days
         }
 
         /* --- ODOMETER ANIMATION SYSTEM --- */
@@ -588,12 +625,10 @@
             if(!container) return;
             const formatted = typeof value === 'number' ? formatNumber(value) : value;
             
-            // Initial Build
             if(!container.hasChildNodes()) {
                 container.innerHTML = '';
                 container.classList.add('odometer-wrapper');
-                const chars = formatted.split('');
-                chars.forEach(char => {
+                formatted.split('').forEach(char => {
                     if (/[0-9]/.test(char)) {
                         const digitWrapper = document.createElement('span');
                         digitWrapper.className = 'odometer-digit';
@@ -615,24 +650,16 @@
                 });
             }
 
-            // Update
             requestAnimationFrame(() => {
                 requestAnimationFrame(() => {
                     container.classList.add('active'); 
                     container.classList.add('pop-effect');
-                    
-                    // Handle value changes (structure might need rebuild if length changes)
-                    // For simplicity in this lightweight version, we assume length stability or simple string matching
-                    // A full impl would rebuild DOM if length changed drastically.
-                    // Here we just target existing digits.
                     
                     const chars = formatted.split('');
                     let digitIndex = 0;
                     
                     Array.from(container.children).forEach(child => {
                         if(child.classList.contains('odometer-digit')) {
-                            // If formatted string is shorter/longer, this might mismatch, 
-                            // but usually stable for incrementing stats
                             const targetDigit = parseInt(chars[digitIndex]);
                             const ribbon = child.querySelector('.odometer-ribbon');
                             if(ribbon && !isNaN(targetDigit)) {
@@ -671,7 +698,7 @@
             if (currentFilter === 'profile') entity = 'podcast';
             
             try {
-                const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(query)}&media=podcast&entity=${entity}&limit=15`);
+                const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(query)}&media=podcast&entity=${entity}&limit=45`); // Fetch more for charts
                 if (!res.ok) throw new Error('Fetch Error');
                 const data = await res.json();
                 if(!data.results) return [];
@@ -736,25 +763,27 @@
             if(trending.length === 0) {
                 trendingContainer.innerHTML = '<div style="padding:20px; color:var(--text-secondary);">Offline</div>';
             } else {
-                trending.forEach(item => {
+                trending.slice(0, 10).forEach(item => {
+                    const stats = getDeterministicStats(item.id.toString(), true);
+                    const verified = stats.chirps > 50000000 ? VERIFIED_BADGE_HTML : '';
                     const el = document.createElement('div');
                     el.className = 'podcast-card';
                     el.onclick = () => { if(item.type==='profile') openProfile(item); else playTrack(item); };
                     el.innerHTML = `
                        <div class="cover-art"><img src="${item.image}"></div>
                        <div class="font-bold text-sm" style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${item.title}</div>
-                       <div class="text-xs text-secondary">${item.artist || 'Unknown'}</div>
+                       <div class="text-xs text-secondary" style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${item.artist}${verified}</div>
                     `;
                     trendingContainer.appendChild(el);
                 });
             }
 
-            const mix = await search('Documentary');
+            const mix = await search('True Crime');
             const mixContainer = document.getElementById('mix-container');
             mixContainer.innerHTML = '';
             
             if(mix.length > 0) {
-                mix.forEach(item => {
+                mix.slice(0, 10).forEach(item => {
                     const el = document.createElement('div');
                     el.className = 'podcast-card';
                     el.onclick = () => { if(item.type==='profile') openProfile(item); else playTrack(item); };
@@ -773,13 +802,79 @@
             currentFilter = filter;
             document.querySelectorAll('.filters .chip').forEach(c => c.classList.remove('active'));
             btn.classList.add('active');
-            const val = document.getElementById('search-input').value;
-            if(val) doSearch(val);
+            
+            if(filter === 'charts') {
+                renderCharts();
+            } else {
+                const val = document.getElementById('search-input').value;
+                if(val) doSearch(val);
+                else document.getElementById('search-results').innerHTML = '<div style="text-align:center; padding:20px; opacity:0.6;">Search to explore</div>';
+            }
+        }
+
+        async function renderCharts() {
+            const container = document.getElementById('search-results');
+            container.innerHTML = '<div class="spinner"></div>';
+            
+            // Simulate fetching chart data by grabbing popular content
+            const chartItems = await search('Podcast Hits');
+            container.innerHTML = '';
+            
+            // Top 45
+            const topTitle = document.createElement('div');
+            topTitle.className = 'section-title';
+            topTitle.innerText = "Top 45 Global";
+            container.appendChild(topTitle);
+
+            chartItems.slice(0, 45).forEach((item, index) => {
+                const el = document.createElement('div');
+                el.className = 'list-item';
+                el.onclick = () => item.type === 'profile' ? openProfile(item) : playTrack(item);
+                el.innerHTML = `
+                    <div class="list-rank">${index + 1}</div>
+                    <img src="${item.image}" class="list-img">
+                    <div style="flex:1; overflow:hidden;">
+                        <div class="font-bold text-sm" style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${item.title}</div>
+                        <div class="text-xs text-secondary">${item.artist}</div>
+                    </div>
+                `;
+                container.appendChild(el);
+            });
+
+            // Top New (Simulated by filtering)
+            const newTitle = document.createElement('div');
+            newTitle.className = 'section-title';
+            newTitle.innerText = "Top New Releases";
+            container.appendChild(newTitle);
+            
+            const newItems = chartItems.filter(i => isNewEpisode(i.date)).slice(0, 45);
+            if(newItems.length === 0) container.innerHTML += '<div style="padding:20px; text-align:center; opacity:0.6;">No new chart entries this week.</div>';
+            
+            newItems.forEach((item, index) => {
+                const el = document.createElement('div');
+                el.className = 'list-item';
+                el.onclick = () => playTrack(item);
+                el.innerHTML = `
+                    <div class="list-rank" style="color:var(--text-primary)">${index + 1}</div>
+                    <img src="${item.image}" class="list-img">
+                    <div style="flex:1; overflow:hidden;">
+                        <div class="font-bold text-sm" style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${item.title} <span class="new-badge">NEW 🔥</span></div>
+                        <div class="text-xs text-secondary">${item.artist}</div>
+                    </div>
+                `;
+                container.appendChild(el);
+            });
         }
 
         function handleSearch(e) {
             if (e.key === 'Enter') {
                 document.getElementById('search-input').blur();
+                if(currentFilter === 'charts') {
+                    // Switch back to 'all' if searching from charts
+                    currentFilter = 'all';
+                    document.querySelectorAll('.filters .chip').forEach(c => c.classList.remove('active'));
+                    document.querySelector('.filters .chip').classList.add('active'); // First one
+                }
                 doSearch(e.target.value);
             }
         }
@@ -800,6 +895,16 @@
                 const stats = getDeterministicStats(item.id.toString(), item.type === 'profile', item.date);
                 const el = document.createElement('div');
                 
+                // Determine Badges
+                const verified = (item.type === 'profile' && stats.chirps > 50000000) ? VERIFIED_BADGE_HTML : '';
+                
+                let chartBadge = '';
+                const chartRank = getChartRank(item.id.toString());
+                const newRank = getTopNewRank(item.id.toString(), item.date);
+                
+                if (newRank) chartBadge = `<span class="chart-badge">🔥 #${newRank} Top New</span>`;
+                else if (chartRank) chartBadge = `<span class="chart-badge">🏆 #${chartRank} Top Podcasts</span>`;
+
                 if (item.type === 'profile') {
                     el.className = 'list-item';
                     el.onclick = () => openProfile(item);
@@ -812,8 +917,8 @@
                     el.innerHTML = `
                         <img src="${item.image}" class="list-img" style="border-radius:50%">
                         <div style="flex:1" class="info-col">
-                            <div class="font-bold">${item.title}</div>
-                            <div class="text-xs text-secondary">Podcast • ${item.artist}</div>
+                            <div class="font-bold">${item.title} ${verified}</div>
+                            <div class="text-xs text-secondary">Podcast • ${item.artist} ${chartBadge}</div>
                         </div>
                         <button style="padding:8px; background:var(--surface-highlight); border-radius:20px; font-size:0.75rem; font-weight:bold; border:none; color:inherit;">View</button>
                     `;
@@ -825,7 +930,6 @@
                     el.className = 'list-item';
                     el.onclick = () => playTrack(item);
                     
-                    // Show Chirps for Episodes now (Not listens)
                     const statContainer = document.createElement('div');
                     statContainer.className = 'flex items-center text-xs text-secondary';
                     statContainer.style.gap = '4px';
@@ -837,7 +941,7 @@
                         <img src="${item.image}" class="list-img">
                         <div style="flex:1">
                             <div class="font-bold text-sm" style="display:-webkit-box; -webkit-line-clamp:1; -webkit-box-orient:vertical; overflow:hidden;">${item.title}${newBadge}</div>
-                            <div class="text-xs text-secondary">${item.artist}</div>
+                            <div class="text-xs text-secondary">${item.artist} ${chartBadge}</div>
                             <div class="flex items-center" style="gap:10px; margin-top:4px;">
                                 <div class="stats-wrapper"></div>
                                 <div class="text-xs text-secondary">• ${timeAgo(item.date)}</div>
@@ -872,7 +976,7 @@
             
             activeProfileStats = getDeterministicStats(currentProfileId, true);
             
-            // Verification Badge Logic (> 50M Chirps)
+            // Verification Badge Logic
             const badgeEl = document.getElementById('pd-verified');
             if(activeProfileStats.chirps >= 50000000) {
                 badgeEl.classList.add('visible');
@@ -917,7 +1021,6 @@
                 el.className = 'list-item';
                 if(!ep.artist) ep.artist = document.getElementById('pd-artist').innerText;
                 
-                // New Badge Logic
                 const newBadge = isNewEpisode(ep.date) ? '<span class="new-badge">NEW 🔥</span>' : '';
 
                 el.onclick = () => playTrack(ep);
@@ -986,7 +1089,7 @@
                 document.getElementById('pd-chirp-btn').classList.add('popping');
                 setTimeout(() => document.getElementById('pd-chirp-btn').classList.remove('popping'), 300);
             }
-            localStorage.setItem('profile_chirps_v18', JSON.stringify(savedProfileChirps));
+            localStorage.setItem('profile_chirps_v19', JSON.stringify(savedProfileChirps));
         }
 
         function updateProfileChirpBtn(active) {
@@ -1048,7 +1151,7 @@
                 btn.style.color = 'var(--bg-color)';
                 showToast();
             }
-            localStorage.setItem('chirps_v18', JSON.stringify(savedChirps));
+            localStorage.setItem('chirps_v19', JSON.stringify(savedChirps));
             renderLibrary();
         }
 
@@ -1079,21 +1182,11 @@
         function timeAgo(dateString) {
             const date = new Date(dateString);
             const now = new Date();
-            const seconds = Math.floor((now - date) / 1000);
-            const minutes = Math.floor(seconds / 60);
-            const hours = Math.floor(minutes / 60);
-            const days = Math.floor(hours / 24);
-            const weeks = Math.floor(days / 7);
-            const months = Math.floor(days / 30);
-            const years = Math.floor(days / 365);
-
-            if (seconds < 60) return 'now';
-            if (minutes < 60) return `${minutes}m`;
-            if (hours < 24) return `${hours}h`;
-            if (days < 7) return `${days}d`;
-            if (weeks < 4) return `${weeks}w`;
-            if (months < 12) return `${months}mo`;
-            return `${years}y`;
+            const diff = (now - date) / 1000;
+            if(diff < 60) return 'Just now';
+            if(diff < 3600) return Math.floor(diff/60) + 'm ago';
+            if(diff < 86400) return Math.floor(diff/3600) + 'h ago';
+            return Math.floor(diff/86400) + 'd ago';
         }
 
         function renderLibrary() {
