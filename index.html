@@ -46,10 +46,12 @@
         }
 
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
+        
         body {
             background-color: var(--bg-color); color: var(--text-primary);
             font-family: var(--font-main); margin: 0; padding: 0;
-            overflow: hidden; height: 100vh; width: 100vw;
+            height: 100dvh; width: 100vw;
+            overflow: hidden;
             transition: background-color 0.3s;
             user-select: none;
         }
@@ -79,8 +81,8 @@
 
         main {
             flex: 1; overflow-y: scroll; scroll-behavior: smooth;
-            padding-bottom: calc(var(--nav-height) + var(--mini-player-height));
-            overscroll-behavior: contain; /* Prevents whole page bounce */
+            padding-bottom: calc(var(--nav-height) + var(--mini-player-height) + 20px);
+            overscroll-behavior: contain;
         }
         main::-webkit-scrollbar { display: none; }
 
@@ -146,15 +148,14 @@
             100% { transform: scale(1); filter: brightness(1); }
         }
 
-        /* --- PROFILE DETAIL VIEW (LAYERED) --- */
+        /* --- PROFILE DETAIL VIEW (FIXED OVERLAY) --- */
         #view-profile-detail { 
             background: var(--bg-color); 
-            z-index: 50; /* Changed: Sits BELOW Nav (100) and MiniPlayer (90) */
+            z-index: 50; 
             position: fixed; 
             top: 0; left: 0; width: 100%; height: 100%; 
             overflow-y: auto; 
-            /* Massive padding bottom to ensure content isn't hidden behind nav */
-            padding-bottom: 180px; 
+            padding-bottom: calc(100px + var(--safe-bottom) + 80px); 
             overscroll-behavior: contain;
         }
         .profile-header {
@@ -201,9 +202,9 @@
         .creator-item:last-child { border-bottom: none; }
         .creator-item:active { background: var(--surface-highlight); border-radius: 12px; }
 
-        /* --- MINI PLAYER & NAV --- */
+        /* --- MINI PLAYER & NAV (IPHONE FIXES) --- */
         #mini-player {
-            position: absolute; bottom: var(--nav-height); left: 0; width: 100%;
+            position: absolute; bottom: calc(var(--nav-height) + var(--safe-bottom)); left: 0; width: 100%;
             height: var(--mini-player-height); background: var(--glass);
             backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
             border-top: 1px solid rgba(255,255,255,0.05);
@@ -213,9 +214,13 @@
         #mini-player.expanded { transform: translateY(200%); }
 
         nav {
-            position: absolute; bottom: 0; width: 100%; height: var(--nav-height);
+            position: absolute; bottom: 0; width: 100%; 
+            height: calc(var(--nav-height) + var(--safe-bottom));
             background: var(--bg-color); display: flex; justify-content: space-around;
-            padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.05); z-index: 100;
+            padding-top: 15px; 
+            padding-bottom: var(--safe-bottom);
+            border-top: 1px solid rgba(255,255,255,0.05); z-index: 100;
+            align-items: flex-start;
         }
         .nav-item { display: flex; flex-direction: column; align-items: center; gap: 6px; color: var(--text-secondary); opacity: 0.7; transition: 0.2s; }
         .nav-item.active { color: var(--text-primary); opacity: 1; }
@@ -316,9 +321,8 @@
             </div>
         </main>
 
-        <!-- PROFILE DETAIL VIEW (Z-Index Fixed) -->
+        <!-- PROFILE DETAIL VIEW (FIXED OVERLAY) -->
         <div id="view-profile-detail" class="hidden">
-            <!-- Back Button with Safe Area Fix -->
             <div style="position:absolute; top:max(15px, env(safe-area-inset-top)); left:20px; z-index:10;">
                 <button onclick="closeProfile()" style="background:var(--glass); width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center; border:none; color:var(--text-primary);">
                     <svg class="icon" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
@@ -360,11 +364,13 @@
                     </div>
                     <div class="stat-box" style="grid-column: span 2;">
                         <span class="text-xs text-secondary">Total Cash Earned ($0.006/stream)</span>
-                        <span class="font-bold" style="font-size:1.8rem; color:var(--text-primary);" id="stat-cash">--</span>
+                        <!-- Cash now an odometer too -->
+                        <span class="font-bold odometer-container" style="font-size:1.8rem; color:var(--text-primary);" id="stat-cash"></span>
                     </div>
                 </div>
                 <div style="padding:20px; text-align:center; color:var(--text-secondary); font-size:0.8rem; line-height:1.5;">
-                    Stats aggregated from the last 60 episodes across the Chirpless ecosystem.
+                    Lifetime Analytics across all platforms.<br>
+                    (Includes historical data not shown in episode list)
                 </div>
             </div>
         </div>
@@ -483,8 +489,8 @@
         let playbackSpeed = 1.0;
         let currentFilter = 'all';
         
-        let savedChirps = JSON.parse(localStorage.getItem('chirps_v14') || '[]');
-        let savedProfileChirps = JSON.parse(localStorage.getItem('profile_chirps_v14') || '[]');
+        let savedChirps = JSON.parse(localStorage.getItem('chirps_v17') || '[]');
+        let savedProfileChirps = JSON.parse(localStorage.getItem('profile_chirps_v17') || '[]');
         
         let currentProfileId = null;
         let currentProfileEpisodes = [];
@@ -555,56 +561,68 @@
         /* --- ODOMETER ANIMATION SYSTEM --- */
         function updateOdometer(container, value) {
             if(!container) return;
-            const formatted = formatNumber(value);
+            // Handle currency or standard number
+            const formatted = typeof value === 'number' ? formatNumber(value) : value;
+            const chars = formatted.split('');
             
-            // Initial Build
-            if(!container.hasChildNodes()) {
+            // Build DOM Component for digit/static char
+            const createNode = (char) => {
+                if (/[0-9]/.test(char)) {
+                    const wrapper = document.createElement('span');
+                    wrapper.className = 'odometer-digit';
+                    const ribbon = document.createElement('div');
+                    ribbon.className = 'odometer-ribbon';
+                    for(let i=0; i<=9; i++) {
+                        const div = document.createElement('div');
+                        div.innerText = i;
+                        ribbon.appendChild(div);
+                    }
+                    wrapper.appendChild(ribbon);
+                    return wrapper;
+                } else {
+                    const span = document.createElement('span');
+                    span.className = 'odometer-static';
+                    span.innerText = char;
+                    return span;
+                }
+            };
+
+            // If length differs or new container, rebuild structure
+            if(container.childElementCount !== chars.length) {
                 container.innerHTML = '';
                 container.classList.add('odometer-wrapper');
-                formatted.split('').forEach(char => {
-                    if (/[0-9]/.test(char)) {
-                        const digitWrapper = document.createElement('span');
-                        digitWrapper.className = 'odometer-digit';
-                        const ribbon = document.createElement('div');
-                        ribbon.className = 'odometer-ribbon';
-                        for(let i=0; i<=9; i++) {
-                            const num = document.createElement('div');
-                            num.innerText = i;
-                            ribbon.appendChild(num);
-                        }
-                        digitWrapper.appendChild(ribbon);
-                        container.appendChild(digitWrapper);
-                    } else {
-                        const staticChar = document.createElement('span');
-                        staticChar.className = 'odometer-static';
-                        staticChar.innerText = char;
-                        container.appendChild(staticChar);
-                    }
+                chars.forEach(char => container.appendChild(createNode(char)));
+                // Force reflow/paint
+                requestAnimationFrame(() => {
+                    requestAnimationFrame(() => {
+                        container.classList.add('active');
+                        updateTransforms(container, chars);
+                    });
                 });
+            } else {
+                updateTransforms(container, chars);
             }
 
-            // Double RequestAnimationFrame
-            requestAnimationFrame(() => {
-                requestAnimationFrame(() => {
-                    container.classList.add('active'); 
-                    container.classList.add('pop-effect');
-                    
-                    const chars = formatted.split('');
-                    let digitIndex = 0;
-                    
-                    Array.from(container.children).forEach(child => {
-                        if(child.classList.contains('odometer-digit')) {
-                            const targetDigit = parseInt(chars[digitIndex]);
-                            const ribbon = child.querySelector('.odometer-ribbon');
-                            if(ribbon && !isNaN(targetDigit)) {
-                                ribbon.style.transform = `translateY(${targetDigit * -1.2}em)`;
-                            }
-                        }
-                        digitIndex++;
-                    });
-                    
-                    setTimeout(() => container.classList.remove('pop-effect'), 500);
-                });
+            // Always trigger pop effect
+            container.classList.remove('pop-effect');
+            void container.offsetWidth; // force reflow
+            container.classList.add('pop-effect');
+        }
+
+        function updateTransforms(container, chars) {
+            let idx = 0;
+            Array.from(container.children).forEach(child => {
+                const char = chars[idx];
+                if(child.classList.contains('odometer-digit')) {
+                    const target = parseInt(char);
+                    const ribbon = child.querySelector('.odometer-ribbon');
+                    if(ribbon && !isNaN(target)) {
+                        ribbon.style.transform = `translateY(${target * -1.2}em)`;
+                    }
+                } else if(child.classList.contains('odometer-static')) {
+                    if(child.innerText !== char) child.innerText = char;
+                }
+                idx++;
             });
         }
 
@@ -621,12 +639,16 @@
             const listensEl = document.getElementById('stat-listens');
             const cashEl = document.getElementById('stat-cash');
 
-            updateOdometer(chirpsEl, activeProfileStats.chirps);
-            updateOdometer(listensEl, activeProfileStats.listens);
-            cashEl.innerText = formatCurrency(activeProfileStats.cash);
+            // Only update if stats tab is visible
+            if(!document.getElementById('pd-content-stats').classList.contains('hidden')) {
+                updateOdometer(chirpsEl, activeProfileStats.chirps);
+                updateOdometer(listensEl, activeProfileStats.listens);
+                // Now uses odometer for cash too
+                updateOdometer(cashEl, formatCurrency(activeProfileStats.cash));
+            }
         }
 
-        /* --- API & DATA FETCHING --- */
+        /* --- API --- */
         async function search(query) {
             let entity = 'podcastEpisode'; 
             if (currentFilter === 'profile') entity = 'podcast';
@@ -654,7 +676,6 @@
             }
         }
 
-        // Updated Profile Fetch with Fallback Logic
         async function fetchProfileEpisodes(collectionId, artistNameFallback) {
              try {
                 const res = await fetch(`https://itunes.apple.com/lookup?id=${collectionId}&media=podcast&entity=podcastEpisode&limit=60`);
@@ -677,7 +698,6 @@
                 }));
              } catch (error) {
                  console.warn("Profile Fetch Error:", error);
-                 // Fallback: Try searching by artist name if ID lookup failed
                  if(artistNameFallback) {
                      return await search(artistNameFallback);
                  }
@@ -777,19 +797,19 @@
                     el.onclick = () => openProfile(item);
                     
                     const statContainer = document.createElement('div');
-                    statContainer.className = 'text-xs text-secondary flex items-center gap-1';
+                    statContainer.className = 'text-xs text-secondary flex items-center gap-1 info-col';
                     statContainer.style.marginTop = '4px';
                     statContainer.innerHTML = `<svg class="icon" style="width:12px;height:12px" viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg> <span class="odometer-container"></span>`;
                     
                     el.innerHTML = `
                         <img src="${item.image}" class="list-img" style="border-radius:50%">
-                        <div style="flex:1">
+                        <div style="flex:1" class="info-col">
                             <div class="font-bold">${item.title}</div>
                             <div class="text-xs text-secondary">Podcast • ${item.artist}</div>
                         </div>
                         <button style="padding:8px; background:var(--surface-highlight); border-radius:20px; font-size:0.75rem; font-weight:bold; border:none; color:inherit;">View</button>
                     `;
-                    el.querySelector('div[style="flex:1"]').appendChild(statContainer);
+                    el.querySelector('.info-col').appendChild(statContainer);
                     const odo = statContainer.querySelector('.odometer-container');
                     setTimeout(() => updateOdometer(odo, stats.chirps), 600);
 
@@ -843,20 +863,21 @@
             
             const chirpsEl = document.getElementById('stat-chirps');
             const listensEl = document.getElementById('stat-listens');
+            const cashEl = document.getElementById('stat-cash');
+            // Reset for animation
             chirpsEl.innerHTML = '';
             listensEl.innerHTML = '';
-            
-            document.getElementById('stat-cash').innerText = formatCurrency(activeProfileStats.cash);
+            cashEl.innerHTML = '';
 
             setTimeout(() => {
                 updateOdometer(chirpsEl, activeProfileStats.chirps);
                 updateOdometer(listensEl, activeProfileStats.listens);
+                updateOdometer(cashEl, formatCurrency(activeProfileStats.cash));
             }, 50);
 
             document.getElementById('pd-content-episodes').innerHTML = '<div class="spinner"></div>';
             
             const idToFetch = item.collectionId || item.id; 
-            // Pass Artist Name as fallback for the search fix
             currentProfileEpisodes = await fetchProfileEpisodes(idToFetch, item.artist);
 
             if(currentProfileEpisodes.length === 0) {
@@ -909,7 +930,6 @@
             activeProfileStats = null;
         }
 
-        /* ... [Rest of helper functions: switchProfileTab, toggleProfileChirp, etc. remain unchanged] ... */
         function switchProfileTab(tab) {
             document.getElementById('tab-episodes').classList.toggle('active', tab === 'episodes');
             document.getElementById('tab-stats').classList.toggle('active', tab === 'stats');
@@ -920,6 +940,21 @@
             if(tab === 'stats') {
                 eps.classList.add('hidden');
                 stats.classList.remove('hidden');
+                // FORCE UPDATE ON SHOW
+                if(activeProfileStats) {
+                    const chirpsEl = document.getElementById('stat-chirps');
+                    const listensEl = document.getElementById('stat-listens');
+                    const cashEl = document.getElementById('stat-cash');
+                    // Clear previous to force rebuild
+                    chirpsEl.innerHTML = '';
+                    listensEl.innerHTML = '';
+                    cashEl.innerHTML = '';
+                    setTimeout(() => {
+                        updateOdometer(chirpsEl, activeProfileStats.chirps);
+                        updateOdometer(listensEl, activeProfileStats.listens);
+                        updateOdometer(cashEl, formatCurrency(activeProfileStats.cash));
+                    }, 50);
+                }
             } else {
                 stats.classList.add('hidden');
                 eps.classList.remove('hidden');
@@ -938,7 +973,7 @@
                 document.getElementById('pd-chirp-btn').classList.add('popping');
                 setTimeout(() => document.getElementById('pd-chirp-btn').classList.remove('popping'), 300);
             }
-            localStorage.setItem('profile_chirps_v14', JSON.stringify(savedProfileChirps));
+            localStorage.setItem('profile_chirps_v17', JSON.stringify(savedProfileChirps));
         }
 
         function updateProfileChirpBtn(active) {
@@ -953,7 +988,7 @@
             }
         }
 
-        /* --- PLAYER & VISUALS (Standard) --- */
+        /* --- PLAYER & VISUALS --- */
         function playTrack(track) {
             currentTrack = track;
             const artistName = track.artist || "Unknown Creator";
@@ -1000,7 +1035,7 @@
                 btn.style.color = 'var(--bg-color)';
                 showToast();
             }
-            localStorage.setItem('chirps_v14', JSON.stringify(savedChirps));
+            localStorage.setItem('chirps_v17', JSON.stringify(savedChirps));
             renderLibrary();
         }
 
@@ -1031,11 +1066,21 @@
         function timeAgo(dateString) {
             const date = new Date(dateString);
             const now = new Date();
-            const diff = (now - date) / 1000;
-            if(diff < 60) return 'Just now';
-            if(diff < 3600) return Math.floor(diff/60) + 'm ago';
-            if(diff < 86400) return Math.floor(diff/3600) + 'h ago';
-            return Math.floor(diff/86400) + 'd ago';
+            const seconds = Math.floor((now - date) / 1000);
+            const minutes = Math.floor(seconds / 60);
+            const hours = Math.floor(minutes / 60);
+            const days = Math.floor(hours / 24);
+            const weeks = Math.floor(days / 7);
+            const months = Math.floor(days / 30);
+            const years = Math.floor(days / 365);
+
+            if (seconds < 60) return 'now';
+            if (minutes < 60) return `${minutes}m`;
+            if (hours < 24) return `${hours}h`;
+            if (days < 7) return `${days}d`;
+            if (weeks < 4) return `${weeks}w`;
+            if (months < 12) return `${months}mo`;
+            return `${years}y`;
         }
 
         function renderLibrary() {
