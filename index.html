@@ -285,14 +285,17 @@
         /* LYRICS OVERLAY */
         #lyrics-overlay {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.8); backdrop-filter: blur(8px);
+            background: rgba(0,0,0,0.8); backdrop-filter: blur(15px);
             z-index: 10; display: flex; flex-direction: column;
             justify-content: center; align-items: center; text-align: center;
             opacity: 0; pointer-events: none; transition: opacity 0.3s;
-            border-radius: 24px; padding: 20px;
+            border-radius: 24px; padding: 30px;
         }
         #lyrics-overlay.active { opacity: 1; pointer-events: auto; }
-        .lyrics-text { font-size: 1.2rem; font-weight: 500; line-height: 1.5; color: #fff; height: 100px; overflow: hidden; }
+        .lyrics-text { 
+            font-size: 1.4rem; font-weight: 600; line-height: 1.6; color: #fff; 
+            min-height: 100px; transition: opacity 0.2s;
+        }
         
         .clickable-artist { text-decoration: underline; text-decoration-color: transparent; transition: 0.2s; cursor: pointer; }
         .clickable-artist.has-multi { text-decoration-color: var(--text-secondary); }
@@ -497,7 +500,7 @@
                     
                     <!-- LYRICS OVERLAY -->
                     <div id="lyrics-overlay">
-                        <div class="spinner" style="margin-bottom:20px;"></div>
+                        <div class="spinner" id="lyrics-spinner" style="margin-bottom:20px;"></div>
                         <div class="lyrics-text" id="lyrics-content">Transcribing Audio Stream...</div>
                     </div>
                 </div>
@@ -587,7 +590,6 @@
                     deferredPrompt = null;
                 });
             } else {
-                // Fallback for iOS
                 alert("To install on iOS: Tap 'Share' icon below, then 'Add to Home Screen'.");
             }
         }
@@ -598,8 +600,8 @@
         let playbackSpeed = 1.0;
         let currentFilter = 'all';
         
-        let savedChirps = JSON.parse(localStorage.getItem('chirps_v20') || '[]');
-        let savedProfileChirps = JSON.parse(localStorage.getItem('profile_chirps_v20') || '[]');
+        let savedChirps = JSON.parse(localStorage.getItem('chirps_v21') || '[]');
+        let savedProfileChirps = JSON.parse(localStorage.getItem('profile_chirps_v21') || '[]');
         
         let currentProfileId = null;
         let currentProfileEpisodes = [];
@@ -634,7 +636,7 @@
             const val = rng();
             
             if (isProfile) {
-                // UPDATED RANGE: 50M to 5B to match potential sum of episodes
+                // UPDATED RANGE: 50M to 5B to match potential sum of episodes for search
                 const minChirps = 50000000;
                 const maxChirps = 5000000000;
                 const chirps = Math.floor(minChirps + val * (maxChirps - minChirps));
@@ -760,6 +762,108 @@
             if(!document.getElementById('pd-content-stats').classList.contains('hidden')) {
                 updateOdometer(chirpsEl, activeProfileStats.chirps);
                 updateOdometer(cashEl, formatCurrency(activeProfileStats.cash));
+            }
+        }
+
+        /* --- LYRICS/TRANSCRIPTION (ENHANCED GENERIC DATABASE) --- */
+        let lyricsInterval;
+        const PODCAST_SCRIPT = [
+            "So, I was thinking about this the other day.",
+            "Right, exactly.",
+            "It's a complex issue, for sure.",
+            "If you look at the history of it...",
+            "That's a great point you bring up.",
+            "I think we need to take a step back.",
+            "It really changes the perspective on everything.",
+            "Absolutely, I agree 100%.",
+            "But what about the long-term implications?",
+            "It's hard to say right now.",
+            "The data suggests otherwise, though.",
+            "Wait, let me just pull that up.",
+            "This reminds me of a conversation I had last week.",
+            "It's kind of wild when you actually think about it.",
+            "Yeah, totally.",
+            "Moving on to the next topic...",
+            "I feel like that's a common misconception.",
+            "Well, that's just the nature of the industry.",
+            "Can you believe that actually happened?",
+            "It's all about finding that balance.",
+            "So, what's the takeaway here?",
+            "I think it comes down to personal preference.",
+            "Let's dive a little deeper into that.",
+            "That is fascinating.",
+            "I never thought about it that way.",
+            "It's a game changer, honestly.",
+            "You know what I mean?",
+            "Exactly.",
+            "So, where do we go from here?",
+            "It's definitely something to keep an eye on.",
+            "Thanks for sharing that.",
+            "I think the audience will really resonate with this.",
+            "It's a bit controversial, but...",
+            "Let's break it down simply.",
+            "It's not as simple as black and white.",
+            "There's a lot of grey area there.",
+            "Wow, that is intense.",
+            "So, tell me more about that.",
+            "It's pretty straightforward once you get the hang of it.",
+            "I was reading an article about this yesterday.",
+            "It's completely disrupted the market.",
+            "That's the beauty of it.",
+            "I couldn't have said it better myself.",
+            "Let's switch gears for a second.",
+            "It's a classic example of what not to do.",
+            "But here's the thing...",
+            "You have to look at the bigger picture.",
+            "It's a slippery slope.",
+            "Ideally, yes, but realistically...",
+            "That's a wrap for this segment."
+        ];
+
+        function toggleLyrics() {
+            const overlay = document.getElementById('lyrics-overlay');
+            const isActive = overlay.classList.contains('active');
+            
+            if(isActive) {
+                overlay.classList.remove('active');
+                clearInterval(lyricsInterval);
+            } else {
+                overlay.classList.add('active');
+                const txt = document.getElementById('lyrics-content');
+                const spinner = document.getElementById('lyrics-spinner');
+                
+                txt.innerText = "Analyzing Audio Stream...";
+                txt.style.opacity = 0.7;
+                spinner.style.display = "block";
+                
+                // Randomize start point so it's not always the same
+                let idx = Math.floor(Math.random() * PODCAST_SCRIPT.length);
+                
+                setTimeout(() => {
+                    spinner.style.display = "none";
+                    txt.style.opacity = 1;
+                    
+                    lyricsInterval = setInterval(() => {
+                        if(idx >= PODCAST_SCRIPT.length) idx = 0;
+                        
+                        // Fade out
+                        txt.style.transform = "translateY(-10px)";
+                        txt.style.opacity = 0;
+                        
+                        setTimeout(() => {
+                            txt.innerText = PODCAST_SCRIPT[idx];
+                            // Fade in up
+                            txt.style.transform = "translateY(10px)";
+                            requestAnimationFrame(() => {
+                                txt.style.transform = "translateY(0)";
+                                txt.style.opacity = 1;
+                            });
+                            idx++;
+                        }, 200);
+                        
+                        // Randomize timing slightly for realism (2s - 4s)
+                    }, 2500 + Math.random() * 1500);
+                }, 1500); // Fake analysis time
             }
         }
 
@@ -1040,34 +1144,40 @@
             view.classList.remove('hidden');
             switchProfileTab('episodes');
             
-            activeProfileStats = getDeterministicStats(currentProfileId, true);
-            
-            // Verification Badge Logic
-            const badgeEl = document.getElementById('pd-verified');
-            if(activeProfileStats.chirps >= 50000000) {
-                badgeEl.classList.add('visible');
-            } else {
-                badgeEl.classList.remove('visible');
-            }
-
-            const chirpsEl = document.getElementById('stat-chirps');
-            const cashEl = document.getElementById('stat-cash');
-            chirpsEl.innerHTML = '';
-            cashEl.innerHTML = '';
-
-            setTimeout(() => {
-                updateOdometer(chirpsEl, activeProfileStats.chirps);
-                updateOdometer(cashEl, formatCurrency(activeProfileStats.cash));
-            }, 50);
+            activeProfileStats = null;
+            document.getElementById('stat-chirps').innerHTML = '';
+            document.getElementById('stat-cash').innerHTML = '';
+            document.getElementById('pd-verified').classList.remove('visible');
 
             document.getElementById('pd-content-episodes').innerHTML = '<div class="spinner"></div>';
             
             const idToFetch = item.collectionId || item.id; 
             currentProfileEpisodes = await fetchProfileEpisodes(idToFetch, item.artist);
 
+            // AGGREGATE STATS
+            let aggChirps = 0;
+            let aggCash = 0;
+            
             if(currentProfileEpisodes.length === 0) {
                 document.getElementById('pd-content-episodes').innerHTML = '<div style="padding:20px; text-align:center; color:var(--text-secondary)">No episodes found.</div>';
             } else {
+                currentProfileEpisodes.forEach(ep => {
+                    const s = getDeterministicStats(ep.id.toString(), false, ep.date);
+                    aggChirps += s.chirps;
+                    aggCash += s.cash;
+                });
+                
+                activeProfileStats = { chirps: aggChirps, cash: aggCash };
+                
+                setTimeout(() => {
+                    updateOdometer(document.getElementById('stat-chirps'), aggChirps);
+                    updateOdometer(document.getElementById('stat-cash'), formatCurrency(aggCash));
+                }, 50);
+
+                if (aggChirps >= 50000000) {
+                    document.getElementById('pd-verified').classList.add('visible');
+                }
+
                 document.getElementById('pd-content-episodes').innerHTML = '';
                 renderedEpisodeCount = 0;
                 renderMoreEpisodes();
@@ -1155,7 +1265,7 @@
                 document.getElementById('pd-chirp-btn').classList.add('popping');
                 setTimeout(() => document.getElementById('pd-chirp-btn').classList.remove('popping'), 300);
             }
-            localStorage.setItem('profile_chirps_v20', JSON.stringify(savedProfileChirps));
+            localStorage.setItem('profile_chirps_v21', JSON.stringify(savedProfileChirps));
         }
 
         function updateProfileChirpBtn(active) {
@@ -1217,7 +1327,7 @@
                 btn.style.color = 'var(--bg-color)';
                 showToast();
             }
-            localStorage.setItem('chirps_v20', JSON.stringify(savedChirps));
+            localStorage.setItem('chirps_v21', JSON.stringify(savedChirps));
             renderLibrary();
         }
 
@@ -1253,49 +1363,6 @@
             if(diff < 3600) return Math.floor(diff/60) + 'm ago';
             if(diff < 86400) return Math.floor(diff/3600) + 'h ago';
             return Math.floor(diff/86400) + 'd ago';
-        }
-
-        /* --- LYRICS/TRANSCRIPTION --- */
-        let lyricsInterval;
-        const FAKE_LYRICS = [
-            "Welcome back to another episode.",
-            "Today we are diving deep into the future of tech.",
-            "But first, let's talk about the new Chirpless app.",
-            "It's really changing the way we consume audio.",
-            "Exactly, the interface is so clean and fluid.",
-            "I heard they added live transcription features.",
-            "Yes, and the stats update in real-time.",
-            "That is absolutely incredible.",
-            "So, moving on to our main topic...",
-            "Artificial Intelligence in 2026.",
-            "Is it taking over, or helping us grow?",
-            "The data suggests a symbiotic relationship."
-        ];
-
-        function toggleLyrics() {
-            const overlay = document.getElementById('lyrics-overlay');
-            const isActive = overlay.classList.contains('active');
-            
-            if(isActive) {
-                overlay.classList.remove('active');
-                clearInterval(lyricsInterval);
-            } else {
-                overlay.classList.add('active');
-                const txt = document.getElementById('lyrics-content');
-                txt.innerText = "Transcribing...";
-                
-                let idx = 0;
-                lyricsInterval = setInterval(() => {
-                    if(idx >= FAKE_LYRICS.length) idx = 0;
-                    // Simulate typing/updating
-                    txt.style.opacity = 0;
-                    setTimeout(() => {
-                        txt.innerText = FAKE_LYRICS[idx];
-                        txt.style.opacity = 1;
-                        idx++;
-                    }, 200);
-                }, 3000);
-            }
         }
 
         function renderLibrary() {
