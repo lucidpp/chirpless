@@ -475,13 +475,16 @@
         let playbackSpeed = 1.0;
         let currentFilter = 'all';
         
-        let savedChirps = JSON.parse(localStorage.getItem('chirps_v8') || '[]');
-        let savedProfileChirps = JSON.parse(localStorage.getItem('profile_chirps_v8') || '[]');
+        let savedChirps = JSON.parse(localStorage.getItem('chirps_v10') || '[]');
+        let savedProfileChirps = JSON.parse(localStorage.getItem('profile_chirps_v10') || '[]');
         
         let currentProfileId = null;
         let currentProfileEpisodes = [];
         let renderedEpisodeCount = 0;
         const EPISODES_PER_PAGE = 10;
+        
+        // Active Stats for Simulation
+        let activeProfileStats = null;
 
         /* --- DETERMINISTIC STATS & FORMATTING --- */
         function seededRandom(str) {
@@ -497,26 +500,35 @@
             }
         }
 
-        function getDeterministicStats(id, isProfile = false) {
+        function getDeterministicStats(id, isProfile = false, dateStr = null) {
             const rng = seededRandom(id);
             const val = rng();
             
-            // Listens: 1k - 748m
-            const minListens = 1000;
-            const maxListens = 748000000;
-            const listenCurve = Math.pow(val, 2); 
-            const listens = Math.floor(minListens + listenCurve * (maxListens - minListens));
-
-            let chirps;
-            if(isProfile) {
-                // Profile Chirps: 21m - 101m
+            if (isProfile) {
                 const minChirps = 21000000;
                 const maxChirps = 101000000;
-                chirps = Math.floor(minChirps + val * (maxChirps - minChirps));
-            } else {
-                chirps = Math.floor(listens * (0.05 + val * 0.1));
+                const chirps = Math.floor(minChirps + val * (maxChirps - minChirps));
+                const listens = Math.floor(chirps * (10 + val * 20));
+                const cash = listens * 0.006;
+                return { listens, chirps, cash };
             }
+
+            // Episode Logic
+            let maxListens = 748000000; 
+            let minListens = 1000;
             
+            if (dateStr) {
+                const date = new Date(dateStr);
+                const now = new Date();
+                const hoursOld = (now - date) / (1000 * 60 * 60);
+                if (hoursOld < 24) { minListens = 100; maxListens = 50000; } 
+                else if (hoursOld < 168) { maxListens = 1000000; } 
+                else if (hoursOld < 720) { maxListens = 10000000; }
+            }
+
+            const listenCurve = Math.pow(val, 3);
+            const listens = Math.floor(minListens + listenCurve * (maxListens - minListens));
+            const chirps = Math.floor(listens * (0.02 + val * 0.08));
             const cash = listens * 0.006;
             return { listens, chirps, cash };
         }
@@ -533,13 +545,11 @@
 
         /* --- ODOMETER ANIMATION SYSTEM --- */
         function updateOdometer(container, value) {
+            if(!container) return;
             const formatted = formatNumber(value);
-            // If container is empty, build structure
             if(!container.hasChildNodes()) {
                 container.innerHTML = '';
                 container.classList.add('odometer-wrapper');
-                
-                // Parse string characters
                 formatted.split('').forEach(char => {
                     if (/[0-9]/.test(char)) {
                         const digitWrapper = document.createElement('span');
@@ -561,8 +571,6 @@
                     }
                 });
             }
-
-            // Force reflow then animate
             requestAnimationFrame(() => {
                 container.classList.add('active'); 
                 container.classList.add('pop-effect');
@@ -582,30 +590,25 @@
             });
         }
 
-        /* --- MOCK DATA --- */
-        function generateMockPodcasts(query, count = 6) {
-            return Array.from({length: count}, (_, i) => ({
-                id: `mock_${query}_${i}`,
-                type: Math.random() > 0.3 ? 'profile' : 'episode',
-                title: `${query} Chronicles ${i+1}`,
-                artist: `Creator ${i+1}`,
-                image: `https://images.unsplash.com/photo-1478737270239-2f02b77ac6d5?w=300&h=300&fit=crop`, 
-                src: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
-                collectionId: `mock_col_${i}`,
-                date: new Date().toISOString()
-            }));
-        }
+        /* --- LIVE SIMULATION ENGINE --- */
+        function simulateLiveStats() {
+            // Only update if Profile View is open
+            const profileView = document.getElementById('view-profile-detail');
+            if(profileView.classList.contains('hidden') || !activeProfileStats) return;
 
-        function generateMockEpisodes(count = 10) {
-            return Array.from({length: count}, (_, i) => ({
-                id: `mock_ep_${i}_${Date.now()}`,
-                title: `Episode ${i+1}: The Deep Dive`,
-                src: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
-                image: `https://images.unsplash.com/photo-1559523161-0fc0d8b38a7a?w=300&h=300&fit=crop`,
-                artist: 'Mock Artist',
-                date: new Date().toISOString(),
-                duration: 300000
-            }));
+            // Increment numbers randomly to look like activity
+            activeProfileStats.chirps += Math.floor(Math.random() * 20) + 1;
+            activeProfileStats.listens += Math.floor(Math.random() * 500) + 50;
+            activeProfileStats.cash = activeProfileStats.listens * 0.006;
+
+            const chirpsEl = document.getElementById('stat-chirps');
+            const listensEl = document.getElementById('stat-listens');
+            const cashEl = document.getElementById('stat-cash');
+
+            // Trigger updates
+            updateOdometer(chirpsEl, activeProfileStats.chirps);
+            updateOdometer(listensEl, activeProfileStats.listens);
+            cashEl.innerText = formatCurrency(activeProfileStats.cash);
         }
 
         /* --- API --- */
@@ -618,7 +621,7 @@
                 if (!res.ok) throw new Error('Fetch Error');
                 const data = await res.json();
                 
-                if(!data.results || data.results.length === 0) return generateMockPodcasts(query);
+                if(!data.results || data.results.length === 0) return [];
 
                 return data.results.map(item => ({
                     id: item.collectionId + (item.trackId || ''),
@@ -631,14 +634,12 @@
                     date: item.releaseDate
                 }));
             } catch (error) {
-                console.warn("Search API failed, using mock data.", error);
-                return generateMockPodcasts(query);
+                console.warn("API Error:", error);
+                return []; // No mock data fallback
             }
         }
 
         async function fetchProfileEpisodes(collectionId) {
-             if(String(collectionId).startsWith('mock')) return generateMockEpisodes(15);
-
              try {
                 const res = await fetch(`https://itunes.apple.com/lookup?id=${collectionId}&media=podcast&entity=podcastEpisode&limit=60`);
                 if(!res.ok) throw new Error("Fetch failed");
@@ -659,8 +660,8 @@
                     duration: item.trackTimeMillis
                 }));
              } catch (error) {
-                 console.warn("Profile fetch failed, using mock.", error);
-                 return generateMockEpisodes(15);
+                 console.warn("Profile Fetch Error:", error);
+                 return []; // No mock fallback
              }
         }
 
@@ -669,6 +670,9 @@
             renderLibrary();
             loadHomeContent();
             
+            // Start Live Heartbeat
+            setInterval(simulateLiveStats, 7000); // 7 seconds
+
             document.getElementById('view-profile-detail').addEventListener('scroll', (e) => {
                 const el = e.target;
                 if(el.scrollTop + el.clientHeight >= el.scrollHeight - 50) {
@@ -678,37 +682,43 @@
         }
 
         async function loadHomeContent() {
-            // Trending
             const trending = await search('Popular');
             const trendingContainer = document.getElementById('trending-container');
             trendingContainer.innerHTML = '';
-            trending.forEach(item => {
-                const el = document.createElement('div');
-                el.className = 'podcast-card';
-                el.onclick = () => { if(item.type==='profile') openProfile(item); else playTrack(item); };
-                el.innerHTML = `
-                   <div class="cover-art"><img src="${item.image}"></div>
-                   <div class="font-bold text-sm" style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${item.title}</div>
-                   <div class="text-xs text-secondary">${item.artist || 'Unknown'}</div>
-                `;
-                trendingContainer.appendChild(el);
-            });
+            
+            if(trending.length === 0) {
+                trendingContainer.innerHTML = '<div style="padding:20px; color:var(--text-secondary);">Offline or No Results</div>';
+            } else {
+                trending.forEach(item => {
+                    const el = document.createElement('div');
+                    el.className = 'podcast-card';
+                    el.onclick = () => { if(item.type==='profile') openProfile(item); else playTrack(item); };
+                    el.innerHTML = `
+                       <div class="cover-art"><img src="${item.image}"></div>
+                       <div class="font-bold text-sm" style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${item.title}</div>
+                       <div class="text-xs text-secondary">${item.artist || 'Unknown'}</div>
+                    `;
+                    trendingContainer.appendChild(el);
+                });
+            }
 
-            // Recommendations
             const mix = await search('Documentary');
             const mixContainer = document.getElementById('mix-container');
             mixContainer.innerHTML = '';
-            mix.forEach(item => {
-                const el = document.createElement('div');
-                el.className = 'podcast-card';
-                el.onclick = () => { if(item.type==='profile') openProfile(item); else playTrack(item); };
-                el.innerHTML = `
-                   <div class="cover-art"><img src="${item.image}"></div>
-                   <div class="font-bold text-sm" style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${item.title}</div>
-                   <div class="text-xs text-secondary">${item.artist || 'Unknown'}</div>
-                `;
-                mixContainer.appendChild(el);
-            });
+            
+            if(mix.length > 0) {
+                mix.forEach(item => {
+                    const el = document.createElement('div');
+                    el.className = 'podcast-card';
+                    el.onclick = () => { if(item.type==='profile') openProfile(item); else playTrack(item); };
+                    el.innerHTML = `
+                       <div class="cover-art"><img src="${item.image}"></div>
+                       <div class="font-bold text-sm" style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${item.title}</div>
+                       <div class="text-xs text-secondary">${item.artist || 'Unknown'}</div>
+                    `;
+                    mixContainer.appendChild(el);
+                });
+            }
         }
 
         /* --- UI LOGIC --- */
@@ -728,65 +738,65 @@
             const container = document.getElementById('search-results');
             container.innerHTML = '<div style="padding:20px; text-align:center; opacity:0.5">Searching...</div>';
             
-            try {
-                const results = await search(query);
-                container.innerHTML = '';
-                
-                results.forEach(item => {
-                    const stats = getDeterministicStats(item.id.toString(), item.type === 'profile');
-                    const el = document.createElement('div');
-                    
-                    if (item.type === 'profile') {
-                        el.className = 'list-item';
-                        el.onclick = () => openProfile(item);
-                        
-                        const statContainer = document.createElement('div');
-                        statContainer.className = 'text-xs text-secondary flex items-center gap-1';
-                        statContainer.style.marginTop = '4px';
-                        statContainer.innerHTML = `<svg class="icon" style="width:12px;height:12px" viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg> <span class="odometer-container"></span>`;
-                        
-                        el.innerHTML = `
-                            <img src="${item.image}" class="list-img" style="border-radius:50%">
-                            <div style="flex:1">
-                                <div class="font-bold">${item.title}</div>
-                                <div class="text-xs text-secondary">Podcast • ${item.artist}</div>
-                            </div>
-                            <button style="padding:8px; background:var(--surface-highlight); border-radius:20px; font-size:0.75rem; font-weight:bold; border:none; color:inherit;">View</button>
-                        `;
-                        el.querySelector('div[style="flex:1"]').appendChild(statContainer);
-                        const odo = statContainer.querySelector('.odometer-container');
-                        setTimeout(() => updateOdometer(odo, stats.chirps), 50);
-
-                    } else {
-                        el.className = 'list-item';
-                        el.onclick = () => playTrack(item);
-                        
-                        const statContainer = document.createElement('div');
-                        statContainer.className = 'flex items-center text-xs text-secondary';
-                        statContainer.style.gap = '4px';
-                        statContainer.innerHTML = `<svg class="icon" style="width:12px; height:12px;" viewBox="0 0 24 24"><polygon points="11 15 6 9 12 2 13 8 18 14 11 15"/></svg> <span class="odometer-container"></span>`;
-
-                        el.innerHTML = `
-                            <img src="${item.image}" class="list-img">
-                            <div style="flex:1">
-                                <div class="font-bold text-sm" style="display:-webkit-box; -webkit-line-clamp:1; -webkit-box-orient:vertical; overflow:hidden;">${item.title}</div>
-                                <div class="text-xs text-secondary">${item.artist}</div>
-                                <div class="flex items-center" style="gap:10px; margin-top:4px;">
-                                    <div class="stats-wrapper"></div>
-                                    <div class="text-xs text-secondary">• ${timeAgo(item.date)}</div>
-                                </div>
-                            </div>
-                        `;
-                        el.querySelector('.stats-wrapper').appendChild(statContainer);
-                        const odo = statContainer.querySelector('.odometer-container');
-                        setTimeout(() => updateOdometer(odo, stats.listens), 50);
-                    }
-                    container.appendChild(el);
-                });
-
-            } catch (err) {
-                container.innerHTML = '<div style="text-align:center; margin-top:20px;">No results.</div>';
+            const results = await search(query);
+            container.innerHTML = '';
+            
+            if(results.length === 0) {
+                container.innerHTML = '<div style="text-align:center; margin-top:20px; color:var(--text-secondary);">No results found.</div>';
+                return;
             }
+            
+            results.forEach(item => {
+                const stats = getDeterministicStats(item.id.toString(), item.type === 'profile', item.date);
+                const el = document.createElement('div');
+                
+                if (item.type === 'profile') {
+                    el.className = 'list-item';
+                    el.onclick = () => openProfile(item);
+                    
+                    const statContainer = document.createElement('div');
+                    statContainer.className = 'text-xs text-secondary flex items-center gap-1';
+                    statContainer.style.marginTop = '4px';
+                    statContainer.innerHTML = `<svg class="icon" style="width:12px;height:12px" viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg> <span class="odometer-container"></span>`;
+                    
+                    el.innerHTML = `
+                        <img src="${item.image}" class="list-img" style="border-radius:50%">
+                        <div style="flex:1">
+                            <div class="font-bold">${item.title}</div>
+                            <div class="text-xs text-secondary">Podcast • ${item.artist}</div>
+                        </div>
+                        <button style="padding:8px; background:var(--surface-highlight); border-radius:20px; font-size:0.75rem; font-weight:bold; border:none; color:inherit;">View</button>
+                    `;
+                    el.querySelector('div[style="flex:1"]').appendChild(statContainer);
+                    const odo = statContainer.querySelector('.odometer-container');
+                    setTimeout(() => updateOdometer(odo, stats.chirps), 50);
+
+                } else {
+                    el.className = 'list-item';
+                    el.onclick = () => playTrack(item);
+                    
+                    const statContainer = document.createElement('div');
+                    statContainer.className = 'flex items-center text-xs text-secondary';
+                    statContainer.style.gap = '4px';
+                    statContainer.innerHTML = `<svg class="icon" style="width:12px; height:12px;" viewBox="0 0 24 24"><polygon points="11 15 6 9 12 2 13 8 18 14 11 15"/></svg> <span class="odometer-container"></span>`;
+
+                    el.innerHTML = `
+                        <img src="${item.image}" class="list-img">
+                        <div style="flex:1">
+                            <div class="font-bold text-sm" style="display:-webkit-box; -webkit-line-clamp:1; -webkit-box-orient:vertical; overflow:hidden;">${item.title}</div>
+                            <div class="text-xs text-secondary">${item.artist}</div>
+                            <div class="flex items-center" style="gap:10px; margin-top:4px;">
+                                <div class="stats-wrapper"></div>
+                                <div class="text-xs text-secondary">• ${timeAgo(item.date)}</div>
+                            </div>
+                        </div>
+                    `;
+                    el.querySelector('.stats-wrapper').appendChild(statContainer);
+                    const odo = statContainer.querySelector('.odometer-container');
+                    setTimeout(() => updateOdometer(odo, stats.listens), 50);
+                }
+                container.appendChild(el);
+            });
         }
 
         /* --- PROFILE --- */
@@ -797,33 +807,29 @@
             document.getElementById('pd-img').src = item.image;
             document.getElementById('pd-title').innerText = item.title;
             
-            // Handle Artist Name styling for multi-artist
             const artEl = document.getElementById('pd-artist');
             artEl.innerText = item.artist;
-            if(item.artist.includes(',')) {
-                artEl.classList.add('has-multi');
-            } else {
-                artEl.classList.remove('has-multi');
-            }
+            if(item.artist.includes(',')) artEl.classList.add('has-multi');
+            else artEl.classList.remove('has-multi');
 
             updateProfileChirpBtn(savedProfileChirps.includes(currentProfileId));
 
             view.classList.remove('hidden');
             switchProfileTab('episodes');
             
-            const pStats = getDeterministicStats(currentProfileId, true);
+            // Set Initial Stats & Enable Live Updates
+            activeProfileStats = getDeterministicStats(currentProfileId, true);
             
             const chirpsEl = document.getElementById('stat-chirps');
             const listensEl = document.getElementById('stat-listens');
             chirpsEl.innerHTML = '';
             listensEl.innerHTML = '';
             
-            document.getElementById('stat-cash').innerText = formatCurrency(pStats.cash);
+            document.getElementById('stat-cash').innerText = formatCurrency(activeProfileStats.cash);
 
-            // Instant Animation
             setTimeout(() => {
-                updateOdometer(chirpsEl, pStats.chirps);
-                updateOdometer(listensEl, pStats.listens);
+                updateOdometer(chirpsEl, activeProfileStats.chirps);
+                updateOdometer(listensEl, activeProfileStats.listens);
             }, 50);
 
             document.getElementById('pd-content-episodes').innerHTML = '<div class="spinner"></div>';
@@ -843,7 +849,7 @@
             
             for(let i = renderedEpisodeCount; i < end; i++) {
                 const ep = currentProfileEpisodes[i];
-                const epStats = getDeterministicStats(ep.id.toString(), false);
+                const epStats = getDeterministicStats(ep.id.toString(), false, ep.date);
                 
                 const el = document.createElement('div');
                 el.className = 'list-item';
@@ -872,53 +878,12 @@
             renderedEpisodeCount = end;
         }
 
-        /* --- CREATORS MODAL & MULTI-ARTIST --- */
-        function handleArtistClick(artistString) {
-            if(!artistString) return;
-            // Check for comma separation
-            if(artistString.includes(',')) {
-                // Open Modal
-                const creators = artistString.split(',').map(s => s.trim()).filter(s => s.length > 0);
-                const modalList = document.getElementById('creators-list');
-                modalList.innerHTML = '';
-                
-                creators.forEach(creator => {
-                    const div = document.createElement('div');
-                    div.className = 'creator-item';
-                    div.innerHTML = `<span>${creator}</span> <svg class="icon" style="width:16px; opacity:0.5" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>`;
-                    div.onclick = () => {
-                        closeCreatorsModal();
-                        closeFullPlayer();
-                        closeProfile();
-                        switchView('discover', document.querySelectorAll('.nav-item')[1]);
-                        document.getElementById('search-input').value = creator;
-                        doSearch(creator);
-                    };
-                    modalList.appendChild(div);
-                });
-                
-                document.getElementById('modal-overlay').classList.add('active');
-                document.getElementById('creators-modal').classList.add('active');
-            } else {
-                // If single artist, try to open their profile directly if we are in player
-                // (Note: finding ID from name is hard without API search, so we search)
-                closeFullPlayer();
-                closeProfile();
-                switchView('discover', document.querySelectorAll('.nav-item')[1]);
-                document.getElementById('search-input').value = artistString;
-                doSearch(artistString);
-            }
-        }
-
-        function closeCreatorsModal() {
-            document.getElementById('modal-overlay').classList.remove('active');
-            document.getElementById('creators-modal').classList.remove('active');
-        }
-
         function closeProfile() {
             document.getElementById('view-profile-detail').classList.add('hidden');
+            activeProfileStats = null; // Stop simulating
         }
 
+        /* ... [Rest of helper functions: switchProfileTab, toggleProfileChirp, etc. remain unchanged] ... */
         function switchProfileTab(tab) {
             document.getElementById('tab-episodes').classList.toggle('active', tab === 'episodes');
             document.getElementById('tab-stats').classList.toggle('active', tab === 'stats');
@@ -947,7 +912,7 @@
                 document.getElementById('pd-chirp-btn').classList.add('popping');
                 setTimeout(() => document.getElementById('pd-chirp-btn').classList.remove('popping'), 300);
             }
-            localStorage.setItem('profile_chirps_v8', JSON.stringify(savedProfileChirps));
+            localStorage.setItem('profile_chirps_v10', JSON.stringify(savedProfileChirps));
         }
 
         function updateProfileChirpBtn(active) {
@@ -962,10 +927,9 @@
             }
         }
 
-        /* --- PLAYER --- */
+        /* --- PLAYER & VISUALS (Standard) --- */
         function playTrack(track) {
             currentTrack = track;
-            
             const artistName = track.artist || "Unknown Creator";
             
             document.getElementById('mini-img').src = track.image;
@@ -1010,7 +974,7 @@
                 btn.style.color = 'var(--bg-color)';
                 showToast();
             }
-            localStorage.setItem('chirps_v8', JSON.stringify(savedChirps));
+            localStorage.setItem('chirps_v10', JSON.stringify(savedChirps));
             renderLibrary();
         }
 
@@ -1032,7 +996,6 @@
             document.querySelectorAll('#mini-play-btn svg, #fp-play-icon').forEach(s => s.innerHTML = path);
         }
 
-        /* --- VISUALS --- */
         function showToast() {
             const t = document.getElementById('toast');
             t.classList.add('show');
@@ -1071,7 +1034,6 @@
             });
         }
 
-        /* --- NAV & SYSTEM --- */
         function switchView(id, btn) {
             document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
             document.getElementById('view-'+id).classList.remove('hidden');
@@ -1089,6 +1051,37 @@
         function toggleTheme() {
             const b = document.body;
             b.setAttribute('data-theme', b.getAttribute('data-theme')==='dark'?'light':'dark');
+        }
+        function handleArtistClick(artistString) {
+            if(!artistString) return;
+            if(artistString.includes(',')) {
+                const creators = artistString.split(',').map(s => s.trim()).filter(s => s.length > 0);
+                const modalList = document.getElementById('creators-list');
+                modalList.innerHTML = '';
+                creators.forEach(creator => {
+                    const div = document.createElement('div');
+                    div.className = 'creator-item';
+                    div.innerHTML = `<span>${creator}</span> <svg class="icon" style="width:16px; opacity:0.5" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>`;
+                    div.onclick = () => {
+                        closeCreatorsModal(); closeFullPlayer(); closeProfile();
+                        switchView('discover', document.querySelectorAll('.nav-item')[1]);
+                        document.getElementById('search-input').value = creator;
+                        doSearch(creator);
+                    };
+                    modalList.appendChild(div);
+                });
+                document.getElementById('modal-overlay').classList.add('active');
+                document.getElementById('creators-modal').classList.add('active');
+            } else {
+                closeFullPlayer(); closeProfile();
+                switchView('discover', document.querySelectorAll('.nav-item')[1]);
+                document.getElementById('search-input').value = artistString;
+                doSearch(artistString);
+            }
+        }
+        function closeCreatorsModal() {
+            document.getElementById('modal-overlay').classList.remove('active');
+            document.getElementById('creators-modal').classList.remove('active');
         }
 
         // Utils
