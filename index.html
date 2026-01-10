@@ -68,7 +68,8 @@
         .icon { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
         
         /* --- LAYOUT --- */
-        #app { height: 100%; display: flex; flex-direction: column; }
+        #app { height: 100%; display: flex; flex-direction: column; position: relative; }
+        
         header {
             padding: var(--padding); padding-top: max(15px, var(--safe-top));
             display: flex; justify-content: space-between; align-items: center; z-index: 10;
@@ -79,6 +80,7 @@
         main {
             flex: 1; overflow-y: scroll; scroll-behavior: smooth;
             padding-bottom: calc(var(--nav-height) + var(--mini-player-height));
+            overscroll-behavior: contain;
         }
         main::-webkit-scrollbar { display: none; }
 
@@ -144,11 +146,15 @@
             100% { transform: scale(1); filter: brightness(1); }
         }
 
-        /* --- PROFILE DETAIL VIEW --- */
+        /* --- PROFILE DETAIL VIEW (FIXED OVERLAY) --- */
         #view-profile-detail { 
-            background: var(--bg-color); z-index: 50; position: absolute; 
+            background: var(--bg-color); 
+            z-index: 150; /* Above Nav */
+            position: fixed; 
             top: 0; left: 0; width: 100%; height: 100%; 
-            overflow-y: auto; padding-bottom: 100px; 
+            overflow-y: auto; 
+            padding-bottom: max(120px, env(safe-area-inset-bottom));
+            overscroll-behavior: contain;
         }
         .profile-header {
             padding: var(--padding); padding-top: 80px; display: flex; flex-direction: column; align-items: center; text-align: center;
@@ -307,59 +313,59 @@
                 <div class="section-title">Your Chirps</div>
                 <div id="library-list"></div>
             </div>
+        </main>
 
-            <!-- PROFILE DETAIL VIEW -->
-            <div id="view-profile-detail" class="hidden">
-                <div style="position:absolute; top:20px; left:20px; z-index:10;">
-                    <button onclick="closeProfile()" style="background:var(--glass); width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center; border:none; color:var(--text-primary);">
-                        <svg class="icon" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+        <!-- PROFILE DETAIL VIEW (FIXED OVERLAY) -->
+        <div id="view-profile-detail" class="hidden">
+            <div style="position:absolute; top:20px; left:20px; z-index:10;">
+                <button onclick="closeProfile()" style="background:var(--glass); width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center; border:none; color:var(--text-primary);">
+                    <svg class="icon" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+                </button>
+            </div>
+            
+            <div class="profile-header">
+                <img id="pd-img" src="" class="profile-art">
+                <h1 id="pd-title" style="margin:0; font-size:1.8rem; line-height:1.2;">Title</h1>
+                <p id="pd-artist" class="text-secondary clickable-artist" onclick="handleArtistClick(this.innerText)" style="margin:8px 0;">Artist</p>
+                
+                <div class="profile-btn-row">
+                    <button id="pd-chirp-btn" class="chirp-btn-lg" onclick="toggleProfileChirp()">
+                        <svg class="icon" viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+                        <span id="pd-chirp-text">Chirp</span>
                     </button>
                 </div>
-                
-                <div class="profile-header">
-                    <img id="pd-img" src="" class="profile-art">
-                    <h1 id="pd-title" style="margin:0; font-size:1.8rem; line-height:1.2;">Title</h1>
-                    <p id="pd-artist" class="text-secondary clickable-artist" onclick="handleArtistClick(this.innerText)" style="margin:8px 0;">Artist</p>
-                    
-                    <div class="profile-btn-row">
-                        <button id="pd-chirp-btn" class="chirp-btn-lg" onclick="toggleProfileChirp()">
-                            <svg class="icon" viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
-                            <span id="pd-chirp-text">Chirp</span>
-                        </button>
+            </div>
+
+            <div class="filters" style="justify-content:center; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:15px;">
+                <div class="chip active" id="tab-episodes" onclick="switchProfileTab('episodes')">Episodes</div>
+                <div class="chip" id="tab-stats" onclick="switchProfileTab('stats')">Stats</div>
+            </div>
+
+            <!-- Tab Content: Episodes -->
+            <div id="pd-content-episodes" style="padding-bottom:100px;"></div>
+            <div id="pd-loading-more" class="hidden"><div class="spinner"></div></div>
+
+            <!-- Tab Content: Stats -->
+            <div id="pd-content-stats" class="hidden" style="padding-bottom:100px;">
+                <div class="stats-grid">
+                    <div class="stat-box">
+                        <span class="text-xs text-secondary">Total Chirps</span>
+                        <span class="font-bold odometer-container" style="font-size:1.5rem" id="stat-chirps"></span>
+                    </div>
+                    <div class="stat-box">
+                        <span class="text-xs text-secondary">Total Listens</span>
+                        <span class="font-bold odometer-container" style="font-size:1.5rem" id="stat-listens"></span>
+                    </div>
+                    <div class="stat-box" style="grid-column: span 2;">
+                        <span class="text-xs text-secondary">Total Cash Earned ($0.006/stream)</span>
+                        <span class="font-bold" style="font-size:1.8rem; color:var(--text-primary);" id="stat-cash">--</span>
                     </div>
                 </div>
-
-                <div class="filters" style="justify-content:center; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:15px;">
-                    <div class="chip active" id="tab-episodes" onclick="switchProfileTab('episodes')">Episodes</div>
-                    <div class="chip" id="tab-stats" onclick="switchProfileTab('stats')">Stats</div>
-                </div>
-
-                <!-- Tab Content: Episodes -->
-                <div id="pd-content-episodes" style="padding-bottom:100px;"></div>
-                <div id="pd-loading-more" class="hidden"><div class="spinner"></div></div>
-
-                <!-- Tab Content: Stats -->
-                <div id="pd-content-stats" class="hidden" style="padding-bottom:100px;">
-                    <div class="stats-grid">
-                        <div class="stat-box">
-                            <span class="text-xs text-secondary">Total Chirps</span>
-                            <span class="font-bold odometer-container" style="font-size:1.5rem" id="stat-chirps"></span>
-                        </div>
-                        <div class="stat-box">
-                            <span class="text-xs text-secondary">Total Listens</span>
-                            <span class="font-bold odometer-container" style="font-size:1.5rem" id="stat-listens"></span>
-                        </div>
-                        <div class="stat-box" style="grid-column: span 2;">
-                            <span class="text-xs text-secondary">Total Cash Earned ($0.006/stream)</span>
-                            <span class="font-bold" style="font-size:1.8rem; color:var(--text-primary);" id="stat-cash">--</span>
-                        </div>
-                    </div>
-                    <div style="padding:20px; text-align:center; color:var(--text-secondary); font-size:0.8rem; line-height:1.5;">
-                        Stats aggregated from the last 60 episodes across the Chirpless ecosystem.
-                    </div>
+                <div style="padding:20px; text-align:center; color:var(--text-secondary); font-size:0.8rem; line-height:1.5;">
+                    Stats aggregated from the last 60 episodes across the Chirpless ecosystem.
                 </div>
             </div>
-        </main>
+        </div>
 
         <!-- MULTI CREATOR MODAL -->
         <div class="modal-overlay" id="modal-overlay" onclick="closeCreatorsModal()"></div>
@@ -475,8 +481,8 @@
         let playbackSpeed = 1.0;
         let currentFilter = 'all';
         
-        let savedChirps = JSON.parse(localStorage.getItem('chirps_v12') || '[]');
-        let savedProfileChirps = JSON.parse(localStorage.getItem('profile_chirps_v12') || '[]');
+        let savedChirps = JSON.parse(localStorage.getItem('chirps_v13') || '[]');
+        let savedProfileChirps = JSON.parse(localStorage.getItem('profile_chirps_v13') || '[]');
         
         let currentProfileId = null;
         let currentProfileEpisodes = [];
@@ -559,7 +565,6 @@
                         digitWrapper.className = 'odometer-digit';
                         const ribbon = document.createElement('div');
                         ribbon.className = 'odometer-ribbon';
-                        // Create 0-9 strip
                         for(let i=0; i<=9; i++) {
                             const num = document.createElement('div');
                             num.innerText = i;
@@ -576,8 +581,7 @@
                 });
             }
 
-            // Double RequestAnimationFrame to Force Browser Reflow/Paint 
-            // This guarantees the animation "resets" and plays every time.
+            // Double RAF for robust animation restart
             requestAnimationFrame(() => {
                 requestAnimationFrame(() => {
                     container.classList.add('active'); 
@@ -591,7 +595,6 @@
                             const targetDigit = parseInt(chars[digitIndex]);
                             const ribbon = child.querySelector('.odometer-ribbon');
                             if(ribbon && !isNaN(targetDigit)) {
-                                // Slide to the digit
                                 ribbon.style.transform = `translateY(${targetDigit * -1.2}em)`;
                             }
                         }
@@ -679,7 +682,6 @@
         function init() {
             renderLibrary();
             loadHomeContent();
-            
             setInterval(simulateLiveStats, 1400);
 
             document.getElementById('view-profile-detail').addEventListener('scroll', (e) => {
@@ -923,7 +925,7 @@
                 document.getElementById('pd-chirp-btn').classList.add('popping');
                 setTimeout(() => document.getElementById('pd-chirp-btn').classList.remove('popping'), 300);
             }
-            localStorage.setItem('profile_chirps_v12', JSON.stringify(savedProfileChirps));
+            localStorage.setItem('profile_chirps_v13', JSON.stringify(savedProfileChirps));
         }
 
         function updateProfileChirpBtn(active) {
@@ -985,7 +987,7 @@
                 btn.style.color = 'var(--bg-color)';
                 showToast();
             }
-            localStorage.setItem('chirps_v12', JSON.stringify(savedChirps));
+            localStorage.setItem('chirps_v13', JSON.stringify(savedChirps));
             renderLibrary();
         }
 
