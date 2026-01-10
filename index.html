@@ -3,1152 +3,1148 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#050505">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Chirpless">
-    <meta name="theme-color" content="#ffffff">
-    <title>Chirpless</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- PWA Links -->
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/png" href="siteicon.png">
+    <link rel="apple-touch-icon" href="siteicon.png">
+    
+    <title>Chirpless | Connected</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
-
+        /* --- CSS VARIABLES & THEME --- */
         :root {
-            --x-main: #f91880; 
-            --x-black: #0f1419;
-            --x-gray: #536471;
-            --x-light-gray: #eff3f4;
-            --x-border: #eff3f4;
-            --anim-duration: 300ms;
-            --anim-curve: cubic-bezier(0.2, 0.8, 0.2, 1);
+            --bg-color: #050505;
+            --surface-color: #121212;
+            --surface-highlight: #1e1e1e;
+            --text-primary: #ffffff;
+            --text-secondary: #999999;
+            --accent: #ffffff;
+            --accent-dim: #333333;
+            --glass: rgba(18, 18, 18, 0.95);
+            --border-radius: 20px;
+            --padding: 20px;
+            --nav-height: 85px;
+            --mini-player-height: 70px;
+            --font-main: 'SF Pro Display', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+            --safe-top: env(safe-area-inset-top);
+            --safe-bottom: env(safe-area-inset-bottom);
         }
 
+        [data-theme="light"] {
+            --bg-color: #f2f2f7;
+            --surface-color: #ffffff;
+            --surface-highlight: #e5e5ea;
+            --text-primary: #000000;
+            --text-secondary: #666666;
+            --accent: #000000;
+            --accent-dim: #d1d1d6;
+            --glass: rgba(255, 255, 255, 0.95);
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: #ffffff;
-            color: var(--x-black);
-            overflow-x: hidden;
-            -webkit-tap-highlight-color: transparent;
-            overscroll-behavior-y: none;
+            background-color: var(--bg-color); color: var(--text-primary);
+            font-family: var(--font-main); margin: 0; padding: 0;
+            overflow: hidden; height: 100vh; width: 100vw;
+            transition: background-color 0.3s;
+            user-select: none;
         }
 
+        /* --- UTILITIES --- */
+        .hidden { display: none !important; }
+        .flex { display: flex; }
+        .flex-col { flex-direction: column; }
+        .items-center { align-items: center; }
+        .justify-between { justify-content: space-between; }
+        .w-full { width: 100%; }
+        .text-sm { font-size: 0.9rem; }
+        .text-xs { font-size: 0.75rem; }
+        .font-bold { font-weight: 700; }
+        .text-secondary { color: var(--text-secondary); }
+        .icon { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+        
+        /* --- LAYOUT --- */
+        #app { height: 100%; display: flex; flex-direction: column; }
+        header {
+            padding: var(--padding); padding-top: max(15px, var(--safe-top));
+            display: flex; justify-content: space-between; align-items: center; z-index: 10;
+        }
+        .brand { font-size: 1.4rem; font-weight: 800; display: flex; align-items: center; gap: 8px; letter-spacing: -0.5px; }
+        .brand img { width: 28px; height: 28px; border-radius: 6px; }
+
+        main {
+            flex: 1; overflow-y: scroll; scroll-behavior: smooth;
+            padding-bottom: calc(var(--nav-height) + var(--mini-player-height));
+        }
+        main::-webkit-scrollbar { display: none; }
+
+        /* --- COMPONENTS --- */
+        .section-title { font-size: 1.3rem; margin: 24px var(--padding) 12px; font-weight: 700; }
+        
+        .search-container { padding: 0 var(--padding); margin-bottom: 15px; }
+        .search-bar {
+            width: 100%; background: var(--surface-color);
+            padding: 12px 16px; border-radius: 14px;
+            display: flex; align-items: center; font-size: 1rem;
+        }
+        .search-bar input {
+            background: transparent; border: none; width: 100%; color: inherit; font-size: inherit; margin-left: 10px;
+        }
+
+        .filters { display: flex; gap: 10px; padding: 0 var(--padding); margin-bottom: 20px; overflow-x: auto; }
+        .chip {
+            padding: 8px 16px; background: var(--surface-color); border-radius: 20px;
+            font-size: 0.85rem; font-weight: 600; color: var(--text-secondary);
+            border: 1px solid transparent; transition: all 0.2s; white-space: nowrap;
+        }
+        .chip.active { background: var(--text-primary); color: var(--bg-color); }
+
+        .horizontal-scroll { display: flex; gap: 16px; overflow-x: auto; padding: 0 var(--padding) 10px; }
+        .horizontal-scroll::-webkit-scrollbar { display: none; }
+        
+        .podcast-card { min-width: 140px; width: 140px; display: flex; flex-direction: column; gap: 8px; }
+        .cover-art {
+            width: 100%; aspect-ratio: 1; background: var(--surface-highlight);
+            border-radius: 16px; overflow: hidden; position: relative;
+        }
+        .cover-art img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s; }
+        .podcast-card:active .cover-art img { transform: scale(0.95); }
+
+        .list-item {
+            display: flex; align-items: center; gap: 16px; padding: 12px var(--padding);
+            border-bottom: 1px solid rgba(255,255,255,0.03); transition: background 0.2s;
+        }
+        .list-item:active { background: var(--surface-highlight); }
+        .list-img { width: 56px; height: 56px; border-radius: 12px; background: var(--surface-highlight); object-fit: cover; flex-shrink: 0; }
+        
         /* --- ODOMETER ANIMATION --- */
-        .odometer {
-            display: inline-flex;
-            flex-direction: row;
-            align-items: baseline;
-            height: 1.25em;
-            line-height: 1.25em;
-            overflow: hidden;
-            vertical-align: bottom;
-            font-variant-numeric: tabular-nums;
-            white-space: nowrap;
-            position: relative;
+        .odometer-wrapper {
+            display: inline-flex; align-items: baseline; overflow: hidden;
+            height: 1.2em; line-height: 1.2em; vertical-align: bottom;
+            font-variant-numeric: tabular-nums; opacity: 0;
+            transition: opacity 0.3s ease;
         }
-
-        .odometer-digit-container {
-            display: inline-block;
-            height: 100%;
-            width: 0.65em;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .odometer-suffix {
-            font-size: 0.75em;
-            font-weight: 700;
-            vertical-align: 0.3em;
-            margin-left: 1px;
-        }
-
-        .odometer-punct {
-            font-size: 1em;
-            font-weight: 400;
-            vertical-align: baseline;
-        }
-
-        .digit-track {
-            position: absolute;
-            top: 0; left: 0; width: 100%;
+        .odometer-wrapper.active { opacity: 1; }
+        .odometer-digit { display: inline-block; height: 1.2em; position: relative; }
+        .odometer-ribbon {
             display: flex; flex-direction: column;
+            transition: transform 1.5s cubic-bezier(0.16, 1, 0.3, 1);
             will-change: transform;
-            height: 1100%; /* 0-9-0 */
-            transition: transform var(--anim-duration) var(--anim-curve);
+        }
+        .odometer-ribbon div { height: 1.2em; display: flex; justify-content: center; align-items: center; }
+        .odometer-static { display: inline-block; }
+        .pop-effect { animation: pop-bright 0.2s ease-out forwards; }
+        @keyframes pop-bright {
+            0% { transform: scale(1); filter: brightness(1); }
+            50% { transform: scale(1.1); filter: brightness(1.3); }
+            100% { transform: scale(1); filter: brightness(1); }
         }
 
-        .digit-value {
-            height: 9.09%; display: flex; align-items: center; justify-content: center;
+        /* --- PROFILE DETAIL VIEW --- */
+        #view-profile-detail { 
+            background: var(--bg-color); z-index: 50; position: absolute; 
+            top: 0; left: 0; width: 100%; height: 100%; 
+            overflow-y: auto; padding-bottom: 100px; 
         }
-
-        .track-reset { transition: none !important; }
-
-        /* --- INTERACTIONS --- */
-        .action-icon-wrapper {
-            padding: 8px; border-radius: 9999px; transition: background 0.2s; margin: -8px; 
-            display: flex; align-items: center; justify-content: center;
+        .profile-header {
+            padding: var(--padding); padding-top: 80px; display: flex; flex-direction: column; align-items: center; text-align: center;
         }
-        .action-group:hover .action-icon-wrapper.like { background-color: rgba(249, 24, 128, 0.1); }
-        .action-group:hover .action-count.like { color: var(--x-main); }
+        .profile-art { width: 160px; height: 160px; border-radius: 30px; margin-bottom: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); object-fit: cover; }
+        .profile-btn-row { display: flex; gap: 15px; margin-top: 20px; width: 100%; justify-content: center; }
         
-        .liked-active .icon-like {
-            fill: var(--x-main); stroke: var(--x-main);
-            animation: heart-pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        .chirp-btn-lg {
+            display: flex; align-items: center; gap: 8px; padding: 12px 30px;
+            border-radius: 30px; font-weight: 700; border: 1px solid var(--surface-highlight);
+            background: var(--surface-color); color: var(--text-primary);
+            transition: all 0.2s;
         }
-        .liked-active .action-count { color: var(--x-main); }
+        .chirp-btn-lg.active {
+            background: var(--text-primary); color: var(--bg-color); transform: scale(1.05); border-color: var(--text-primary);
+        }
+        .chirp-btn-lg:active { transform: scale(0.95); }
 
-        .reposted .icon-repost { stroke: #00ba7c; fill: rgba(0, 186, 124, 0.1); }
-        .reposted .action-count { color: #00ba7c; }
-
-        @keyframes heart-pop {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.3); }
-            100% { transform: scale(1); }
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 0 var(--padding); margin-top: 20px; }
+        .stat-box {
+            background: var(--surface-color); padding: 15px; border-radius: 16px;
+            display: flex; flex-direction: column; gap: 4px;
         }
 
-        /* --- POLLS --- */
-        .poll-option {
-            position: relative;
-            height: 32px;
-            border-radius: 4px;
-            display: flex;
-            align-items: center;
-            margin-bottom: 8px;
-            cursor: pointer;
-            overflow: hidden;
-            transition: background 0.2s;
+        /* --- CREATORS MODAL --- */
+        #creators-modal {
+            position: fixed; bottom: 0; left: 0; width: 100%;
+            background: var(--surface-color); border-top-left-radius: 30px; border-top-right-radius: 30px;
+            z-index: 400; transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+            padding: 20px; padding-bottom: max(40px, var(--safe-bottom));
+            box-shadow: 0 -10px 40px rgba(0,0,0,0.5);
         }
-        .poll-option.voted { cursor: default; }
-        .poll-bg {
-            position: absolute; top: 0; left: 0; bottom: 0;
-            background-color: rgba(249, 24, 128, 0.12); /* Red tint */
-            width: 0%;
-            transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-            z-index: 0;
+        #creators-modal.active { transform: translateY(0); }
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5); z-index: 350; opacity: 0; pointer-events: none; transition: opacity 0.3s;
         }
-        .poll-bg.winner { background-color: rgba(249, 24, 128, 0.25); }
-        .poll-label {
-            position: relative; z-index: 1; padding: 0 12px;
-            width: 100%; display: flex; justify-content: space-between;
-            font-weight: 500; font-size: 15px;
+        .modal-overlay.active { opacity: 1; pointer-events: auto; }
+        .creator-item {
+            padding: 16px; border-bottom: 1px solid rgba(255,255,255,0.05);
+            font-size: 1.1rem; font-weight: 500; display: flex; justify-content: space-between; align-items: center;
         }
-        .poll-btn-style {
-            border: 1px solid var(--x-main); color: var(--x-main); font-weight: 700;
-            border-radius: 9999px; height: 32px; display: flex; align-items: center; justify-content: center;
-            width: 100%; transition: background 0.2s;
-        }
-        .poll-btn-style:hover { background-color: rgba(249, 24, 128, 0.1); }
+        .creator-item:last-child { border-bottom: none; }
+        .creator-item:active { background: var(--surface-highlight); border-radius: 12px; }
 
-        /* --- UTILS --- */
-        .tab-active { font-weight: 700; color: var(--x-black); border-bottom: 4px solid var(--x-main); }
-        .tab-inactive { color: var(--x-gray); font-weight: 500; }
-        .trending-badge { font-size: 11px; font-weight: 700; margin-bottom: 4px; display: flex; align-items: center; gap: 4px; }
-        .verified-badge { color: var(--x-main); margin-left: 2px; display: inline-block; vertical-align: text-bottom; }
-        .pinned-indicator { font-size: 11px; font-weight: 700; color: #536471; display: flex; align-items: center; gap: 4px; margin-bottom: 4px; }
-        
-        /* Menu */
-        .post-menu { position: absolute; top: 10px; right: 10px; background: white; box-shadow: 0 0 10px rgba(0,0,0,0.1); border-radius: 8px; z-index: 20; display: none; flex-direction: column; overflow: hidden; border: 1px solid #eff3f4; }
-        .post-menu button { padding: 8px 16px; text-align: left; font-size: 13px; font-weight: 600; width: 150px; transition: background 0.1s; }
-        .post-menu button:hover { background: #f7f9f9; }
-        .post-menu button.delete { color: #f4212e; }
-        .post-menu.show { display: flex; }
+        /* --- MINI PLAYER & NAV --- */
+        #mini-player {
+            position: absolute; bottom: var(--nav-height); left: 0; width: 100%;
+            height: var(--mini-player-height); background: var(--glass);
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border-top: 1px solid rgba(255,255,255,0.05);
+            display: flex; align-items: center; padding: 0 var(--padding);
+            z-index: 90; transition: transform 0.3s ease;
+        }
+        #mini-player.expanded { transform: translateY(200%); }
 
-        /* Media Upload Label */
-        .upload-label { cursor: pointer; display: flex; align-items: center; justify-content: center; width: 100%; height: 100px; border: 2px dashed #eff3f4; border-radius: 8px; color: var(--x-main); font-weight: 600; transition: background 0.2s; }
-        .upload-label:hover { background: #f7f9f9; }
+        nav {
+            position: absolute; bottom: 0; width: 100%; height: var(--nav-height);
+            background: var(--bg-color); display: flex; justify-content: space-around;
+            padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.05); z-index: 100;
+        }
+        .nav-item { display: flex; flex-direction: column; align-items: center; gap: 6px; color: var(--text-secondary); opacity: 0.7; transition: 0.2s; }
+        .nav-item.active { color: var(--text-primary); opacity: 1; }
+
+        /* --- FULL PLAYER --- */
+        #full-player {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: var(--bg-color); z-index: 200; 
+            display: flex; flex-direction: column;
+            transform: translateY(100%); transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+            overflow: hidden; 
+            padding: max(20px, var(--safe-top)) var(--padding) max(20px, var(--safe-bottom));
+        }
+        #full-player.active { transform: translateY(0); }
+
+        .player-top { flex: 0 0 auto; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .player-art-area { flex: 1; display: flex; align-items: center; justify-content: center; min-height: 0; margin-bottom: 20px; position: relative; }
+        .player-art-wrapper { width: 100%; height: 100%; max-width: 340px; max-height: 340px; aspect-ratio: 1; border-radius: 24px; overflow: hidden; box-shadow: 0 10px 40px rgba(0,0,0,0.3); }
+        .player-art-wrapper img { width: 100%; height: 100%; object-fit: cover; }
+        .player-info { flex: 0 0 auto; margin-bottom: 10px; text-align: left; }
+        .player-controls-area { flex: 0 0 auto; width: 100%; }
+
+        .clickable-artist { text-decoration: underline; text-decoration-color: transparent; transition: 0.2s; cursor: pointer; }
+        .clickable-artist.has-multi { text-decoration-color: var(--text-secondary); }
+        .clickable-artist.has-multi:active { color: var(--text-primary); }
+
+        /* --- TOAST --- */
+        #toast {
+            position: fixed; top: -60px; left: 50%; transform: translateX(-50%);
+            background: var(--text-primary); color: var(--bg-color);
+            padding: 12px 24px; border-radius: 30px; font-weight: 700;
+            z-index: 300; transition: top 0.4s;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2); display: flex; align-items: center; gap: 8px;
+        }
+        #toast.show { top: 20px; }
+        @keyframes pop { 0% { transform: scale(1); } 50% { transform: scale(1.3); } 100% { transform: scale(1); } }
+        .popping { animation: pop 0.3s ease; }
+
+        /* Loader */
+        .spinner { width: 20px; height: 20px; border: 2px solid var(--text-secondary); border-top-color: var(--text-primary); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 10px auto; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
     </style>
 </head>
-<body class="flex justify-center min-h-screen">
+<body data-theme="dark">
 
-    <!-- DESKTOP SIDEBAR -->
-    <header class="hidden md:flex flex-col items-end w-[275px] pr-6 h-screen sticky top-0">
-        <div class="w-[250px] flex flex-col h-full pb-4 pt-2">
-            <div class="w-12 h-12 flex items-center justify-center hover:bg-gray-100 rounded-full cursor-pointer transition-colors mb-2" onclick="navTo('home')">
-                <img src="site.png" class="w-8 h-8 object-contain" onerror="this.style.display='none'; this.parentElement.innerHTML='<div class=\'w-8 h-8 bg-black rounded-full\'></div>'">
+    <div id="app">
+        <!-- HEADER -->
+        <header>
+            <div class="brand">
+                <img src="siteicon.png" alt="icon">
+                Chirpless
             </div>
-            
-            <nav class="space-y-2 w-full text-xl">
-                <a onclick="navTo('home')" class="flex items-center gap-4 p-3 rounded-full hover:bg-gray-100 cursor-pointer">
-                    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
-                    <span class="font-bold">Home</span>
-                </a>
-                <a onclick="navTo('trending')" class="flex items-center gap-4 p-3 rounded-full hover:bg-gray-100 cursor-pointer">
-                    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                    <span>Trending</span>
-                </a>
-                <a onclick="navTo('collab')" class="flex items-center gap-4 p-3 rounded-full hover:bg-gray-100 cursor-pointer">
-                    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle></svg>
-                    <span>Collab</span>
-                </a>
-                <a onclick="navTo('profile')" class="flex items-center gap-4 p-3 rounded-full hover:bg-gray-100 cursor-pointer">
-                    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-                    <span>Profile</span>
-                </a>
-            </nav>
+            <button onclick="toggleTheme()" style="background:none; border:none; color:inherit;">
+                <svg class="icon" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+            </button>
+        </header>
 
-            <button onclick="openCompose()" class="mt-4 bg-[#f91880] text-white font-bold py-3.5 rounded-full w-[90%] shadow-md hover:bg-[#e0245e] transition-colors">Post</button>
+        <main id="main-content">
+            <!-- HOME VIEW -->
+            <div id="view-home" class="view">
+                <div class="section-title">Trending Now</div>
+                <div class="horizontal-scroll" id="trending-container" style="min-height:200px">
+                    <div class="spinner"></div>
+                </div>
+                <div class="section-title">Recommended for You</div>
+                <div class="horizontal-scroll" id="mix-container" style="min-height:200px">
+                    <div class="spinner"></div>
+                </div>
+                <div style="height:20px"></div>
+            </div>
 
-            <div class="mt-auto flex items-center gap-3 p-3 hover:bg-gray-100 rounded-full cursor-pointer" onclick="navTo('profile')">
-                <img id="sidebar-avatar" class="w-10 h-10 rounded-full bg-gray-200 object-cover">
-                <div class="hidden xl:block">
-                    <div class="font-bold text-sm flex items-center"><span id="sidebar-name">User</span><span id="sidebar-verified"></span></div>
-                    <div class="text-gray-500 text-sm" id="sidebar-handle">@handle</div>
+            <!-- DISCOVER VIEW -->
+            <div id="view-discover" class="view hidden">
+                <div class="section-title">Explore</div>
+                <div class="search-container">
+                    <div class="search-bar">
+                        <svg class="icon" style="opacity:0.5; width:20px;" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                        <input type="search" id="search-input" placeholder="Search..." onkeypress="handleSearch(event)">
+                    </div>
+                </div>
+                <div class="filters">
+                    <div class="chip active" onclick="setFilter('all', this)">All</div>
+                    <div class="chip" onclick="setFilter('profile', this)">Profiles</div>
+                    <div class="chip" onclick="setFilter('episode', this)">Episodes</div>
+                </div>
+                <div id="search-results">
+                    <div style="text-align:center; color:var(--text-secondary); margin-top:40px;">
+                        Find creators and stories.
+                    </div>
                 </div>
             </div>
-        </div>
-    </header>
 
-    <!-- MAIN FEED AREA -->
-    <main id="app" class="w-full max-w-[600px] min-h-screen border-x border-gray-100 pb-16 md:pb-0 relative">
-        
-        <!-- HEADER MOBILE -->
-        <div class="sticky top-0 z-50 bg-white/85 backdrop-blur-md border-b border-gray-100 md:hidden flex justify-between items-center px-4 h-14">
-            <img id="mobile-header-avatar" class="w-8 h-8 rounded-full bg-gray-200 object-cover" onclick="navTo('profile')">
-            <img src="site.png" class="w-6 h-6 object-contain" onerror="this.style.display='none';">
-            <div class="w-8"></div>
-        </div>
-
-        <!-- VIEW: HOME -->
-        <div id="view-home" class="view-section">
-            <div class="flex border-b border-gray-100 sticky top-14 md:top-0 bg-white z-40">
-                <div id="tab-foryou" class="flex-1 h-12 flex items-center justify-center cursor-pointer tab-active" onclick="switchFeedTab('foryou')">For you</div>
-                <div id="tab-following" class="flex-1 h-12 flex items-center justify-center cursor-pointer tab-inactive" onclick="switchFeedTab('following')">Following</div>
+            <!-- LIBRARY VIEW -->
+            <div id="view-library" class="view hidden">
+                <div class="section-title">Your Chirps</div>
+                <div id="library-list"></div>
             </div>
-            <!-- Desktop Compose -->
-            <div class="hidden md:flex gap-3 p-4 border-b border-gray-100">
-                <img id="desktop-compose-avatar" class="w-10 h-10 rounded-full bg-gray-200 object-cover">
-                <div class="flex-1">
-                    <textarea id="desktop-input" maxlength="400" placeholder="What is happening?!" class="w-full text-xl outline-none resize-none h-12 focus:h-24 transition-all placeholder-gray-500"></textarea>
+
+            <!-- PROFILE DETAIL VIEW -->
+            <div id="view-profile-detail" class="hidden">
+                <div style="position:absolute; top:20px; left:20px; z-index:10;">
+                    <button onclick="closeProfile()" style="background:var(--glass); width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center; border:none; color:var(--text-primary);">
+                        <svg class="icon" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+                    </button>
+                </div>
+                
+                <div class="profile-header">
+                    <img id="pd-img" src="" class="profile-art">
+                    <h1 id="pd-title" style="margin:0; font-size:1.8rem; line-height:1.2;">Title</h1>
+                    <p id="pd-artist" class="text-secondary clickable-artist" onclick="handleArtistClick(this.innerText)" style="margin:8px 0;">Artist</p>
                     
-                    <!-- Previews -->
-                    <div id="desktop-media-preview" class="hidden mt-2 rounded-xl overflow-hidden relative"></div>
-                    <div id="desktop-poll-creator" class="hidden mt-2 border border-gray-200 rounded-xl p-3">
-                        <div id="desktop-poll-options">
-                            <input type="text" class="w-full border-b border-gray-100 p-2 outline-none mb-2 poll-option-input" placeholder="Choice 1">
-                            <input type="text" class="w-full border-b border-gray-100 p-2 outline-none mb-2 poll-option-input" placeholder="Choice 2">
-                        </div>
-                        <div class="flex justify-between items-center mt-2">
-                            <button onclick="addPollOption('desktop')" class="text-[#f91880] text-sm font-bold">+ Add option</button>
-                            <button onclick="clearPoll('desktop')" class="text-red-500 text-sm font-bold">Remove</button>
-                        </div>
-                    </div>
-
-                    <div class="flex justify-between items-center mt-2 pt-2 border-t border-gray-100">
-                        <div class="flex gap-2 text-[#f91880] items-center">
-                            <!-- Image Upload Only -->
-                            <label class="p-2 hover:bg-red-50 rounded-full cursor-pointer"><input type="file" accept="image/*" hidden onchange="handleMedia('desktop')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg></label>
-                            
-                            <button class="p-2 hover:bg-red-50 rounded-full cursor-pointer" onclick="togglePollCreator('desktop')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg></button>
-                            
-                            <!-- Desktop AI Collab Select -->
-                            <select id="desktop-collab-select" class="ml-2 bg-transparent text-sm font-bold text-[#f91880] outline-none cursor-pointer hover:bg-red-50 p-1 rounded max-w-[150px]">
-                                <option value="none">✨ Collab</option>
-                                <!-- JS Populated -->
-                            </select>
-                        </div>
-                        <button id="desktop-post-btn" onclick="submitPost('desktop')" class="bg-[#f91880] text-white font-bold px-4 py-1.5 rounded-full disabled:opacity-50" disabled>Post</button>
+                    <div class="profile-btn-row">
+                        <button id="pd-chirp-btn" class="chirp-btn-lg" onclick="toggleProfileChirp()">
+                            <svg class="icon" viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+                            <span id="pd-chirp-text">Chirp</span>
+                        </button>
                     </div>
                 </div>
-            </div>
-            <div id="feed-list"></div>
-        </div>
 
-        <!-- VIEW: PROFILE -->
-        <div id="view-profile" class="view-section hidden">
-            <div class="h-32 bg-gray-200 relative overflow-hidden">
-                <img id="profile-banner" class="w-full h-full object-cover hidden">
-            </div>
-            <div class="px-4 relative">
-                <div class="w-32 h-32 rounded-full border-4 border-white bg-white absolute -top-16 overflow-hidden">
-                    <img id="profile-lg-avatar" class="w-full h-full object-cover">
+                <div class="filters" style="justify-content:center; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:15px;">
+                    <div class="chip active" id="tab-episodes" onclick="switchProfileTab('episodes')">Episodes</div>
+                    <div class="chip" id="tab-stats" onclick="switchProfileTab('stats')">Stats</div>
                 </div>
-                <div class="flex justify-end gap-2 py-3">
-                    <button onclick="editProfile()" class="px-4 py-1.5 border border-gray-300 rounded-full font-bold text-sm hover:bg-gray-100">Edit profile</button>
-                </div>
-                <div class="mt-2">
-                    <h1 class="font-black text-xl flex items-center gap-1"><span id="profile-name">Name</span><span id="profile-verify"></span></h1>
-                    <div class="text-gray-500 text-sm">@<span id="profile-handle">handle</span></div>
-                    <p class="text-gray-900 text-[15px] mt-2 mb-2" id="profile-bio"></p>
-                    <div class="flex gap-4 mt-3 text-sm">
-                        <span class="hover:underline cursor-pointer"><span class="font-bold text-black odometer" id="profile-following">0</span> <span class="text-gray-500">Following</span></span>
-                        <span class="hover:underline cursor-pointer" onclick="editFollowers()"><span class="font-bold text-black odometer" id="profile-followers">0</span> <span class="text-gray-500">Followers</span></span>
+
+                <!-- Tab Content: Episodes -->
+                <div id="pd-content-episodes" style="padding-bottom:100px;"></div>
+                <div id="pd-loading-more" class="hidden"><div class="spinner"></div></div>
+
+                <!-- Tab Content: Stats -->
+                <div id="pd-content-stats" class="hidden" style="padding-bottom:100px;">
+                    <div class="stats-grid">
+                        <div class="stat-box">
+                            <span class="text-xs text-secondary">Total Chirps</span>
+                            <span class="font-bold odometer-container" style="font-size:1.5rem" id="stat-chirps"></span>
+                        </div>
+                        <div class="stat-box">
+                            <span class="text-xs text-secondary">Total Listens</span>
+                            <span class="font-bold odometer-container" style="font-size:1.5rem" id="stat-listens"></span>
+                        </div>
+                        <div class="stat-box" style="grid-column: span 2;">
+                            <span class="text-xs text-secondary">Total Cash Earned ($0.006/stream)</span>
+                            <span class="font-bold" style="font-size:1.8rem; color:var(--text-primary);" id="stat-cash">--</span>
+                        </div>
+                    </div>
+                    <div style="padding:20px; text-align:center; color:var(--text-secondary); font-size:0.8rem; line-height:1.5;">
+                        Stats aggregated from the last 60 episodes across the Chirpless ecosystem.
                     </div>
                 </div>
             </div>
-            <div id="profile-list" class="mt-4 border-t border-gray-100"></div>
+        </main>
+
+        <!-- MULTI CREATOR MODAL -->
+        <div class="modal-overlay" id="modal-overlay" onclick="closeCreatorsModal()"></div>
+        <div id="creators-modal">
+            <div style="text-align:center; font-weight:bold; margin-bottom:20px; opacity:0.6;">Featured Creators</div>
+            <div id="creators-list"></div>
         </div>
 
-        <!-- VIEW: COLLAB -->
-        <div id="view-collab" class="view-section hidden p-4">
-            <h1 class="font-bold text-xl mb-4">Bot Collabs</h1>
-            <p class="text-gray-500 text-sm mb-4">Create bots to boost your engagement rate.</p>
-            <button onclick="createBot()" class="w-full py-3 bg-black text-white rounded-full font-bold mb-4">Create New Bot</button>
-            <div id="bot-list" class="space-y-2"></div>
+        <!-- TOAST -->
+        <div id="toast">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="var(--bg-color)"><path d="M21 15C21 19 17 22 13 22C9 22 10 18 10 15C10 12 5 10 3 8C5.5 6 12 2 12 2Z"/></svg>
+            Chirped!
         </div>
 
-        <!-- VIEW: TRENDING (Mobile) -->
-        <div id="view-trending" class="view-section hidden">
-            <div class="p-4 border-b border-gray-100 font-bold text-xl">Trending</div>
-            <div id="mobile-trending-list"></div>
-        </div>
-
-        <!-- VIEW: POST DETAIL -->
-        <div id="view-post-detail" class="view-section hidden">
-            <div class="flex items-center gap-6 px-4 h-14 border-b border-gray-100 sticky top-0 bg-white/85 backdrop-blur z-50">
-                <button onclick="navTo('home')">←</button>
-                <span class="font-bold text-lg">Post</span>
+        <!-- MINI PLAYER -->
+        <div id="mini-player" onclick="openFullPlayer()">
+            <img id="mini-img" src="" class="list-img" style="opacity:0">
+            <div style="flex:1; margin-left:12px; overflow:hidden;">
+                <div id="mini-title" class="font-bold text-sm" style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Select a chirp</div>
+                <div id="mini-artist" class="text-xs text-secondary">Chirpless</div>
             </div>
-            <div id="post-detail-content"></div>
-            <div class="p-4 border-b border-gray-100 font-bold text-lg">Replies</div>
-            <div id="post-replies-list" class="pb-20"></div>
+            <button id="mini-play-btn" onclick="event.stopPropagation(); togglePlay()" style="padding:10px; background:none; border:none; color:inherit;">
+                <svg class="icon" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+            </button>
         </div>
 
-    </main>
-
-    <!-- RIGHT SIDEBAR (TRENDING) -->
-    <div class="hidden lg:block w-[350px] pl-8 pt-4 h-screen sticky top-0">
-        <div class="bg-gray-100 rounded-full h-10 flex items-center px-4 mb-4 text-gray-500">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-            <span class="ml-3">Search</span>
-        </div>
-        <div class="bg-gray-50 rounded-2xl py-3">
-            <h2 class="font-black text-xl px-4 mb-3">Trending for you</h2>
-            <div id="trending-wall"></div>
-        </div>
-    </div>
-
-    <!-- MOBILE NAV -->
-    <nav class="fixed bottom-0 w-full h-[53px] bg-white border-t border-gray-100 flex justify-around items-center md:hidden z-50">
-        <button onclick="navTo('home')"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg></button>
-        <button onclick="navTo('trending')"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg></button>
-        <button onclick="navTo('collab')"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle></svg></button>
-        <button onclick="navTo('profile')"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg></button>
-    </nav>
-
-    <!-- FAB -->
-    <button onclick="openCompose()" class="fixed bottom-20 right-4 w-14 h-14 bg-[#f91880] rounded-full text-white shadow-lg flex items-center justify-center md:hidden z-50">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"></path></svg>
-    </button>
-
-    <!-- COMPOSE MODAL -->
-    <div id="compose-modal" class="fixed inset-0 bg-black/40 z-[60] hidden flex items-start justify-center pt-12">
-        <div class="bg-white w-full h-full md:h-auto md:w-[600px] md:rounded-2xl p-4 flex flex-col">
-            <div class="flex justify-between mb-4">
-                <button onclick="closeCompose()">Cancel</button>
-                <button id="mobile-post-btn" onclick="submitPost('mobile')" class="bg-[#f91880] text-white font-bold px-4 py-1.5 rounded-full disabled:opacity-50" disabled>Post</button>
+        <!-- NAV -->
+        <nav>
+            <div class="nav-item active" onclick="switchView('home', this)">
+                <svg class="icon" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                <span class="text-xs">Home</span>
             </div>
-            <textarea id="mobile-input" maxlength="400" placeholder="What is happening?!" class="w-full text-xl outline-none resize-none h-32"></textarea>
-            
-            <div id="mobile-media-preview" class="hidden mt-2 rounded-xl overflow-hidden relative max-h-60"></div>
-            
-            <div id="mobile-poll-creator" class="hidden mt-2 border border-gray-200 rounded-xl p-3">
-                <div id="mobile-poll-options">
-                    <input type="text" class="w-full border-b border-gray-100 p-2 outline-none mb-2 poll-option-input" placeholder="Choice 1">
-                    <input type="text" class="w-full border-b border-gray-100 p-2 outline-none mb-2 poll-option-input" placeholder="Choice 2">
-                </div>
-                <div class="flex justify-between items-center mt-2">
-                    <button onclick="addPollOption('mobile')" class="text-[#f91880] text-sm font-bold">+ Add option</button>
-                    <button onclick="clearPoll('mobile')" class="text-red-500 text-sm font-bold">Remove</button>
+            <div class="nav-item" onclick="switchView('discover', this)">
+                <svg class="icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <span class="text-xs">Discover</span>
+            </div>
+            <div class="nav-item" onclick="switchView('library', this)">
+                <svg class="icon" viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+                <span class="text-xs">Library</span>
+            </div>
+        </nav>
+
+        <!-- FULL PLAYER -->
+        <div id="full-player">
+            <!-- Top -->
+            <div class="player-top">
+                <button onclick="closeFullPlayer()" style="background:none; border:none; color:inherit;"><svg class="icon" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg></button>
+                <span class="text-xs font-bold" style="letter-spacing:2px;">NOW PLAYING</span>
+                <div style="width:24px;"></div>
+            </div>
+
+            <!-- Art -->
+            <div class="player-art-area">
+                <div class="player-art-wrapper">
+                    <img id="fp-img" src="" alt="Album Art">
                 </div>
             </div>
 
-            <div class="mt-4 pt-3 border-t border-gray-100 flex gap-4 text-[#f91880] items-center">
-                <label><input type="file" accept="image/*" hidden onchange="handleMedia('mobile')">📷</label>
-                <button onclick="togglePollCreator('mobile')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg></button>
-                <select id="mobile-collab-select" class="ml-auto bg-transparent text-sm font-bold text-[#f91880] outline-none cursor-pointer hover:bg-blue-50 p-1 rounded max-w-[150px]">
-                    <option value="none">✨ Collab</option>
-                    <!-- JS populated -->
-                </select>
+            <!-- Info -->
+            <div class="player-info">
+                <h2 id="fp-title" style="margin:0; font-size:1.5rem; line-height:1.2; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">Title</h2>
+                <p id="fp-artist" class="text-secondary clickable-artist" onclick="handleArtistClick(this.innerText)" style="margin:5px 0 0;">Artist</p>
+            </div>
+
+            <!-- Controls -->
+            <div class="player-controls-area">
+                <canvas id="wave-canvas" style="width:100%; height:50px; margin-bottom:10px; opacity:0.6;"></canvas>
+                
+                <div id="progress-container" onclick="seek(event)" style="width:100%; height:20px; display:flex; align-items:center;">
+                    <div style="width:100%; height:4px; background:var(--accent-dim); border-radius:2px; overflow:hidden;">
+                        <div id="progress-fill" style="width:0%; height:100%; background:var(--text-primary);"></div>
+                    </div>
+                </div>
+                <div class="flex justify-between text-xs text-secondary" style="margin-bottom:20px;">
+                    <span id="time-current">0:00</span>
+                    <span id="time-total">0:00</span>
+                </div>
+
+                <div class="flex justify-between items-center" style="max-width:350px; margin:0 auto;">
+                    <button class="bird-btn" id="fp-bird-btn" onclick="toggleTrackChirp()" style="background:var(--surface-highlight); width:44px; height:44px; border-radius:50%; display:flex; align-items:center; justify-content:center; color:inherit; border:none;">
+                        <svg class="icon" viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+                    </button>
+                    
+                    <button onclick="skip(-15)" style="background:none; border:none; color:inherit;"><svg class="icon" style="width:32px; height:32px;" viewBox="0 0 24 24"><path d="M11 17l-5-5 5-5M18 17l-5-5 5-5"/></svg></button>
+                    
+                    <button onclick="togglePlay()" style="width:70px; height:70px; background:var(--text-primary); color:var(--bg-color); border-radius:50%; display:flex; align-items:center; justify-content:center; border:none;">
+                        <svg id="fp-play-icon" style="width:32px; height:32px; fill:currentColor; stroke:none;" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                    </button>
+                    
+                    <button onclick="skip(15)" style="background:none; border:none; color:inherit;"><svg class="icon" style="width:32px; height:32px;" viewBox="0 0 24 24"><path d="M13 17l5-5-5-5M6 17l5-5-5-5"/></svg></button>
+                    
+                    <button onclick="changeSpeed()" style="background:var(--surface-highlight); width:44px; height:44px; border-radius:50%; font-weight:bold; font-size:0.8rem; border:none; color:inherit;" id="speed-btn">1x</button>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- ONBOARDING -->
-    <div id="onboarding-modal" class="fixed inset-0 bg-white z-[100] flex flex-col items-center justify-center p-6 hidden">
-        <div class="w-10 h-10 mb-8 bg-black rounded-full"></div>
-        <h1 class="text-3xl font-black mb-8 text-left w-full max-w-sm">Create your account</h1>
-        <div class="w-full max-w-sm space-y-6">
-            <div class="relative"><input type="text" id="setup-name" class="w-full border p-4 rounded outline-none" placeholder="Name"></div>
-            <div class="relative"><input type="text" id="setup-handle" class="w-full border p-4 rounded outline-none" placeholder="Handle"></div>
-            <div class="relative"><input type="number" id="setup-followers" class="w-full border p-4 rounded outline-none" placeholder="Initial Followers" value="100"></div>
-        </div>
-        <button onclick="completeSetup()" class="mt-8 bg-black text-white font-bold py-4 px-8 rounded-full w-full max-w-sm">Next</button>
-    </div>
-
-    <!-- EDIT PROFILE MODAL -->
-    <div id="edit-profile-modal" class="fixed inset-0 bg-black/40 z-[90] hidden flex items-center justify-center p-4">
-        <div class="bg-white w-full max-w-md rounded-2xl p-6 relative">
-            <h2 class="text-xl font-bold mb-4">Edit Profile</h2>
-            <div class="space-y-4">
-                <label class="upload-label">
-                    <input type="file" accept="image/*" hidden onchange="handleProfileMedia('banner')">
-                    <span>Upload Banner</span>
-                </label>
-                <label class="upload-label" style="height: 60px;">
-                    <input type="file" accept="image/*" hidden onchange="handleProfileMedia('avatar')">
-                    <span>Upload Avatar</span>
-                </label>
-                <input type="text" id="edit-name" class="w-full border p-3 rounded" placeholder="Name">
-                <textarea id="edit-bio" class="w-full border p-3 rounded" placeholder="Bio" rows="3"></textarea>
-            </div>
-            <div class="flex justify-end gap-3 mt-6">
-                <button onclick="document.getElementById('edit-profile-modal').classList.add('hidden')" class="px-4 py-2 rounded-full border">Cancel</button>
-                <button onclick="saveEditProfile()" class="px-4 py-2 rounded-full bg-black text-white font-bold">Save</button>
-            </div>
-        </div>
-    </div>
+    <audio id="audio-player" preload="none"></audio>
 
     <script>
-        const VERIFIED = `<svg class="verified-badge w-5 h-5 text-[#f91880] inline-block ml-1 align-text-bottom" viewBox="0 0 24 24" fill="currentColor"><path d="M22.5 12.5c0-1.58-.875-2.95-2.148-3.6.154-.435.238-.905.238-1.4 0-2.21-1.71-3.998-3.818-3.998-.47 0-.92.175-1.297.503C14.78 2.67 13.438 2 12 2s-2.78.67-3.475 2.005c-.377-.328-.827-.503-1.297-.503-2.108 0-3.818 1.788-3.818 3.998 0 .495.084.965.238 1.4 1.273-.65 2.148-2.02 2.148-3.6zM9.763 16.296l-4.24-4.24 1.414-1.414 2.826 2.826 6.364-6.364 1.414 1.414-7.778 7.778z"></path></svg>`;
-        const DECAY_CONSTANT = 21600; 
-        const AI_NAMES = ["TechGuru", "CryptoWhale", "MemeLord", "Artist_X", "NewsBot", "Traveler"];
-        const AI_REPLIES = ["Big if true.", "🚀", "Interesting.", "Following.", "Perspective.", "Elaborate?", "Underrated.", "First!", "Really?", "Facts."];
-        const COLLAB_BOOSTS = { 'viral': 1.5, 'trend': 3.0, 'hype': 5.0, 'none': 1.0 };
-        const COLLAB_NAMES = { 'viral': 'ViralGPT', 'trend': 'TrendSetter', 'hype': 'HypeBeast' };
+        // PWA REGISTRATION
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./service-worker.js')
+                    .then(reg => console.log('SW registered'))
+                    .catch(err => console.log('SW failed', err));
+            });
+        }
+
+        /* --- STATE & CONFIG --- */
+        let currentTrack = null;
+        let isPlaying = false;
+        let playbackSpeed = 1.0;
+        let currentFilter = 'all';
         
-        // STRICT LIMITS
-        const MAX_POSTS = 1; 
+        let savedChirps = JSON.parse(localStorage.getItem('chirps_v8') || '[]');
+        let savedProfileChirps = JSON.parse(localStorage.getItem('profile_chirps_v8') || '[]');
+        
+        let currentProfileId = null;
+        let currentProfileEpisodes = [];
+        let renderedEpisodeCount = 0;
+        const EPISODES_PER_PAGE = 10;
 
-        let appData = { user: { name: "", handle: "", followers: 0, following: 0, avatar: "", bio: "" }, posts: [], bots: [], lastActive: Date.now(), currentTab: 'foryou' };
-        let tempProfileMedia = { avatar: null, banner: null };
-        let currentMedia = { desktop: null, mobile: null };
-        const els = {};
-
-        function init() {
-            els.feed = document.getElementById('feed-list');
-            els.profile = document.getElementById('profile-list');
-            els.trendingWall = document.getElementById('trending-wall');
-            els.mobileTrending = document.getElementById('mobile-trending-list');
-            els.onboarding = document.getElementById('onboarding-modal');
-            els.botList = document.getElementById('bot-list');
-            els.postDetail = document.getElementById('post-detail-content');
-            els.replyList = document.getElementById('post-replies-list');
-
-            try {
-                // CLEANUP: If a post has type:video, delete it on startup to prevent visual glitches
-                const saved = localStorage.getItem('x_sim_v3');
-                if (saved) {
-                    const parsed = JSON.parse(saved);
-                    appData = { ...appData, ...parsed };
-                    
-                    // Filter out corrupt or video posts
-                    appData.posts = appData.posts.filter(p => !p.media || p.media.type !== 'video');
-                    
-                    if (!Array.isArray(appData.bots)) appData.bots = [];
-                    if (!appData.currentTab) appData.currentTab = 'foryou';
-                    
-                    if(appData.posts.length > MAX_POSTS) {
-                        appData.posts = appData.posts.slice(0, MAX_POSTS);
-                    }
-                    
-                    simulateTimeAway();
-                    renderAll();
-                    updateTabUI();
-                } else {
-                    if(els.onboarding) els.onboarding.classList.remove('hidden');
-                }
-            } catch (e) {
-                console.error("Save file corrupted, resetting", e);
-                localStorage.removeItem('x_sim_v3'); 
-                if(els.onboarding) els.onboarding.classList.remove('hidden');
+        /* --- DETERMINISTIC STATS & FORMATTING --- */
+        function seededRandom(str) {
+            let h = 1779033703 ^ str.length;
+            for(let i = 0; i < str.length; i++) {
+                h = Math.imul(h ^ str.charCodeAt(i), 3432918353);
+                h = h << 13 | h >>> 19;
             }
-
-            setInterval(simulateLive, 1000);
-            setInterval(renderTrending, 2000);
-            
-            ['desktop', 'mobile'].forEach(m => {
-                const inp = document.getElementById(`${m}-input`);
-                if(inp) inp.addEventListener('input', e => document.getElementById(`${m}-post-btn`).disabled = e.target.value.trim() === '');
-            });
-
-            window.addEventListener('beforeunload', saveState);
-            document.addEventListener('visibilitychange', () => {
-                if (document.hidden) saveState();
-                else { appData.lastActive = parseInt(localStorage.getItem('x_sim_last_active')) || Date.now(); simulateTimeAway(); }
-            });
-        }
-
-        function saveState() {
-            appData.lastActive = Date.now();
-            if(appData.posts.length > MAX_POSTS) {
-                appData.posts = appData.posts.slice(0, MAX_POSTS);
+            return function() {
+                h = Math.imul(h ^ (h >>> 16), 2246822507);
+                h = Math.imul(h ^ (h >>> 13), 3266489909);
+                return (h >>> 0) / 4294967296;
             }
-            try {
-                const str = JSON.stringify(appData);
-                if(str.length > 1000000) { 
-                    appData.posts.forEach(p => delete p.media);
-                    localStorage.setItem('x_sim_v3', JSON.stringify(appData));
-                } else {
-                    localStorage.setItem('x_sim_v3', str);
-                }
-                localStorage.setItem('x_sim_last_active', appData.lastActive);
-            } catch (e) { console.warn("Storage error"); }
         }
 
-        function completeSetup() {
-            const name = document.getElementById('setup-name').value || "User";
-            const handle = document.getElementById('setup-handle').value.replace('@','') || "user";
-            const followers = parseInt(document.getElementById('setup-followers').value) || 100;
+        function getDeterministicStats(id, isProfile = false) {
+            const rng = seededRandom(id);
+            const val = rng();
             
-            appData.user = { name, handle, followers, following: Math.floor(followers * 0.4), avatar: `https://ui-avatars.com/api/?name=${name}&background=random`, bio: "Just chatting." };
-            appData.bots.push({ name: "AutoBot", followers: 10000, id: Date.now() });
-            
-            appData.posts.push({
-                id: Date.now().toString(), content: "Just joined! #NewHere", timestamp: Date.now(),
-                stats: { views: 0, likes: 0, reposts: 0, replies: 0 }, interacted: { like: false, repost: false },
-                collab: 'none', comments: [], pinned: false, poll: null, isBot: false
-            });
-            els.onboarding.classList.add('hidden');
-            saveState(); renderAll();
-        }
+            // Listens: 1k - 748m
+            const minListens = 1000;
+            const maxListens = 748000000;
+            const listenCurve = Math.pow(val, 2); 
+            const listens = Math.floor(minListens + listenCurve * (maxListens - minListens));
 
-        function switchFeedTab(tab) {
-            appData.currentTab = tab;
-            updateTabUI();
-            renderFeeds();
-        }
-
-        function updateTabUI() {
-            const forYouTab = document.getElementById('tab-foryou');
-            const followingTab = document.getElementById('tab-following');
-            if(appData.currentTab === 'foryou') {
-                forYouTab.className = "flex-1 h-12 flex items-center justify-center cursor-pointer tab-active";
-                followingTab.className = "flex-1 h-12 flex items-center justify-center cursor-pointer text-gray-500 font-medium";
+            let chirps;
+            if(isProfile) {
+                // Profile Chirps: 21m - 101m
+                const minChirps = 21000000;
+                const maxChirps = 101000000;
+                chirps = Math.floor(minChirps + val * (maxChirps - minChirps));
             } else {
-                forYouTab.className = "flex-1 h-12 flex items-center justify-center cursor-pointer text-gray-500 font-medium";
-                followingTab.className = "flex-1 h-12 flex items-center justify-center cursor-pointer tab-active";
+                chirps = Math.floor(listens * (0.05 + val * 0.1));
             }
+            
+            const cash = listens * 0.006;
+            return { listens, chirps, cash };
         }
 
         function formatNumber(num) {
-            if (num < 1000) return num.toLocaleString();
-            if (num >= 1000000000) return (num / 1000000000).toFixed(1) + 'B';
-            if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
-            return (num / 1000).toFixed(1) + 'K';
+            if (num >= 1000000) return (num / 1000000).toFixed(1) + 'm';
+            if (num >= 1000) return (num / 1000).toFixed(1) + 'k';
+            return num.toLocaleString();
         }
 
-        function renderOdometer(element, value) {
-            if (!element) return;
-            const currentStr = element.getAttribute('data-value-str') || "";
-            const newStr = formatNumber(value);
-            if (currentStr === newStr) return;
+        function formatCurrency(num) {
+            return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(num);
+        }
 
-            const oldClean = currentStr.replace(/[^0-9]/g, '').length;
-            const newClean = newStr.replace(/[^0-9]/g, '').length;
-            const formatChanged = (currentStr.includes('K') !== newStr.includes('K')) || (oldClean !== newClean);
-
-            if (formatChanged || !element.children.length) {
-                element.innerHTML = generateOdometerHTML(newStr);
-            } else {
-                const digits = element.querySelectorAll('.digit-track');
-                const newChars = newStr.split('');
-                let digitIdx = 0;
-                newChars.forEach(char => {
-                    if (!/[0-9]/.test(char)) return;
-                    const digit = parseInt(char);
-                    if (digitIdx < digits.length) {
-                        const track = digits[digitIdx];
-                        const currentDigit = parseInt(track.getAttribute('data-digit'));
-                        if (currentDigit !== digit) {
-                            if (currentDigit === 9 && digit === 0) {
-                                track.classList.add('track-reset'); track.style.transform = `translateY(-${10 * 9.09}%)`;
-                                setTimeout(() => { track.classList.add('track-reset'); track.style.transform = `translateY(0%)`; track.setAttribute('data-digit', 0); void track.offsetHeight; track.classList.remove('track-reset'); }, 300);
-                            } else {
-                                track.classList.remove('track-reset'); track.style.transform = `translateY(-${digit * 9.09}%)`; track.setAttribute('data-digit', digit);
-                            }
+        /* --- ODOMETER ANIMATION SYSTEM --- */
+        function updateOdometer(container, value) {
+            const formatted = formatNumber(value);
+            // If container is empty, build structure
+            if(!container.hasChildNodes()) {
+                container.innerHTML = '';
+                container.classList.add('odometer-wrapper');
+                
+                // Parse string characters
+                formatted.split('').forEach(char => {
+                    if (/[0-9]/.test(char)) {
+                        const digitWrapper = document.createElement('span');
+                        digitWrapper.className = 'odometer-digit';
+                        const ribbon = document.createElement('div');
+                        ribbon.className = 'odometer-ribbon';
+                        for(let i=0; i<=9; i++) {
+                            const num = document.createElement('div');
+                            num.innerText = i;
+                            ribbon.appendChild(num);
                         }
-                        digitIdx++;
+                        digitWrapper.appendChild(ribbon);
+                        container.appendChild(digitWrapper);
+                    } else {
+                        const staticChar = document.createElement('span');
+                        staticChar.className = 'odometer-static';
+                        staticChar.innerText = char;
+                        container.appendChild(staticChar);
                     }
                 });
             }
-            element.setAttribute('data-value-str', newStr);
+
+            // Force reflow then animate
+            requestAnimationFrame(() => {
+                container.classList.add('active'); 
+                container.classList.add('pop-effect');
+                const chars = formatted.split('');
+                let digitIndex = 0;
+                Array.from(container.children).forEach(child => {
+                    if(child.classList.contains('odometer-digit')) {
+                        const targetDigit = parseInt(chars[digitIndex]);
+                        const ribbon = child.querySelector('.odometer-ribbon');
+                        if(ribbon && !isNaN(targetDigit)) {
+                            ribbon.style.transform = `translateY(${targetDigit * -1.2}em)`;
+                        }
+                    }
+                    digitIndex++;
+                });
+                setTimeout(() => container.classList.remove('pop-effect'), 500);
+            });
         }
 
-        function generateOdometerHTML(str) {
-            return str.split('').map(char => {
-                if (/[0-9]/.test(char)) {
-                    const digit = parseInt(char);
-                    const tapeHtml = [0,1,2,3,4,5,6,7,8,9,0].map(d => `<span class="digit-value">${d}</span>`).join('');
-                    return `<span class="odometer-digit-container"><span class="digit-track" style="transform: translateY(-${digit * 9.09}%)" data-digit="${digit}">${tapeHtml}</span></span>`;
-                } else if (/[KMB]/.test(char)) { return `<span class="odometer-suffix">${char}</span>`; }
-                else { return `<span class="odometer-punct">${char}</span>`; }
-            }).join('');
+        /* --- MOCK DATA --- */
+        function generateMockPodcasts(query, count = 6) {
+            return Array.from({length: count}, (_, i) => ({
+                id: `mock_${query}_${i}`,
+                type: Math.random() > 0.3 ? 'profile' : 'episode',
+                title: `${query} Chronicles ${i+1}`,
+                artist: `Creator ${i+1}`,
+                image: `https://images.unsplash.com/photo-1478737270239-2f02b77ac6d5?w=300&h=300&fit=crop`, 
+                src: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
+                collectionId: `mock_col_${i}`,
+                date: new Date().toISOString()
+            }));
         }
 
-        function togglePollCreator(mode) {
-            const el = document.getElementById(`${mode}-poll-creator`);
-            el.classList.toggle('hidden');
+        function generateMockEpisodes(count = 10) {
+            return Array.from({length: count}, (_, i) => ({
+                id: `mock_ep_${i}_${Date.now()}`,
+                title: `Episode ${i+1}: The Deep Dive`,
+                src: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
+                image: `https://images.unsplash.com/photo-1559523161-0fc0d8b38a7a?w=300&h=300&fit=crop`,
+                artist: 'Mock Artist',
+                date: new Date().toISOString(),
+                duration: 300000
+            }));
         }
-        function addPollOption(mode) {
-            const container = document.getElementById(`${mode}-poll-options`);
-            const count = container.children.length;
-            if(count >= 4) return;
-            const input = document.createElement('input');
-            input.className = "w-full border-b border-gray-100 p-2 outline-none mb-2 poll-option-input";
-            input.placeholder = `Choice ${count + 1}`;
-            container.appendChild(input);
-        }
-        function clearPoll(mode) {
-            document.getElementById(`${mode}-poll-creator`).classList.add('hidden');
-            const container = document.getElementById(`${mode}-poll-options`);
-            container.innerHTML = `
-                <input type="text" class="w-full border-b border-gray-100 p-2 outline-none mb-2 poll-option-input" placeholder="Choice 1">
-                <input type="text" class="w-full border-b border-gray-100 p-2 outline-none mb-2 poll-option-input" placeholder="Choice 2">
-            `;
-        }
-        function vote(postId, optionIdx) {
-            const post = appData.posts.find(p => p.id === postId);
-            if(post && post.poll && post.poll.voted === null && !post.poll.ended) {
-                post.poll.voted = optionIdx;
-                post.poll.options[optionIdx].votes++;
-                post.poll.total++;
-                updatePostDOM(post);
-                saveState();
+
+        /* --- API --- */
+        async function search(query) {
+            let entity = 'podcastEpisode'; 
+            if (currentFilter === 'profile') entity = 'podcast';
+            
+            try {
+                const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(query)}&media=podcast&entity=${entity}&limit=15`);
+                if (!res.ok) throw new Error('Fetch Error');
+                const data = await res.json();
+                
+                if(!data.results || data.results.length === 0) return generateMockPodcasts(query);
+
+                return data.results.map(item => ({
+                    id: item.collectionId + (item.trackId || ''),
+                    type: item.kind === 'podcast' ? 'profile' : 'episode',
+                    title: item.trackName || item.collectionName || 'Untitled',
+                    artist: item.artistName || item.collectionName || 'Unknown Creator',
+                    image: item.artworkUrl600,
+                    src: item.episodeUrl,
+                    collectionId: item.collectionId,
+                    date: item.releaseDate
+                }));
+            } catch (error) {
+                console.warn("Search API failed, using mock data.", error);
+                return generateMockPodcasts(query);
             }
         }
-        function endPoll(postId) {
-             const post = appData.posts.find(p => p.id === postId);
-             if(post && post.poll) {
-                 post.poll.ended = true;
-                 updatePostDOM(post);
-                 saveState();
+
+        async function fetchProfileEpisodes(collectionId) {
+             if(String(collectionId).startsWith('mock')) return generateMockEpisodes(15);
+
+             try {
+                const res = await fetch(`https://itunes.apple.com/lookup?id=${collectionId}&media=podcast&entity=podcastEpisode&limit=60`);
+                if(!res.ok) throw new Error("Fetch failed");
+                const data = await res.json();
+                
+                if (!data.results || data.results.length === 0) throw new Error("No episodes");
+
+                const showInfo = data.results[0];
+                const artistName = showInfo.artistName || showInfo.collectionName || "Unknown";
+                
+                return data.results.slice(1).map(item => ({
+                    id: item.trackId,
+                    title: item.trackName || "Untitled Episode",
+                    src: item.episodeUrl,
+                    image: item.artworkUrl600,
+                    artist: artistName, 
+                    date: item.releaseDate,
+                    duration: item.trackTimeMillis
+                }));
+             } catch (error) {
+                 console.warn("Profile fetch failed, using mock.", error);
+                 return generateMockEpisodes(15);
              }
         }
 
-        function updateCollabSelects() {
-            const options = `<option value="none">✨ Collab</option>` + appData.bots.map(b => `<option value="${b.id}">${b.name} (${formatNumber(b.followers)})</option>`).join('');
-            const d = document.getElementById('desktop-collab-select');
-            const m = document.getElementById('mobile-collab-select');
-            if(d) d.innerHTML = options;
-            if(m) m.innerHTML = options;
+        /* --- INIT & HOME CONTENT --- */
+        function init() {
+            renderLibrary();
+            loadHomeContent();
+            
+            document.getElementById('view-profile-detail').addEventListener('scroll', (e) => {
+                const el = e.target;
+                if(el.scrollTop + el.clientHeight >= el.scrollHeight - 50) {
+                    renderMoreEpisodes();
+                }
+            });
         }
 
-        function simulateTimeAway() {
-            const now = Date.now();
-            const elapsed = (now - appData.lastActive) / 1000;
-            if (elapsed < 1) return;
-            appData.posts.forEach(post => {
-                const age = (now - post.timestamp) / 1000;
-                if (age > 172800) return; 
+        async function loadHomeContent() {
+            // Trending
+            const trending = await search('Popular');
+            const trendingContainer = document.getElementById('trending-container');
+            trendingContainer.innerHTML = '';
+            trending.forEach(item => {
+                const el = document.createElement('div');
+                el.className = 'podcast-card';
+                el.onclick = () => { if(item.type==='profile') openProfile(item); else playTrack(item); };
+                el.innerHTML = `
+                   <div class="cover-art"><img src="${item.image}"></div>
+                   <div class="font-bold text-sm" style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${item.title}</div>
+                   <div class="text-xs text-secondary">${item.artist || 'Unknown'}</div>
+                `;
+                trendingContainer.appendChild(el);
+            });
 
-                const decay = Math.exp(-age / DECAY_CONSTANT); 
-                const followers = post.isBot ? post.botFollowers : appData.user.followers;
-                let baseRate = (followers / 100) + (Math.log10(Math.max(10, followers)) * 5);
+            // Recommendations
+            const mix = await search('Documentary');
+            const mixContainer = document.getElementById('mix-container');
+            mixContainer.innerHTML = '';
+            mix.forEach(item => {
+                const el = document.createElement('div');
+                el.className = 'podcast-card';
+                el.onclick = () => { if(item.type==='profile') openProfile(item); else playTrack(item); };
+                el.innerHTML = `
+                   <div class="cover-art"><img src="${item.image}"></div>
+                   <div class="font-bold text-sm" style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${item.title}</div>
+                   <div class="text-xs text-secondary">${item.artist || 'Unknown'}</div>
+                `;
+                mixContainer.appendChild(el);
+            });
+        }
+
+        /* --- UI LOGIC --- */
+        function setFilter(filter, btn) {
+            currentFilter = filter;
+            document.querySelectorAll('.filters .chip').forEach(c => c.classList.remove('active'));
+            btn.classList.add('active');
+            const val = document.getElementById('search-input').value;
+            if(val) doSearch(val);
+        }
+
+        function handleSearch(e) {
+            if (e.key === 'Enter') doSearch(e.target.value);
+        }
+
+        async function doSearch(query) {
+            const container = document.getElementById('search-results');
+            container.innerHTML = '<div style="padding:20px; text-align:center; opacity:0.5">Searching...</div>';
+            
+            try {
+                const results = await search(query);
+                container.innerHTML = '';
                 
-                if(!post.isBot) {
-                     let botPower = appData.bots.reduce((a,b) => a + b.followers, 0);
-                     baseRate += (botPower / 500);
-                }
-                
-                const boost = COLLAB_BOOSTS[post.collab || 'none'];
-                const speed = baseRate * boost * decay;
-                const added = Math.floor(speed * elapsed);
-                
-                if (added > 0) {
-                    post.stats.views += added;
-                    post.stats.likes += Math.floor(added * 0.08); 
-                    post.stats.reposts += Math.floor(added * 0.03);
-                    generateAIReplies(post, Math.floor(added * 0.01));
-                    simulatePollVotes(post, added);
+                results.forEach(item => {
+                    const stats = getDeterministicStats(item.id.toString(), item.type === 'profile');
+                    const el = document.createElement('div');
                     
-                    if(!post.isBot) {
-                        const newFollowers = Math.floor(added * 0.0005);
-                        if(newFollowers > 0) appData.user.followers += newFollowers;
+                    if (item.type === 'profile') {
+                        el.className = 'list-item';
+                        el.onclick = () => openProfile(item);
+                        
+                        const statContainer = document.createElement('div');
+                        statContainer.className = 'text-xs text-secondary flex items-center gap-1';
+                        statContainer.style.marginTop = '4px';
+                        statContainer.innerHTML = `<svg class="icon" style="width:12px;height:12px" viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg> <span class="odometer-container"></span>`;
+                        
+                        el.innerHTML = `
+                            <img src="${item.image}" class="list-img" style="border-radius:50%">
+                            <div style="flex:1">
+                                <div class="font-bold">${item.title}</div>
+                                <div class="text-xs text-secondary">Podcast • ${item.artist}</div>
+                            </div>
+                            <button style="padding:8px; background:var(--surface-highlight); border-radius:20px; font-size:0.75rem; font-weight:bold; border:none; color:inherit;">View</button>
+                        `;
+                        el.querySelector('div[style="flex:1"]').appendChild(statContainer);
+                        const odo = statContainer.querySelector('.odometer-container');
+                        setTimeout(() => updateOdometer(odo, stats.chirps), 50);
+
+                    } else {
+                        el.className = 'list-item';
+                        el.onclick = () => playTrack(item);
+                        
+                        const statContainer = document.createElement('div');
+                        statContainer.className = 'flex items-center text-xs text-secondary';
+                        statContainer.style.gap = '4px';
+                        statContainer.innerHTML = `<svg class="icon" style="width:12px; height:12px;" viewBox="0 0 24 24"><polygon points="11 15 6 9 12 2 13 8 18 14 11 15"/></svg> <span class="odometer-container"></span>`;
+
+                        el.innerHTML = `
+                            <img src="${item.image}" class="list-img">
+                            <div style="flex:1">
+                                <div class="font-bold text-sm" style="display:-webkit-box; -webkit-line-clamp:1; -webkit-box-orient:vertical; overflow:hidden;">${item.title}</div>
+                                <div class="text-xs text-secondary">${item.artist}</div>
+                                <div class="flex items-center" style="gap:10px; margin-top:4px;">
+                                    <div class="stats-wrapper"></div>
+                                    <div class="text-xs text-secondary">• ${timeAgo(item.date)}</div>
+                                </div>
+                            </div>
+                        `;
+                        el.querySelector('.stats-wrapper').appendChild(statContainer);
+                        const odo = statContainer.querySelector('.odometer-container');
+                        setTimeout(() => updateOdometer(odo, stats.listens), 50);
                     }
-                }
-            });
-            appData.lastActive = now;
-        }
-
-        function simulateLive() {
-            appData.posts.forEach(post => {
-                const age = (Date.now() - post.timestamp) / 1000;
-                if (age > 172800) return;
-
-                const decay = Math.exp(-age / DECAY_CONSTANT);
-                if (decay < 0.01) return;
-                
-                const followers = post.isBot ? post.botFollowers : appData.user.followers;
-                let baseViews = (followers * 0.001) + (Math.log10(followers) * 0.1);
-                
-                let botBoost = 0;
-                if (!post.isBot && post.collab && post.collab !== 'none') {
-                    const bot = appData.bots.find(b => b.id == post.collab);
-                    if(bot) botBoost = bot.followers * 0.0005;
-                }
-
-                let amount = (baseViews + botBoost) * decay;
-
-                let viewsToAdd = 0;
-                if(amount > 1) {
-                    viewsToAdd = Math.ceil(amount * (0.8 + Math.random() * 0.4));
-                } else {
-                    if(Math.random() < amount) viewsToAdd = 1;
-                }
-
-                if (viewsToAdd > 0) {
-                    post.stats.views += viewsToAdd;
-                    if(Math.random() < 0.2) post.stats.likes += Math.ceil(viewsToAdd * 0.1);
-                    if(Math.random() < 0.05) post.stats.reposts += Math.ceil(viewsToAdd * 0.02);
-                    if(Math.random() < 0.02) generateAIReplies(post, 1);
-                    simulatePollVotes(post, viewsToAdd);
-                    
-                    if(!post.isBot && Math.random() < 0.05) { 
-                        appData.user.followers += Math.ceil(viewsToAdd * 0.002);
-                        updateProfileHeader();
-                    }
-
-                    updatePostDOM(post);
-                }
-            });
-        }
-
-        function simulatePollVotes(post, newViews) {
-            if(post.poll && !post.poll.ended) {
-                const newVotes = Math.ceil(newViews * 0.05 * Math.random());
-                for(let i=0; i<newVotes; i++) {
-                    const rand = Math.random();
-                    let cumulative = 0;
-                    for(let j=0; j<post.poll.options.length; j++) {
-                        cumulative += post.poll.options[j].weight;
-                        if(rand < cumulative) {
-                            post.poll.options[j].votes++;
-                            post.poll.total++;
-                            break;
-                        }
-                    }
-                }
-            }
-        }
-
-        function generateAIReplies(post, count) {
-            if(!post.comments) post.comments = [];
-            for(let i=0; i<count; i++) {
-                const name = AI_NAMES[Math.floor(Math.random() * AI_NAMES.length)];
-                const text = AI_REPLIES[Math.floor(Math.random() * AI_REPLIES.length)];
-                post.comments.unshift({ name, text, time: Date.now() });
-                post.stats.replies++;
-            }
-        }
-
-        function updatePostDOM(post) {
-            const selector = `[data-post-id="${post.id}"]`;
-            document.querySelectorAll(selector).forEach(el => {
-                renderOdometer(el.querySelector('.odometer[data-type="views"]'), post.stats.views);
-                renderOdometer(el.querySelector('.odometer[data-type="likes"]'), post.stats.likes);
-                renderOdometer(el.querySelector('.odometer[data-type="reposts"]'), post.stats.reposts);
-                renderOdometer(el.querySelector('.odometer[data-type="replies"]'), post.stats.replies);
-                
-                if(post.poll) {
-                    const pollContainer = el.querySelector('.poll-container');
-                    if(pollContainer) {
-                        if (post.poll.voted !== null || post.poll.ended) {
-                           if(!pollContainer.classList.contains('results-shown')) {
-                               pollContainer.classList.add('results-shown');
-                               pollContainer.innerHTML = renderPollResults(post);
-                           } else {
-                               post.poll.options.forEach((opt, idx) => {
-                                   const pct = post.poll.total > 0 ? Math.round((opt.votes/post.poll.total)*100) : 0;
-                                   const bar = pollContainer.querySelector(`[data-opt-idx="${idx}"] .poll-bg`);
-                                   if(bar) bar.style.width = pct + '%';
-                                   const odo = pollContainer.querySelector(`[data-opt-idx="${idx}"] .odometer`);
-                                   if(odo) renderOdometer(odo, pct);
-                               });
-                               const totalOdo = pollContainer.querySelector('.total-votes-odo');
-                               if(totalOdo) renderOdometer(totalOdo, post.poll.total);
-                               const endBtn = pollContainer.querySelector('.end-poll-btn');
-                               if(endBtn && post.poll.ended) { endBtn.innerText = "Final Results"; endBtn.disabled = true; }
-                           }
-                        }
-                    }
-                }
-
-                const likeBtn = el.querySelector('.action-group:nth-child(3)');
-                const repostBtn = el.querySelector('.action-group:nth-child(2)');
-                if(post.interacted.like) likeBtn.classList.add('liked-blue'); else likeBtn.classList.remove('liked-blue');
-                if(post.interacted.repost) repostBtn.classList.add('reposted'); else repostBtn.classList.remove('reposted');
-
-                const footer = el.querySelector('.trending-footer');
-                const rank = getTrendingRank(post.id);
-                if(rank && footer) {
-                    footer.innerHTML = `<span class="text-[#f91880]">#${rank} on Trending</span>`;
-                    footer.classList.remove('hidden');
-                } else if (footer) footer.classList.add('hidden');
-            });
-            
-            if(document.getElementById('view-post-detail').classList.contains('hidden') === false) {
-               const list = document.getElementById('post-replies-list');
-               if(list && list.children.length !== post.comments.length) renderReplies(post);
-            }
-        }
-
-        function renderAll() {
-            renderProfileHeader(); renderFeeds(); renderBots(); renderTrending(); updateCollabSelects();
-        }
-
-        function renderProfileHeader() {
-            const els = ['sidebar-avatar', 'mobile-header-avatar', 'desktop-compose-avatar', 'profile-lg-avatar'];
-            els.forEach(id => { const el = document.getElementById(id); if(el) el.src = appData.user.avatar; });
-            const verify = appData.user.followers >= 100000 ? VERIFIED : '';
-            ['sidebar-name', 'profile-name'].forEach(id => { document.getElementById(id).innerHTML = appData.user.name; });
-            ['sidebar-verified', 'profile-verify'].forEach(id => { document.getElementById(id).innerHTML = verify; });
-            document.getElementById('sidebar-handle').innerText = '@' + appData.user.handle;
-            document.getElementById('profile-handle').innerText = '@' + appData.user.handle;
-            document.getElementById('profile-bio').innerText = appData.user.bio || "";
-            
-            if(appData.user.banner) {
-                const b = document.getElementById('profile-banner');
-                b.src = appData.user.banner;
-                b.classList.remove('hidden');
-            }
-            updateProfileHeader();
-        }
-        
-        function updateProfileHeader() {
-            renderOdometer(document.getElementById('profile-followers'), appData.user.followers);
-            renderOdometer(document.getElementById('profile-following'), appData.user.following);
-        }
-
-        function renderFeeds() {
-            els.feed.innerHTML = ''; els.profile.innerHTML = '';
-            
-            let filteredPosts = [];
-            if(appData.currentTab === 'foryou') {
-                filteredPosts = [...appData.posts];
-            } else {
-                filteredPosts = appData.posts.filter(p => p.isBot);
-            }
-            
-            const sorted = filteredPosts.sort((a,b) => {
-                if(a.pinned && !b.pinned) return -1;
-                if(!a.pinned && b.pinned) return 1;
-                return b.timestamp - a.timestamp;
-            });
-            sorted.forEach(post => { els.feed.appendChild(createPostHTML(post)); });
-            
-            const userPosts = appData.posts.filter(p => !p.isBot).sort((a,b) => b.timestamp - a.timestamp);
-            userPosts.forEach(p => els.profile.appendChild(createPostHTML(p)));
-        }
-
-        function createPostHTML(post) {
-            const div = document.createElement('div');
-            div.className = "p-4 border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors relative";
-            div.dataset.postId = post.id;
-            div.onclick = () => openPostDetail(post.id);
-            
-            let name, handle, avatar, verified;
-            if(post.isBot) {
-                name = post.botName;
-                handle = post.botName.toLowerCase().replace(/\s/g, '');
-                avatar = `https://ui-avatars.com/api/?name=${name}&background=random`; 
-                verified = post.botFollowers >= 100000 ? VERIFIED : '';
-            } else {
-                name = appData.user.name;
-                handle = appData.user.handle;
-                avatar = appData.user.avatar;
-                verified = appData.user.followers >= 100000 ? VERIFIED : '';
-            }
-
-            const rank = getTrendingRank(post.id);
-            const trendHtml = rank ? `<div class="trending-badge"><span class="text-[#f91880]">#${rank} on Trending</span></div>` : '<div class="trending-footer hidden text-xs font-bold mt-1"></div>';
-            const pinnedHtml = post.pinned ? `<div class="pinned-indicator"><svg width="12" height="12" viewBox="0 0 24 24" fill="#536471"><path d="M16 4.5C16 3.12 14.88 2 13.5 2H10.5C9.12 2 8 3.12 8 4.5V8H6V10H8V16L6 18V19H9.5V22H14.5V19H18V18L16 16V10H18V8H16V4.5Z"></path></svg> Pinned</div>` : '';
-            
-            let collabHtml = '';
-            if(post.collab && post.collab !== 'none') {
-                const bot = appData.bots.find(b => b.id == post.collab);
-                if(bot) collabHtml = `<span class="text-gray-500 text-sm ml-1">& ${bot.name}</span>`;
-            }
-
-            let mediaHtml = '';
-            if(post.media) {
-                if(post.media.type === 'image') mediaHtml = `<div class="mt-3 rounded-xl overflow-hidden border border-gray-200"><img src="${post.media.data}" class="w-full object-cover max-h-[500px]"></div>`;
-            }
-
-            let pollHtml = '';
-            if(post.poll) {
-                if(post.poll.voted !== null || post.poll.ended) {
-                    pollHtml = `<div class="mt-3 poll-container results-shown">${renderPollResults(post)}</div>`;
-                } else {
-                    pollHtml = `<div class="mt-3 poll-container">` + post.poll.options.map((opt, i) => `
-                        <div class="poll-option" onclick="event.stopPropagation(); vote('${post.id}', ${i})">
-                            <div class="poll-btn-style">${opt.text}</div>
-                        </div>
-                    `).join('') + `</div>`;
-                }
-            }
-            
-            const menuHtml = !post.isBot ? `
-                <div class="post-menu" id="menu-${post.id}">
-                    <button onclick="event.stopPropagation(); togglePin('${post.id}')">${post.pinned ? 'Unpin' : 'Pin to profile'}</button>
-                    <button class="delete" onclick="event.stopPropagation(); deletePost('${post.id}')">Delete post</button>
-                </div>` : '';
-            
-            const menuBtn = !post.isBot ? `<button class="text-gray-400 hover:text-blue-500 px-2" onclick="event.stopPropagation(); toggleMenu('${post.id}')">•••</button>` : '';
-
-
-            div.innerHTML = `
-                ${pinnedHtml}
-                <div class="flex gap-3">
-                    <img src="${avatar}" class="w-10 h-10 rounded-full bg-gray-200 shrink-0">
-                    <div class="flex-1 min-w-0">
-                        <div class="flex items-center justify-between">
-                            <div class="flex items-center gap-1 text-[15px]">
-                                <span class="font-bold truncate">${name}</span>${verified}${collabHtml}
-                                <span class="text-gray-500 truncate">@${handle}</span>
-                                <span class="text-gray-500 text-xs">· ${timeAgo(post.timestamp)}</span>
-                            </div>
-                            ${menuBtn}
-                        </div>
-                        ${trendHtml}
-                        <div class="text-[15px] whitespace-pre-wrap leading-6">${post.content}</div>
-                        ${mediaHtml}
-                        ${pollHtml}
-                        <div class="flex justify-between mt-3 max-w-md text-gray-500 text-xs">
-                            <div class="action-group flex items-center gap-1 group">
-                                <div class="action-icon-wrapper"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg></div>
-                                <span class="odometer" data-type="replies">0</span>
-                            </div>
-                            <div class="action-group flex items-center gap-1 group ${post.interacted.repost ? 'reposted' : ''}" onclick="event.stopPropagation(); interact('${post.id}', 'repost')">
-                                <div class="action-icon-wrapper"><svg class="icon-repost" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="17 1 21 5 17 9"></polyline><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><polyline points="7 23 3 19 7 15"></polyline><path d="M21 13v2a4 4 0 0 1-4 4H3"></path></svg></div>
-                                <span class="odometer action-count" data-type="reposts">0</span>
-                            </div>
-                            <div class="action-group flex items-center gap-1 group ${post.interacted.like ? 'liked-blue' : ''}" onclick="event.stopPropagation(); interact('${post.id}', 'like')">
-                                <div class="action-icon-wrapper like-btn-inner"><svg class="icon-like" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg></div>
-                                <span class="odometer action-count" data-type="likes">0</span>
-                            </div>
-                            <div class="action-group flex items-center gap-1 group">
-                                <div class="action-icon-wrapper"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg></div>
-                                <span class="odometer" data-type="views">0</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                ${menuHtml}
-            `;
-            setTimeout(() => updatePostDOM(post), 0);
-            return div;
-        }
-
-        // --- MENU LOGIC ---
-        function toggleMenu(id) {
-            document.querySelectorAll('.post-menu').forEach(m => { if(m.id !== `menu-${id}`) m.classList.remove('show'); });
-            const menu = document.getElementById(`menu-${id}`);
-            menu.classList.toggle('show');
-        }
-        function togglePin(id) { const post = appData.posts.find(p => p.id === id); if(post) { post.pinned = !post.pinned; saveState(); renderFeeds(); } }
-        function deletePost(id) { if(confirm('Delete this post?')) { appData.posts = appData.posts.filter(p => p.id !== id); saveState(); renderFeeds(); } }
-        window.onclick = function(e) { if (!e.target.matches('.post-menu button') && !e.target.innerText === '•••') { document.querySelectorAll('.post-menu').forEach(m => m.classList.remove('show')); } }
-
-        function getTrendingRank(id) {
-            const scores = appData.posts.map(p => {
-                const ageHours = (Date.now() - p.timestamp) / 3600000;
-                const score = p.stats.views / Math.pow(ageHours + 1, 2.5); 
-                return { id: p.id, score };
-            }).sort((a,b) => b.score - a.score);
-            
-            const idx = scores.findIndex(s => s.id === id);
-            return (idx !== -1 && scores[idx].score > 20) ? idx + 1 : null;
-        }
-
-        function renderTrending() {
-            const walls = [els.trendingWall, els.mobileTrending];
-            const sorted = [...appData.posts].map(p => ({ ...p, score: p.stats.views / Math.pow((Date.now() - p.timestamp)/3600000 + 1, 2.5) })).sort((a,b) => b.score - a.score).slice(0,5);
-            
-            const html = sorted.map((p,i) => `
-                <div class="px-4 py-3 hover:bg-gray-100 cursor-pointer border-b border-gray-50 transition-colors" onclick="openPostDetail('${p.id}')">
-                    <div class="text-xs text-gray-500 flex justify-between"><span>${i+1} · Trending</span><span>···</span></div>
-                    <div class="font-bold text-sm line-clamp-1 mt-0.5">${p.content}</div>
-                    <div class="text-xs text-gray-500 mt-0.5 flex items-center gap-1"><span class="odometer" data-value="${p.stats.views}">${generateOdometerHTML(formatNumber(p.stats.views))}</span> views</div>
-                </div>
-            `).join('');
-            walls.forEach(w => { if(w) w.innerHTML = html; });
-            
-            sorted.forEach(p => {
-                walls.forEach(w => {
-                    const el = w.querySelector(`[onclick="openPostDetail('${p.id}')"] .odometer`);
-                    if(el) renderOdometer(el, p.stats.views);
+                    container.appendChild(el);
                 });
-            });
+
+            } catch (err) {
+                container.innerHTML = '<div style="text-align:center; margin-top:20px;">No results.</div>';
+            }
         }
 
-        function createBot() {
-            const name = prompt("Bot Name");
-            if(name) { appData.bots.push({name, followers: parseInt(prompt("Followers","10000")), id:Date.now()}); saveState(); renderBots(); updateCollabSelects(); }
-        }
-        function renderBots() {
-            els.botList.innerHTML = appData.bots.map((b,i) => `<div class="flex justify-between p-3 bg-gray-50 rounded items-center"><div><div class="font-bold text-sm">${b.name}</div><div class="text-xs text-gray-500">${formatNumber(b.followers)} followers</div></div><button class="text-red-500 text-xs font-bold" onclick="deleteBot(${i})">Delete</button></div>`).join('');
-        }
-        function deleteBot(i) { appData.bots.splice(i,1); saveState(); renderBots(); updateCollabSelects(); }
-
-        function submitPost(mode) {
-            const txt = document.getElementById(`${mode}-input`).value;
-            const collab = document.getElementById(`${mode}-collab-select`)?.value || 'none';
+        /* --- PROFILE --- */
+        async function openProfile(item) {
+            currentProfileId = item.id.toString();
+            const view = document.getElementById('view-profile-detail');
             
-            let poll = null;
-            if(!document.getElementById(`${mode}-poll-creator`).classList.contains('hidden')) {
-                const inputs = document.querySelectorAll(`#${mode}-poll-options .poll-option-input`);
-                const options = [];
-                inputs.forEach(inp => { if(inp.value.trim()) options.push({ text: inp.value.trim(), votes: 0, weight: Math.random() }); });
+            document.getElementById('pd-img').src = item.image;
+            document.getElementById('pd-title').innerText = item.title;
+            
+            // Handle Artist Name styling for multi-artist
+            const artEl = document.getElementById('pd-artist');
+            artEl.innerText = item.artist;
+            if(item.artist.includes(',')) {
+                artEl.classList.add('has-multi');
+            } else {
+                artEl.classList.remove('has-multi');
+            }
+
+            updateProfileChirpBtn(savedProfileChirps.includes(currentProfileId));
+
+            view.classList.remove('hidden');
+            switchProfileTab('episodes');
+            
+            const pStats = getDeterministicStats(currentProfileId, true);
+            
+            const chirpsEl = document.getElementById('stat-chirps');
+            const listensEl = document.getElementById('stat-listens');
+            chirpsEl.innerHTML = '';
+            listensEl.innerHTML = '';
+            
+            document.getElementById('stat-cash').innerText = formatCurrency(pStats.cash);
+
+            // Instant Animation
+            setTimeout(() => {
+                updateOdometer(chirpsEl, pStats.chirps);
+                updateOdometer(listensEl, pStats.listens);
+            }, 50);
+
+            document.getElementById('pd-content-episodes').innerHTML = '<div class="spinner"></div>';
+            
+            const idToFetch = item.collectionId || item.id; 
+            currentProfileEpisodes = await fetchProfileEpisodes(idToFetch);
+
+            document.getElementById('pd-content-episodes').innerHTML = '';
+            renderedEpisodeCount = 0;
+            renderMoreEpisodes();
+        }
+
+        function renderMoreEpisodes() {
+            if(renderedEpisodeCount >= currentProfileEpisodes.length) return;
+            const listContainer = document.getElementById('pd-content-episodes');
+            const end = Math.min(renderedEpisodeCount + EPISODES_PER_PAGE, currentProfileEpisodes.length);
+            
+            for(let i = renderedEpisodeCount; i < end; i++) {
+                const ep = currentProfileEpisodes[i];
+                const epStats = getDeterministicStats(ep.id.toString(), false);
                 
-                if(options.length >= 2) {
-                    const totalWeight = options.reduce((a,b) => a + b.weight, 0);
-                    options.forEach(o => o.weight = o.weight / totalWeight);
-                    poll = { options, total: 0, voted: null, ended: false };
-                }
-            }
-
-            if(!txt && !currentMedia[mode] && !poll) return;
-            
-            // SECURITY: CLOSE MODAL IMMEDIATELY
-            if(mode === 'mobile') closeCompose();
-
-            appData.posts.unshift({
-                id: Date.now().toString(), content: txt, media: currentMedia[mode], timestamp: Date.now(),
-                stats: { views: 0, likes: 0, reposts: 0, replies: 0 }, interacted: { like: false, repost: false },
-                collab: collab, comments: [], pinned: false, poll: poll, isBot: false
-            });
-            
-            document.getElementById(`${mode}-input`).value = ''; 
-            clearMedia(mode); clearPoll(mode);
-            
-            saveState(); 
-            renderAll();
-        }
-
-        function interact(id, type) {
-            const post = appData.posts.find(p => p.id === id);
-            if(post) {
-                const active = !post.interacted[type];
-                post.interacted[type] = active;
-                post.stats[type + 's'] += active ? 1 : -1;
-                updatePostDOM(post);
-                saveState();
-            }
-        }
-
-        function openEditProfileModal() {
-            document.getElementById('edit-name').value = appData.user.name;
-            document.getElementById('edit-bio').value = appData.user.bio || "";
-            document.getElementById('edit-profile-modal').classList.remove('hidden');
-        }
-        function handleProfileMedia(type) {
-            const file = event.target.files[0];
-            if(!file) return;
-            const reader = new FileReader();
-            reader.onload = (e) => { 
-                const img = new Image();
-                img.src = e.target.result;
-                img.onload = () => {
-                    const elem = document.createElement('canvas');
-                    const scale = (type==='avatar' ? 150 : 500) / img.width;
-                    elem.width = (type==='avatar' ? 150 : 500);
-                    elem.height = img.height * scale;
-                    const ctx = elem.getContext('2d');
-                    ctx.drawImage(img, 0, 0, elem.width, elem.height);
-                    tempProfileMedia[type] = elem.toDataURL('image/jpeg', 0.5);
-                }
-            };
-            reader.readAsDataURL(file);
-        }
-        function saveEditProfile() {
-            appData.user.name = document.getElementById('edit-name').value;
-            appData.user.bio = document.getElementById('edit-bio').value;
-            if(tempProfileMedia.avatar) appData.user.avatar = tempProfileMedia.avatar;
-            if(tempProfileMedia.banner) appData.user.banner = tempProfileMedia.banner;
-            saveState(); renderAll();
-            document.getElementById('edit-profile-modal').classList.add('hidden');
-            tempProfileMedia = { avatar: null, banner: null };
-        }
-
-        function navTo(page) {
-            ['home', 'profile', 'collab', 'trending', 'post-detail'].forEach(v => document.getElementById(`view-${v}`).classList.add('hidden'));
-            document.getElementById(`view-${page}`).classList.remove('hidden');
-            window.scrollTo(0,0);
-        }
-        function openPostDetail(id) {
-            const post = appData.posts.find(p => p.id === id);
-            if(post) {
-                navTo('post-detail');
-                els.postDetail.innerHTML = '';
-                els.postDetail.appendChild(createPostHTML(post));
-                renderReplies(post);
-            }
-        }
-        
-        function renderReplies(post) {
-            const list = document.getElementById('post-replies-list');
-            list.innerHTML = post.comments.map(c => `
-                <div class="ai-reply-item flex gap-3">
-                    <div class="w-8 h-8 rounded-full bg-gray-200 flex-shrink-0"></div>
-                    <div>
-                        <div class="flex items-center gap-1">
-                            <span class="font-bold text-sm">${c.name}</span>
-                            <span class="text-gray-500 text-xs">· ${timeAgo(c.time)}</span>
-                        </div>
-                        <div class="text-sm text-gray-900">${c.text}</div>
+                const el = document.createElement('div');
+                el.className = 'list-item';
+                if(!ep.artist) ep.artist = document.getElementById('pd-artist').innerText;
+                
+                el.onclick = () => playTrack(ep);
+                el.innerHTML = `
+                    <div style="width:40px; height:40px; background:var(--surface-highlight); border-radius:50%; display:flex; align-items:center; justify-content:center; color:var(--text-primary);">
+                        <svg class="icon" style="width:16px; height:16px; fill:currentColor; stroke:none;" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
                     </div>
-                </div>
-            `).join('');
+                    <div style="flex:1">
+                        <div class="font-bold text-sm" style="display:-webkit-box; -webkit-line-clamp:1; -webkit-box-orient:vertical; overflow:hidden;">${ep.title}</div>
+                        <div class="text-xs text-secondary flex items-center gap-2">
+                             <span>${timeAgo(ep.date)}</span> • 
+                             <span class="flex items-center gap-1">
+                                <svg class="icon" style="width:10px; height:10px" viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg> 
+                                <span class="odometer-container"></span>
+                             </span>
+                        </div>
+                    </div>
+                `;
+                listContainer.appendChild(el);
+                const odo = el.querySelector('.odometer-container');
+                setTimeout(() => updateOdometer(odo, epStats.chirps), 50 + (i - renderedEpisodeCount) * 20); 
+            }
+            renderedEpisodeCount = end;
         }
 
-        function handleMedia(mode, type) {
-            // ONLY ALLOW IMAGE. VIDEO IS BANNED.
-            if(type === 'video') return; 
+        /* --- CREATORS MODAL & MULTI-ARTIST --- */
+        function handleArtistClick(artistString) {
+            if(!artistString) return;
+            // Check for comma separation
+            if(artistString.includes(',')) {
+                // Open Modal
+                const creators = artistString.split(',').map(s => s.trim()).filter(s => s.length > 0);
+                const modalList = document.getElementById('creators-list');
+                modalList.innerHTML = '';
+                
+                creators.forEach(creator => {
+                    const div = document.createElement('div');
+                    div.className = 'creator-item';
+                    div.innerHTML = `<span>${creator}</span> <svg class="icon" style="width:16px; opacity:0.5" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>`;
+                    div.onclick = () => {
+                        closeCreatorsModal();
+                        closeFullPlayer();
+                        closeProfile();
+                        switchView('discover', document.querySelectorAll('.nav-item')[1]);
+                        document.getElementById('search-input').value = creator;
+                        doSearch(creator);
+                    };
+                    modalList.appendChild(div);
+                });
+                
+                document.getElementById('modal-overlay').classList.add('active');
+                document.getElementById('creators-modal').classList.add('active');
+            } else {
+                // If single artist, try to open their profile directly if we are in player
+                // (Note: finding ID from name is hard without API search, so we search)
+                closeFullPlayer();
+                closeProfile();
+                switchView('discover', document.querySelectorAll('.nav-item')[1]);
+                document.getElementById('search-input').value = artistString;
+                doSearch(artistString);
+            }
+        }
 
-            const file = event.target.files[0];
-            if(!file) return;
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                const img = new Image();
-                img.src = e.target.result;
-                img.onload = () => {
-                    const canvas = document.createElement('canvas');
-                    const ctx = canvas.getContext('2d');
-                    const scale = 500 / img.width;
-                    canvas.width = 500;
-                    canvas.height = img.height * scale;
-                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                    const dataUrl = canvas.toDataURL('image/jpeg', 0.5);
-                    
-                    currentMedia[mode] = { type: 'image', data: dataUrl };
-                    
-                    const el = document.getElementById(`${mode}-media-preview`);
-                    el.classList.remove('hidden');
-                    el.innerHTML = `<img src="${dataUrl}" class="w-full h-full object-cover">`;
-                    const btn = document.createElement('button');
-                    btn.className = "absolute top-2 right-2 bg-black/70 text-white rounded-full p-1";
-                    btn.innerHTML = 'X';
-                    btn.onclick = () => clearMedia(mode);
-                    el.appendChild(btn);
-                    document.getElementById(`${mode}-post-btn`).disabled = false;
-                }
-            };
-            reader.readAsDataURL(file);
+        function closeCreatorsModal() {
+            document.getElementById('modal-overlay').classList.remove('active');
+            document.getElementById('creators-modal').classList.remove('active');
+        }
+
+        function closeProfile() {
+            document.getElementById('view-profile-detail').classList.add('hidden');
+        }
+
+        function switchProfileTab(tab) {
+            document.getElementById('tab-episodes').classList.toggle('active', tab === 'episodes');
+            document.getElementById('tab-stats').classList.toggle('active', tab === 'stats');
+            
+            const stats = document.getElementById('pd-content-stats');
+            const eps = document.getElementById('pd-content-episodes');
+            
+            if(tab === 'stats') {
+                eps.classList.add('hidden');
+                stats.classList.remove('hidden');
+            } else {
+                stats.classList.add('hidden');
+                eps.classList.remove('hidden');
+            }
+        }
+
+        function toggleProfileChirp() {
+            const index = savedProfileChirps.indexOf(currentProfileId);
+            if (index > -1) {
+                savedProfileChirps.splice(index, 1);
+                updateProfileChirpBtn(false);
+            } else {
+                savedProfileChirps.push(currentProfileId);
+                updateProfileChirpBtn(true);
+                showToast();
+                document.getElementById('pd-chirp-btn').classList.add('popping');
+                setTimeout(() => document.getElementById('pd-chirp-btn').classList.remove('popping'), 300);
+            }
+            localStorage.setItem('profile_chirps_v8', JSON.stringify(savedProfileChirps));
+        }
+
+        function updateProfileChirpBtn(active) {
+            const btn = document.getElementById('pd-chirp-btn');
+            const txt = document.getElementById('pd-chirp-text');
+            if(active) {
+                btn.classList.add('active');
+                txt.innerText = "Chirped!";
+            } else {
+                btn.classList.remove('active');
+                txt.innerText = "Chirp";
+            }
+        }
+
+        /* --- PLAYER --- */
+        function playTrack(track) {
+            currentTrack = track;
+            
+            const artistName = track.artist || "Unknown Creator";
+            
+            document.getElementById('mini-img').src = track.image;
+            document.getElementById('mini-img').style.opacity = 1;
+            document.getElementById('mini-title').innerText = track.title;
+            document.getElementById('mini-artist').innerText = artistName;
+            
+            document.getElementById('fp-img').src = track.image;
+            document.getElementById('fp-title').innerText = track.title;
+            
+            const fpArtistEl = document.getElementById('fp-artist');
+            fpArtistEl.innerText = artistName;
+            if(artistName.includes(',')) fpArtistEl.classList.add('has-multi');
+            else fpArtistEl.classList.remove('has-multi');
+
+            const fpBtn = document.getElementById('fp-bird-btn');
+            const isSaved = savedChirps.some(t => t.id === track.id);
+            fpBtn.style.background = isSaved ? 'var(--text-primary)' : 'var(--surface-highlight)';
+            fpBtn.style.color = isSaved ? 'var(--bg-color)' : 'inherit';
+
+            const audio = document.getElementById('audio-player');
+            audio.src = track.src;
+            audio.play().then(() => {
+                isPlaying = true;
+                updatePlayIcons();
+                openFullPlayer();
+                startWaveform();
+            });
+        }
+
+        function toggleTrackChirp() {
+            if(!currentTrack) return;
+            const btn = document.getElementById('fp-bird-btn');
+            const idx = savedChirps.findIndex(t => t.id === currentTrack.id);
+            if(idx > -1) {
+                savedChirps.splice(idx, 1);
+                btn.style.background = 'var(--surface-highlight)';
+                btn.style.color = 'inherit';
+            } else {
+                savedChirps.unshift(currentTrack);
+                btn.style.background = 'var(--text-primary)';
+                btn.style.color = 'var(--bg-color)';
+                showToast();
+            }
+            localStorage.setItem('chirps_v8', JSON.stringify(savedChirps));
+            renderLibrary();
+        }
+
+        function togglePlay() {
+            const audio = document.getElementById('audio-player');
+            if(audio.paused && audio.src) {
+                audio.play(); isPlaying = true;
+                startWaveform();
+            } else {
+                audio.pause(); isPlaying = false;
+            }
+            updatePlayIcons();
         }
         
-        function clearMedia(mode) {
-            currentMedia[mode] = null;
-            document.getElementById(`${mode}-media-preview`).classList.add('hidden');
-            document.getElementById(`${mode}-post-btn`).disabled = true;
+        function updatePlayIcons() {
+            const path = isPlaying 
+                ? '<rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect>' 
+                : '<polygon points="5 3 19 12 5 21 5 3"></polygon>';
+            document.querySelectorAll('#mini-play-btn svg, #fp-play-icon').forEach(s => s.innerHTML = path);
         }
 
-        function openCompose() { document.getElementById('compose-modal').classList.remove('hidden'); updateCollabSelects(); }
-        function closeCompose() { document.getElementById('compose-modal').classList.add('hidden'); }
-        function resetData() { if(confirm("Reset?")) { localStorage.removeItem('x_sim_v3'); location.reload(); } }
-        function editProfile() { openEditProfileModal(); } 
-        function editFollowers() { const f = prompt("Followers", appData.user.followers); if(f) { appData.user.followers = parseInt(f); saveState(); renderAll(); } }
-        function timeAgo(ts) {
-            const s = Math.floor((Date.now()-ts)/1000);
-            if(s<60) return s+'s'; if(s<3600) return Math.floor(s/60)+'m'; return Math.floor(s/3600)+'h';
+        /* --- VISUALS --- */
+        function showToast() {
+            const t = document.getElementById('toast');
+            t.classList.add('show');
+            setTimeout(() => t.classList.remove('show'), 2000);
         }
 
-        function updateCollabSelects() {
-            const options = `<option value="none">✨ Collab</option>` + appData.bots.map(b => `<option value="${b.id}">${b.name} (${formatNumber(b.followers)})</option>`).join('');
-            const d = document.getElementById('desktop-collab-select');
-            const m = document.getElementById('mobile-collab-select');
-            if(d) d.innerHTML = options;
-            if(m) m.innerHTML = options;
+        function timeAgo(dateString) {
+            const date = new Date(dateString);
+            const now = new Date();
+            const diff = (now - date) / 1000;
+            if(diff < 60) return 'Just now';
+            if(diff < 3600) return Math.floor(diff/60) + 'm ago';
+            if(diff < 86400) return Math.floor(diff/3600) + 'h ago';
+            return Math.floor(diff/86400) + 'd ago';
         }
 
-        document.addEventListener('DOMContentLoaded', init);
+        function renderLibrary() {
+            const div = document.getElementById('library-list');
+            div.innerHTML = '';
+            if(!savedChirps.length) {
+                div.innerHTML = '<div style="padding:20px; text-align:center; color:var(--text-secondary)">No saved chirps.</div>';
+                return;
+            }
+            savedChirps.forEach(item => {
+                const el = document.createElement('div');
+                el.className = 'list-item';
+                el.onclick = () => playTrack(item);
+                el.innerHTML = `
+                    <img src="${item.image}" class="list-img">
+                    <div style="flex:1">
+                        <div class="font-bold text-sm">${item.title}</div>
+                        <div class="text-xs text-secondary">Saved Chirp</div>
+                    </div>
+                `;
+                div.appendChild(el);
+            });
+        }
+
+        /* --- NAV & SYSTEM --- */
+        function switchView(id, btn) {
+            document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
+            document.getElementById('view-'+id).classList.remove('hidden');
+            document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+        }
+        function openFullPlayer() { 
+            document.getElementById('full-player').classList.add('active'); 
+            document.getElementById('mini-player').classList.add('expanded');
+        }
+        function closeFullPlayer() { 
+            document.getElementById('full-player').classList.remove('active'); 
+            document.getElementById('mini-player').classList.remove('expanded');
+        }
+        function toggleTheme() {
+            const b = document.body;
+            b.setAttribute('data-theme', b.getAttribute('data-theme')==='dark'?'light':'dark');
+        }
+
+        // Utils
+        const canvas = document.getElementById('wave-canvas');
+        const ctx = canvas.getContext('2d');
+        let animId;
+        function startWaveform() {
+            if(animId) cancelAnimationFrame(animId);
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
+            loop();
+        }
+        function loop() {
+            if(!isPlaying) return;
+            ctx.clearRect(0,0,canvas.width,canvas.height);
+            ctx.fillStyle = getComputedStyle(document.body).getPropertyValue('--text-primary');
+            const bars = 50; 
+            const w = canvas.width/bars;
+            for(let i=0; i<bars; i++) {
+                const h = Math.abs(Math.sin(Date.now()/200 + i*0.5)) * canvas.height;
+                ctx.fillRect(i*w, (canvas.height-h)/2, w-2, h);
+            }
+            animId = requestAnimationFrame(loop);
+        }
+        
+        function seek(e) {
+            const rect = document.getElementById('progress-container').getBoundingClientRect();
+            const pct = (e.clientX - rect.left) / rect.width;
+            const audio = document.getElementById('audio-player');
+            if(audio.duration) audio.currentTime = pct * audio.duration;
+        }
+
+        const audioEl = document.getElementById('audio-player');
+        audioEl.ontimeupdate = () => {
+            if(audioEl.duration) {
+                const pct = (audioEl.currentTime / audioEl.duration) * 100;
+                document.getElementById('progress-fill').style.width = pct + '%';
+                document.getElementById('time-current').innerText = formatTime(audioEl.currentTime);
+                document.getElementById('time-total').innerText = formatTime(audioEl.duration);
+            }
+        };
+        function formatTime(s) {
+            if(!s) return "0:00";
+            const m = Math.floor(s/60);
+            const sec = Math.floor(s%60);
+            return `${m}:${sec<10?'0':''}${sec}`;
+        }
+        function skip(v) { audioEl.currentTime += v; }
+        function changeSpeed() {
+             playbackSpeed = playbackSpeed === 1.0 ? 1.5 : (playbackSpeed === 1.5 ? 2.0 : 1.0);
+             audioEl.playbackRate = playbackSpeed;
+             document.getElementById('speed-btn').innerText = playbackSpeed + 'x';
+        }
+
+        init();
+
     </script>
 </body>
 </html>
