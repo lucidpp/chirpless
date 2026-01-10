@@ -132,7 +132,7 @@
         .odometer-digit { display: inline-block; height: 1.2em; position: relative; }
         .odometer-ribbon {
             display: flex; flex-direction: column;
-            transition: transform 1.5s cubic-bezier(0.16, 1, 0.3, 1);
+            transition: transform 1.2s cubic-bezier(0.16, 1, 0.3, 1); /* Faster for 1.4s updates */
             will-change: transform;
         }
         .odometer-ribbon div { height: 1.2em; display: flex; justify-content: center; align-items: center; }
@@ -475,8 +475,8 @@
         let playbackSpeed = 1.0;
         let currentFilter = 'all';
         
-        let savedChirps = JSON.parse(localStorage.getItem('chirps_v10') || '[]');
-        let savedProfileChirps = JSON.parse(localStorage.getItem('profile_chirps_v10') || '[]');
+        let savedChirps = JSON.parse(localStorage.getItem('chirps_v11') || '[]');
+        let savedProfileChirps = JSON.parse(localStorage.getItem('profile_chirps_v11') || '[]');
         
         let currentProfileId = null;
         let currentProfileEpisodes = [];
@@ -534,6 +534,7 @@
         }
 
         function formatNumber(num) {
+            if (num >= 1000000000) return (num / 1000000000).toFixed(1) + 'b';
             if (num >= 1000000) return (num / 1000000).toFixed(1) + 'm';
             if (num >= 1000) return (num / 1000).toFixed(1) + 'k';
             return num.toLocaleString();
@@ -596,9 +597,9 @@
             const profileView = document.getElementById('view-profile-detail');
             if(profileView.classList.contains('hidden') || !activeProfileStats) return;
 
-            // Increment numbers randomly to look like activity
-            activeProfileStats.chirps += Math.floor(Math.random() * 20) + 1;
-            activeProfileStats.listens += Math.floor(Math.random() * 500) + 50;
+            // Increment numbers randomly
+            activeProfileStats.chirps += Math.floor(Math.random() * 5) + 1;
+            activeProfileStats.listens += Math.floor(Math.random() * 100) + 10;
             activeProfileStats.cash = activeProfileStats.listens * 0.006;
 
             const chirpsEl = document.getElementById('stat-chirps');
@@ -635,7 +636,7 @@
                 }));
             } catch (error) {
                 console.warn("API Error:", error);
-                return []; // No mock data fallback
+                return [];
             }
         }
 
@@ -661,7 +662,7 @@
                 }));
              } catch (error) {
                  console.warn("Profile Fetch Error:", error);
-                 return []; // No mock fallback
+                 return [];
              }
         }
 
@@ -670,8 +671,8 @@
             renderLibrary();
             loadHomeContent();
             
-            // Start Live Heartbeat
-            setInterval(simulateLiveStats, 7000); // 7 seconds
+            // Live Heartbeat every 1.4s
+            setInterval(simulateLiveStats, 1400);
 
             document.getElementById('view-profile-detail').addEventListener('scroll', (e) => {
                 const el = e.target;
@@ -817,7 +818,6 @@
             view.classList.remove('hidden');
             switchProfileTab('episodes');
             
-            // Set Initial Stats & Enable Live Updates
             activeProfileStats = getDeterministicStats(currentProfileId, true);
             
             const chirpsEl = document.getElementById('stat-chirps');
@@ -880,7 +880,7 @@
 
         function closeProfile() {
             document.getElementById('view-profile-detail').classList.add('hidden');
-            activeProfileStats = null; // Stop simulating
+            activeProfileStats = null;
         }
 
         /* ... [Rest of helper functions: switchProfileTab, toggleProfileChirp, etc. remain unchanged] ... */
@@ -912,7 +912,7 @@
                 document.getElementById('pd-chirp-btn').classList.add('popping');
                 setTimeout(() => document.getElementById('pd-chirp-btn').classList.remove('popping'), 300);
             }
-            localStorage.setItem('profile_chirps_v10', JSON.stringify(savedProfileChirps));
+            localStorage.setItem('profile_chirps_v11', JSON.stringify(savedProfileChirps));
         }
 
         function updateProfileChirpBtn(active) {
@@ -974,7 +974,7 @@
                 btn.style.color = 'var(--bg-color)';
                 showToast();
             }
-            localStorage.setItem('chirps_v10', JSON.stringify(savedChirps));
+            localStorage.setItem('chirps_v11', JSON.stringify(savedChirps));
             renderLibrary();
         }
 
