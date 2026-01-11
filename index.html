@@ -24,7 +24,11 @@
             --text-secondary: #999999;
             --accent: #ffffff;
             --accent-dim: #333333;
-            --glass: rgba(18, 18, 18, 0.95);
+            /* Modern Glass Variables */
+            --glass-panel: rgba(20, 20, 20, 0.6);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --glass-blur: blur(20px) saturate(180%);
+            
             --border-radius: 20px;
             --padding: 20px;
             --nav-height: 85px;
@@ -43,7 +47,9 @@
             --text-secondary: #666666;
             --accent: #000000;
             --accent-dim: #d1d1d6;
-            --glass: rgba(255, 255, 255, 0.95);
+            /* Light Mode Glass */
+            --glass-panel: rgba(255, 255, 255, 0.65);
+            --glass-border: rgba(0, 0, 0, 0.05);
         }
 
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
@@ -113,11 +119,23 @@
         .section-title { font-size: 1.3rem; margin: 24px var(--padding) 12px; font-weight: 700; }
         
         .search-container { padding: 0 var(--padding); margin-bottom: 15px; }
+        
+        /* Modern Glass Search Bar */
         .search-bar {
-            width: 100%; background: var(--surface-color);
+            width: 100%;
+            background: var(--glass-panel);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border: 1px solid var(--glass-border);
             padding: 12px 16px; border-radius: 14px;
             display: flex; align-items: center; font-size: 1rem;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            transition: background 0.3s;
         }
+        .search-bar:focus-within {
+             background: rgba(100, 100, 100, 0.2);
+        }
+
         .search-bar input {
             background: transparent; border: none; width: 100%; color: inherit; font-size: inherit; margin-left: 10px;
         }
@@ -139,14 +157,14 @@
             border-radius: 16px; overflow: hidden; position: relative;
         }
         .cover-art img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s; }
-        .podcast-card:hover .cover-art img { transform: scale(1.05); }
+        .podcast-card:active .cover-art img { transform: scale(0.95); }
 
         .list-item {
             display: flex; align-items: center; gap: 16px; padding: 12px var(--padding);
             border-bottom: 1px solid rgba(255,255,255,0.03); transition: background 0.2s;
             cursor: pointer;
         }
-        .list-item:hover { background: var(--surface-highlight); }
+        .list-item:active { background: var(--surface-highlight); }
         .list-img { width: 56px; height: 56px; border-radius: 12px; background: var(--surface-highlight); object-fit: cover; flex-shrink: 0; }
         .list-rank {
             font-size: 1.2rem; font-weight: 900; color: var(--text-secondary); width: 30px; text-align: center; font-variant-numeric: tabular-nums;
@@ -267,7 +285,7 @@
         .creator-item:last-child { border-bottom: none; }
         .creator-item:active { background: var(--surface-highlight); border-radius: 12px; }
 
-        /* --- NAVIGATION --- */
+        /* --- MINI PLAYER & NAV --- */
         #mini-player {
             position: absolute; bottom: calc(var(--nav-height) + var(--safe-bottom)); left: 0; width: 100%;
             height: var(--mini-player-height); background: var(--glass);
@@ -289,16 +307,26 @@
         .nav-item { display: flex; flex-direction: column; align-items: center; gap: 6px; color: var(--text-secondary); opacity: 0.7; transition: 0.2s; }
         .nav-item.active { color: var(--text-primary); opacity: 1; }
 
-        /* --- FULL PLAYER --- */
+        /* --- FULL PLAYER (MODERN GLASS THEME) --- */
         #full-player {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-            background: var(--bg-color); z-index: 200; 
+            /* Modern Glass Effect */
+            background: rgba(10, 10, 10, 0.65);
+            backdrop-filter: blur(45px) saturate(180%);
+            -webkit-backdrop-filter: blur(45px) saturate(180%);
+            
+            z-index: 200; 
             display: flex; flex-direction: column;
             transform: translateY(100%); transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
             overflow: hidden; 
             padding: max(20px, var(--safe-top)) var(--padding) max(20px, var(--safe-bottom));
         }
         #full-player.active { transform: translateY(0); }
+        
+        /* Light mode override for player */
+        [data-theme="light"] #full-player {
+             background: rgba(255, 255, 255, 0.65);
+        }
 
         .player-top { flex: 0 0 auto; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
         .player-art-area { flex: 1; display: flex; align-items: center; justify-content: center; min-height: 0; margin-bottom: 20px; position: relative; }
@@ -373,44 +401,20 @@
                 bottom: 0;
             }
 
-            /* Full Player as Centered Modal */
+            /* Desktop Modal Overrides */
             #full-player {
-                background: rgba(0,0,0,0.85); /* Darker backdrop */
-                backdrop-filter: blur(20px);
-            }
-            #full-player.active {
-                /* Transform logic handled by removing translateY and using opacity/display for modal feel? 
-                   Keeping existing slide up but constraining width */
-                align-items: center; justify-content: center;
-                padding: 0;
-            }
-            /* Use a wrapper inside full player to constrain size */
-            #full-player > * {
-                /* This is tricky with current flex layout. 
-                   Better: Constrain the #full-player container itself on desktop. */
-                
-            }
-        }
-        
-        /* Desktop Modal Overrides specifically */
-        @media (min-width: 768px) {
-            #full-player {
-                /* Reset fixed full screen to be a modal-like container centered */
                 left: 50%; top: 50%;
                 width: 450px; height: 85vh;
                 transform: translate(-50%, 150%); /* Start below */
                 border-radius: 24px;
-                border: 1px solid var(--surface-highlight);
-                background: var(--surface-color);
+                border: 1px solid var(--glass-border);
                 box-shadow: 0 40px 80px rgba(0,0,0,0.6);
             }
             #full-player.active {
                 transform: translate(-50%, -50%); /* Center */
             }
-            /* Adjust close button position inside modal */
             .player-top { margin-top: 10px; }
             
-            /* Modal overlay background (pseudo element) */
             #full-player::before {
                 content: ''; position: fixed; top: -50vh; left: -50vw; width: 200vw; height: 200vh;
                 background: rgba(0,0,0,0.7); z-index: -1;
@@ -516,6 +520,7 @@
                 <h1 id="pd-title" style="margin:0; font-size:1.8rem; line-height:1.2;">Title</h1>
                 <p id="pd-artist-container" style="margin:8px 0;">
                     <span id="pd-artist" class="text-secondary clickable-artist" onclick="handleArtistClick(this.innerText)">Artist</span>
+                    <!-- Verification Badge -->
                     <svg class="verified-badge lg" id="pd-verified" viewBox="0 0 24 24">
                         <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
                     </svg>
@@ -549,8 +554,8 @@
                     </div>
                 </div>
                 <div style="padding:20px; text-align:center; color:var(--text-secondary); font-size:0.8rem; line-height:1.5;">
-                    Lifetime Analytics across all platforms.<br>
-                    (Includes historical data not shown in episode list)
+                    Data reflects currently loaded episodes only.<br>
+                    (Historical data not retrieved)
                 </div>
             </div>
         </div>
@@ -664,8 +669,7 @@
     <audio id="audio-player" preload="none"></audio>
 
     <script>
-        // ... (Script remains same as v24, logic didn't change, just CSS/HTML structure)
-        // I will re-include the script block for completeness
+        // PWA REGISTRATION & INSTALL LOGIC
         let deferredPrompt;
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
@@ -703,13 +707,14 @@
             }
         }
 
+        /* --- STATE & CONFIG --- */
         let currentTrack = null;
         let isPlaying = false;
         let playbackSpeed = 1.0;
         let currentFilter = 'all';
         
-        let savedChirps = JSON.parse(localStorage.getItem('chirps_v25') || '[]');
-        let savedProfileChirps = JSON.parse(localStorage.getItem('profile_chirps_v25') || '[]');
+        let savedChirps = JSON.parse(localStorage.getItem('chirps_v26') || '[]');
+        let savedProfileChirps = JSON.parse(localStorage.getItem('profile_chirps_v26') || '[]');
         
         let currentProfileId = null;
         let currentProfileEpisodes = [];
@@ -722,6 +727,7 @@
                 <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
             </svg>`;
 
+        /* --- DETERMINISTIC STATS & FORMATTING --- */
         function seededRandom(str) {
             let h = 1779033703 ^ str.length;
             for(let i = 0; i < str.length; i++) {
@@ -785,6 +791,7 @@
             return { listens, chirps, cash };
         }
 
+        /* --- CHART LOGIC --- */
         function getChartRank(id) {
             const rng = seededRandom(id + "_chart");
             if (rng() > 0.8) return Math.floor(rng() * 45) + 1;
@@ -819,6 +826,7 @@
             return (now - date) < (7 * 24 * 60 * 60 * 1000);
         }
 
+        /* --- ODOMETER ANIMATION SYSTEM --- */
         function updateOdometer(container, value) {
             if(!container) return;
             const formatted = typeof value === 'number' ? formatNumber(value) : value;
@@ -985,7 +993,8 @@
             if (currentFilter === 'profile') entity = 'podcast';
             
             try {
-                const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(query)}&media=podcast&entity=${entity}&limit=45`);
+                // CACHE BUSTING TIMESTAMP
+                const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(query)}&media=podcast&entity=${entity}&limit=45&_t=${Date.now()}`);
                 if (!res.ok) throw new Error('Fetch Error');
                 const data = await res.json();
                 if(!data.results) return [];
@@ -1008,7 +1017,8 @@
 
         async function fetchProfileEpisodes(collectionId, artistNameFallback) {
              try {
-                const res = await fetch(`https://itunes.apple.com/lookup?id=${collectionId}&media=podcast&entity=podcastEpisode&limit=60`);
+                // CACHE BUSTING TIMESTAMP
+                const res = await fetch(`https://itunes.apple.com/lookup?id=${collectionId}&media=podcast&entity=podcastEpisode&limit=60&_t=${Date.now()}`);
                 if(!res.ok) throw new Error("Fetch failed");
                 const data = await res.json();
                 if (!data.results || data.results.length === 0) throw new Error("No episodes");
@@ -1252,33 +1262,41 @@
             view.classList.remove('hidden');
             switchProfileTab('episodes');
             
-            activeProfileStats = getDeterministicStats(currentProfileId, true);
-            
-            const badgeEl = document.getElementById('pd-verified');
-            if(activeProfileStats.chirps >= 50000000) {
-                badgeEl.classList.add('visible');
-            } else {
-                badgeEl.classList.remove('visible');
-            }
-
-            const chirpsEl = document.getElementById('stat-chirps');
-            const cashEl = document.getElementById('stat-cash');
-            chirpsEl.innerHTML = '';
-            cashEl.innerHTML = '';
-
-            setTimeout(() => {
-                updateOdometer(chirpsEl, activeProfileStats.chirps);
-                updateOdometer(cashEl, formatCurrency(activeProfileStats.cash));
-            }, 50);
+            // RESET STATS
+            activeProfileStats = null;
+            document.getElementById('stat-chirps').innerHTML = '';
+            document.getElementById('stat-cash').innerHTML = '';
+            document.getElementById('pd-verified').classList.remove('visible');
 
             document.getElementById('pd-content-episodes').innerHTML = '<div class="spinner"></div>';
             
             const idToFetch = item.collectionId || item.id; 
             currentProfileEpisodes = await fetchProfileEpisodes(idToFetch, item.artist);
 
+            // AGGREGATE STATS
+            let aggChirps = 0;
+            let aggCash = 0;
+            
             if(currentProfileEpisodes.length === 0) {
                 document.getElementById('pd-content-episodes').innerHTML = '<div style="padding:20px; text-align:center; color:var(--text-secondary)">No episodes found.</div>';
             } else {
+                currentProfileEpisodes.forEach(ep => {
+                    const s = getDeterministicStats(ep.id.toString(), false, ep.date);
+                    aggChirps += s.chirps;
+                    aggCash += s.cash;
+                });
+                
+                activeProfileStats = { chirps: aggChirps, cash: aggCash };
+                
+                setTimeout(() => {
+                    updateOdometer(document.getElementById('stat-chirps'), aggChirps);
+                    updateOdometer(document.getElementById('stat-cash'), formatCurrency(aggCash));
+                }, 50);
+
+                if (aggChirps >= 50000000) {
+                    document.getElementById('pd-verified').classList.add('visible');
+                }
+
                 document.getElementById('pd-content-episodes').innerHTML = '';
                 renderedEpisodeCount = 0;
                 renderMoreEpisodes();
@@ -1366,7 +1384,7 @@
                 document.getElementById('pd-chirp-btn').classList.add('popping');
                 setTimeout(() => document.getElementById('pd-chirp-btn').classList.remove('popping'), 300);
             }
-            localStorage.setItem('profile_chirps_v25', JSON.stringify(savedProfileChirps));
+            localStorage.setItem('profile_chirps_v26', JSON.stringify(savedProfileChirps));
         }
 
         function updateProfileChirpBtn(active) {
@@ -1427,7 +1445,7 @@
                 btn.style.color = 'var(--bg-color)';
                 showToast();
             }
-            localStorage.setItem('chirps_v25', JSON.stringify(savedChirps));
+            localStorage.setItem('chirps_v26', JSON.stringify(savedChirps));
             renderLibrary();
         }
 
@@ -1487,16 +1505,14 @@
             });
         }
 
-        function switchView(viewName, el) {
+        function switchView(id, btn) {
             document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
-            document.getElementById(`view-${viewName}`).classList.remove('hidden');
+            document.getElementById('view-'+id).classList.remove('hidden');
             
-            // Update BOTH Mobile and Desktop Nav Items
-            document.querySelectorAll('.nav-item, .sidebar-item').forEach(item => item.classList.remove('active'));
-            
-            // Find corresponding items in both navs
-            const targetText = el.innerText.trim();
+            // Sync Navs
+            const targetText = btn.innerText.trim();
             document.querySelectorAll('.nav-item, .sidebar-item').forEach(item => {
+                item.classList.remove('active');
                 if(item.innerText.trim() === targetText) item.classList.add('active');
             });
         }
@@ -1525,7 +1541,6 @@
                     div.innerHTML = `<span>${creator}</span> <svg class="icon" style="width:16px; opacity:0.5" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>`;
                     div.onclick = () => {
                         closeCreatorsModal(); closeFullPlayer(); closeProfile();
-                        // Find discover tab
                         const discoverTab = document.querySelectorAll('.nav-item')[1]; 
                         switchView('discover', discoverTab);
                         document.getElementById('search-input').value = creator;
@@ -1604,4 +1619,4 @@
 
     </script>
 </body>
-</html>
+    </html>
