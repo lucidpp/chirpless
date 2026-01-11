@@ -157,12 +157,17 @@
         [data-theme="dark"] .verified-badge { fill: #ffffff; filter: drop-shadow(0 0 4px rgba(255,255,255,0.5)); }
         [data-theme="light"] .verified-badge { fill: #000000; filter: none; }
 
-        .new-badge {
-            font-size: 0.6rem; font-weight: 900; letter-spacing: 0.5px;
-            background: var(--text-primary); color: var(--bg-color);
-            padding: 3px 6px; border-radius: 6px; margin-left: 8px;
-            vertical-align: middle; display: inline-block;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        .trending-label {
+            font-size: 0.7rem; font-weight: 800; letter-spacing: 0.3px;
+            background: linear-gradient(135deg, #FFD700, #FFA500); 
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            margin-left: 8px; vertical-align: middle; display: inline-block;
+        }
+        .new-trending-label {
+            font-size: 0.7rem; font-weight: 800; letter-spacing: 0.3px;
+            background: linear-gradient(135deg, #30D158, #0A84FF);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            margin-left: 8px; vertical-align: middle; display: inline-block;
         }
         
         .bookmark-icon-small { width: 14px; height: 14px; margin-left: 4px; vertical-align: middle; fill: currentColor; opacity: 0.7; }
@@ -562,7 +567,6 @@
             
             // Unified Profile Stats (Community/Subscribers count logic)
             if(isProfile) {
-                 // Different magnitude for profiles (Community/Followers)
                  // Range: 50,000 to 15,000,000 for realistic "Popular" profiles
                  let minC=50000, maxC=15000000;
                  if(t>0.8) { minC=10000000; maxC=100000000; } // Superstars
@@ -637,23 +641,48 @@
                 setTimeout(() => c.classList.remove('pop-effect'), 500);
             });
         }
+        
+        // Helper for raw number parsing from formatted string
+        function parseFormatted(str) {
+             if (!str) return 0;
+             let num = parseFloat(str.replace(/,/g, ''));
+             if (str.includes('k')) num *= 1000;
+             if (str.includes('m')) num *= 1000000;
+             if (str.includes('b')) num *= 1000000000;
+             return Math.floor(num);
+        }
 
         function simLive(){
+            // Profile Update
             if(activeProfileStats && !document.getElementById('view-profile-detail').classList.contains('hidden')){
-                // Simulate live follower gain
                 activeProfileStats.chirps += Math.floor(Math.random() * 3); 
-                activeProfileStats.cash = activeProfileStats.chirps * 0.5; // Dummy cash calc for profile
+                activeProfileStats.cash = activeProfileStats.chirps * 0.5; 
                 
-                // Update Header
                 const hEl = document.getElementById('pd-header-stat');
-                updateOdometer(hEl.querySelector('.odometer-wrapper') || hEl, activeProfileStats.chirps);
+                if(hEl.querySelector('.odometer-wrapper')) updateOdometer(hEl.querySelector('.odometer-wrapper'), activeProfileStats.chirps);
 
-                // Update Stats Tab
                 if(!document.getElementById('pd-content-stats').classList.contains('hidden')){
                     updateOdometer(document.getElementById('stat-chirps'), activeProfileStats.chirps);
                     updateOdometer(document.getElementById('stat-cash'), formatCurrency(activeProfileStats.cash));
                 }
             }
+
+            // Episode List Update (Live Growth)
+            // Select all episode chirps currently visible
+            document.querySelectorAll('.odo-sub, .odo-c').forEach(el => {
+                // To simulate live growth we need a base number. 
+                // Since formatNumber is lossy (1.2k), we can't just increment the text.
+                // We rely on the stored 'data-chirps' we will now add.
+                let val = parseInt(el.getAttribute('data-chirps'));
+                if (!isNaN(val)) {
+                    // Growth logic: Add 1-5 chirps randomly
+                    if (Math.random() > 0.7) {
+                        val += Math.floor(Math.random() * 5) + 1;
+                        el.setAttribute('data-chirps', val);
+                        updateOdometer(el, val);
+                    }
+                }
+            });
         }
 
         /* --- API --- */
@@ -688,7 +717,7 @@
 
         /* --- INIT --- */
         function init(){
-            renderLibrary(); loadHomeContent(); setInterval(simLive, 2500); // Slower live update for realism
+            renderLibrary(); loadHomeContent(); setInterval(simLive, 2500); // Live update cycle
             document.getElementById('view-profile-detail').addEventListener('scroll',e=>{if(e.target.scrollTop+e.target.clientHeight>=e.target.scrollHeight-50)renderMore();});
             switchView('home', document.querySelectorAll('.nav-item')[0]);
         }
@@ -706,7 +735,7 @@
 
         function createCard(i,c){
             const s=getDeterministicStats(i.id.toString(),true);
-            const v=s.chirps>5e7?VERIFIED_BADGE_HTML:'';
+            const v=s.chirps>1000000?VERIFIED_BADGE_HTML:''; // Lowered threshold to 1M
             const d=document.createElement('div'); d.className='podcast-card premium-hover';
             d.onclick=()=>i.type==='profile'?openProfile(i):playTrack(i);
             d.innerHTML=`<div class="cover-art"><img src="${i.image}"></div><div style="font-weight:700;font-size:0.9rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${i.title}</div><div style="font-size:0.8rem;opacity:0.6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${i.artist} ${v}</div>`;
@@ -730,22 +759,30 @@
                 const el=document.createElement('div'); el.className='list-item premium-hover';
                 
                 const viewProfileBtn = `<button onclick="event.stopPropagation(); openProfile({id:'${i.collectionId}', collectionId:'${i.collectionId}', title:'${i.collectionName?.replace(/'/g, "\\'") || ''}', artist:'${i.artist?.replace(/'/g, "\\'") || ''}', image:'${i.image}'})" style="font-size:0.7rem; padding:4px 8px; background:rgba(255,255,255,0.1); border-radius:8px; margin-left:auto; z-index:2; border:none; color:inherit;">Profile</button>`;
-                const isSaved = savedChirps.some(x=>x.id===i.id);
-                const birdColor = isSaved ? 'var(--text-primary)' : 'rgba(255,255,255,0.3)';
+                const birdColor = savedChirps.some(x=>x.id===i.id) ? 'var(--text-primary)' : 'rgba(255,255,255,0.3)';
                 const birdBtn = `<button onclick="event.stopPropagation(); toggleTrackChirpSearch('${i.id}')" style="background:none;border:none;margin-left:8px;z-index:2;color:${birdColor}"><svg class="icon" style="width:20px" viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg></button>`;
 
                 if(i.type==='profile'){
                     el.onclick=()=>openProfile(i);
-                    const v=s.chirps>5e7?VERIFIED_BADGE_HTML:'';
+                    const v=s.chirps>1000000?VERIFIED_BADGE_HTML:''; // 1M Threshold
                     el.innerHTML=`<img src="${i.image}" class="list-img" style="border-radius:50%"><div style="flex:1" class="info-col"><div style="font-weight:700">${i.title} ${v}</div><div style="opacity:0.6;font-size:0.85rem">Podcast • ${i.artist}</div></div><button style="padding:6px 14px;border-radius:20px;background:var(--glass-border);border:none;color:inherit;font-weight:600">View</button>`;
                     const statContainer = document.createElement('div'); statContainer.className = 'text-xs text-secondary flex items-center gap-1 info-col'; statContainer.style.marginTop = '4px'; statContainer.innerHTML = `${BOOKMARK_ICON} <span class="odometer-container"></span>`;
                     el.querySelector('.info-col').appendChild(statContainer);
                     setTimeout(() => updateOdometer(statContainer.querySelector('.odometer-container'), s.chirps), 600);
                 }else{
                     el.onclick=()=>playTrack(i);
+                    // TRENDING LOGIC
+                    const rng = seededRandom(i.id.toString() + "rank");
+                    const rank = Math.floor(rng() * 100) + 1;
+                    let trendLabel = "";
+                    if (rank <= 50) {
+                        if (isNewEpisode(i.date)) trendLabel = `<span class="new-trending-label">Top #${rank} New Trending</span>`;
+                        else trendLabel = `<span class="trending-label">Top #${rank} Trending</span>`;
+                    }
                     const n=isNewEpisode(i.date)?'<span class="new-badge">NEW</span>':'';
-                    // Replaced "Chirps" word with BOOKMARK_ICON
-                    el.innerHTML=`<img src="${i.image}" class="list-img"><div style="flex:1"><div style="font-weight:700;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden;">${i.title} ${n}</div><div style="display:flex;align-items:center;gap:6px;font-size:0.8rem;opacity:0.6;margin-top:2px;"><span>${timeAgo(i.date)}</span> • <span class="odo-c"></span> ${BOOKMARK_ICON}</div></div>${birdBtn}`;
+                    
+                    // Added data-chirps for live updates
+                    el.innerHTML=`<img src="${i.image}" class="list-img"><div style="flex:1"><div style="font-weight:700;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden;">${i.title} ${n} ${trendLabel}</div><div style="display:flex;align-items:center;gap:6px;font-size:0.8rem;opacity:0.6;margin-top:2px;"><span>${timeAgo(i.date)}</span> • <span class="odo-c" data-chirps="${s.chirps}"></span> ${BOOKMARK_ICON}</div></div>${birdBtn}`;
                     setTimeout(()=>updateOdometer(el.querySelector('.odo-c'),s.chirps),300);
                 }
                 c.appendChild(el);
@@ -775,29 +812,25 @@
             updateProfBtn(); v.classList.remove('hidden'); setTimeout(()=>v.classList.remove('hidden'),10); 
             switchProfileTab('episodes');
             
-            // Use UNIFIED ID for Profile Header Stats with New Profile Logic
             activeProfileStats = getDeterministicStats(currentProfileId, true);
             const chirpsEl = document.getElementById('pd-header-stat');
             chirpsEl.innerHTML = '';
             
-            // Stats Tab
             const tabChirps = document.getElementById('stat-chirps');
             const tabCash = document.getElementById('stat-cash');
             tabChirps.innerHTML = ''; tabCash.innerHTML = '';
 
             setTimeout(() => {
-                // Header Count
                 const odoWrapper = document.createElement('span'); odoWrapper.className = 'odometer-container';
                 chirpsEl.appendChild(odoWrapper);
                 updateOdometer(odoWrapper, activeProfileStats.chirps);
                 chirpsEl.insertAdjacentHTML('beforeend', ' <span style="font-size:0.8em; opacity:0.7; font-weight:500">Community</span>');
                 
-                // Stats Tab Counts
                 updateOdometer(tabChirps, activeProfileStats.chirps);
                 updateOdometer(tabCash, formatCurrency(activeProfileStats.cash));
             }, 50);
 
-            if(activeProfileStats.chirps >= 50000000) document.getElementById('pd-verified').classList.add('visible');
+            if(activeProfileStats.chirps >= 1000000) document.getElementById('pd-verified').classList.add('visible'); // 1M Threshold
             else document.getElementById('pd-verified').classList.remove('visible');
 
             document.getElementById('pd-content-episodes').innerHTML='<div class="spinner"></div>';
@@ -815,8 +848,8 @@
                 if(!e.artist)e.artist=document.getElementById('pd-artist').innerText;
                 const n=isNewEpisode(e.date)?'<span class="new-badge">NEW</span>':'';
                 d.onclick=()=>playTrack(e);
-                // Replaced "Chirps" with BOOKMARK_ICON here too
-                d.innerHTML=`<div style="width:44px;height:44px;background:rgba(255,255,255,0.1);border-radius:50%;display:flex;align-items:center;justify-content:center"><svg class="icon" style="width:18px" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg></div><div style="flex:1"><div style="font-weight:700;font-size:0.95rem;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden">${e.title} ${n}</div><div style="font-size:0.8rem;opacity:0.6;margin-top:4px;display:flex;gap:8px"><span>${timeAgo(e.date)}</span> • <span class="odo-sub"></span> ${BOOKMARK_ICON}</div></div>`;
+                // Added data-chirps
+                d.innerHTML=`<div style="width:44px;height:44px;background:rgba(255,255,255,0.1);border-radius:50%;display:flex;align-items:center;justify-content:center"><svg class="icon" style="width:18px" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg></div><div style="flex:1"><div style="font-weight:700;font-size:0.95rem;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden">${e.title} ${n}</div><div style="font-size:0.8rem;opacity:0.6;margin-top:4px;display:flex;gap:8px"><span>${timeAgo(e.date)}</span> • <span class="odo-sub" data-chirps="${s.chirps}"></span> ${BOOKMARK_ICON}</div></div>`;
                 c.appendChild(d); setTimeout(()=>updateOdometer(d.querySelector('.odo-sub'),s.chirps),50+(i-renderedEpisodeCount)*30);
             }
             renderedEpisodeCount=end;
@@ -833,8 +866,9 @@
                 const parts = featured.split(/,|&|\band\b/i).map(s=>s.trim()).filter(s=>s);
                 parts.forEach(p => { if (!finalArtist.toLowerCase().includes(p.toLowerCase())) finalArtist += `, ${p}`; });
             }
+            // Fetch Specific Stats for this track ID
             const s=getDeterministicStats(t.id.toString(),false);
-            currentOdometerValue = s.chirps; // Set initial value for active manipulation
+            currentOdometerValue = s.chirps; 
             
             document.getElementById('mini-img').src=t.image; document.getElementById('mini-title').innerText=t.title; document.getElementById('mini-artist').innerText=finalArtist; 
             document.getElementById('fp-img').src=t.image; document.getElementById('fp-title').innerText=t.title; document.getElementById('fp-artist').innerText=finalArtist; 
@@ -857,19 +891,17 @@
             if(!currentTrack)return; 
             const idx=savedChirps.findIndex(t=>t.id===currentTrack.id); 
             
-            // Update Odometer on Full Player
             const odo = document.getElementById('fp-chirp-count');
             
             if(idx>-1){
                 savedChirps.splice(idx,1);
-                currentOdometerValue--; // Decrement visual count
+                currentOdometerValue--; 
             } else {
                 savedChirps.unshift(currentTrack);
-                currentOdometerValue++; // Increment visual count
+                currentOdometerValue++; 
                 showToast();
             } 
             
-            // Animate Odometer
             updateOdometer(odo, currentOdometerValue);
 
             localStorage.setItem('chirps_v32',JSON.stringify(savedChirps)); 
