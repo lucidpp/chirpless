@@ -419,7 +419,7 @@
                         <span class="text-xs text-secondary">Total Chirps</span>
                         <span class="font-bold odometer-container" style="font-size:1.5rem" id="stat-chirps"></span>
                     </div>
-                    <!-- Listens Removed, only Chirps and Cash -->
+                    <!-- Listens Removed -->
                     <div class="stat-box">
                         <span class="text-xs text-secondary">Total Cash Earned ($0.006/stream)</span>
                         <span class="font-bold odometer-container" style="font-size:1.8rem; color:var(--text-primary);" id="stat-cash">--</span>
@@ -427,7 +427,7 @@
                 </div>
                 <div style="padding:20px; text-align:center; color:var(--text-secondary); font-size:0.8rem; line-height:1.5;">
                     Lifetime Analytics across all platforms.<br>
-                    (Includes historical data not shown in episode list)
+                    (Based on Lifetime Popularity)
                 </div>
             </div>
         </div>
@@ -600,8 +600,8 @@
         let playbackSpeed = 1.0;
         let currentFilter = 'all';
         
-        let savedChirps = JSON.parse(localStorage.getItem('chirps_v21') || '[]');
-        let savedProfileChirps = JSON.parse(localStorage.getItem('profile_chirps_v21') || '[]');
+        let savedChirps = JSON.parse(localStorage.getItem('chirps_v22') || '[]');
+        let savedProfileChirps = JSON.parse(localStorage.getItem('profile_chirps_v22') || '[]');
         
         let currentProfileId = null;
         let currentProfileEpisodes = [];
@@ -640,8 +640,11 @@
                 const minChirps = 50000000;
                 const maxChirps = 5000000000;
                 const chirps = Math.floor(minChirps + val * (maxChirps - minChirps));
-                // Placeholder cash/listens for search objects
-                return { listens: 0, chirps, cash: 0 };
+                const listens = Math.floor(chirps * (10 + val * 20)); // Approx listen/chirp ratio
+                const cash = listens * 0.006;
+                // SAFEGUARD NAN
+                if(isNaN(chirps) || isNaN(cash)) return { chirps: minChirps, cash: 0, listens: 0 };
+                return { listens, chirps, cash };
             }
 
             // Episode Logic
@@ -650,17 +653,25 @@
             
             if (dateStr) {
                 const date = new Date(dateStr);
-                const now = new Date();
-                const hoursOld = (now - date) / (1000 * 60 * 60);
-                if (hoursOld < 24) { minListens = 100; maxListens = 50000; } 
-                else if (hoursOld < 168) { maxListens = 1000000; } 
-                else if (hoursOld < 720) { maxListens = 10000000; }
+                // Safe date check
+                if(!isNaN(date.getTime())) {
+                    const now = new Date();
+                    const hoursOld = (now - date) / (1000 * 60 * 60);
+                    if (hoursOld < 24) { minListens = 100; maxListens = 50000; } 
+                    else if (hoursOld < 168) { maxListens = 1000000; } 
+                    else if (hoursOld < 720) { maxListens = 10000000; }
+                }
             }
 
             const listenCurve = Math.pow(val, 3);
             const listens = Math.floor(minListens + listenCurve * (maxListens - minListens));
             const chirps = Math.floor(listens * (0.02 + val * 0.08));
             const cash = listens * 0.006;
+            
+            // Safeguard NaN
+            if(isNaN(listens) || isNaN(chirps) || isNaN(cash)) {
+                return { listens: 1000, chirps: 50, cash: 6 };
+            }
             return { listens, chirps, cash };
         }
 
@@ -679,6 +690,7 @@
         }
 
         function formatNumber(num) {
+            if(isNaN(num)) return "0";
             if (num >= 1000000000) return (num / 1000000000).toFixed(1) + 'b';
             if (num >= 1000000) return (num / 1000000).toFixed(1) + 'm';
             if (num >= 1000) return (num / 1000).toFixed(1) + 'k';
@@ -686,12 +698,14 @@
         }
 
         function formatCurrency(num) {
+            if(isNaN(num)) return "$0.00";
             return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(num);
         }
 
         function isNewEpisode(dateStr) {
             if (!dateStr) return false;
             const date = new Date(dateStr);
+            if(isNaN(date.getTime())) return false;
             const now = new Date();
             return (now - date) < (7 * 24 * 60 * 60 * 1000); // 7 days
         }
@@ -765,7 +779,7 @@
             }
         }
 
-        /* --- LYRICS/TRANSCRIPTION (ENHANCED GENERIC DATABASE) --- */
+        /* --- LYRICS/TRANSCRIPTION --- */
         let lyricsInterval;
         const PODCAST_SCRIPT = [
             "So, I was thinking about this the other day.",
@@ -836,7 +850,6 @@
                 txt.style.opacity = 0.7;
                 spinner.style.display = "block";
                 
-                // Randomize start point so it's not always the same
                 let idx = Math.floor(Math.random() * PODCAST_SCRIPT.length);
                 
                 setTimeout(() => {
@@ -845,14 +858,10 @@
                     
                     lyricsInterval = setInterval(() => {
                         if(idx >= PODCAST_SCRIPT.length) idx = 0;
-                        
-                        // Fade out
                         txt.style.transform = "translateY(-10px)";
                         txt.style.opacity = 0;
-                        
                         setTimeout(() => {
                             txt.innerText = PODCAST_SCRIPT[idx];
-                            // Fade in up
                             txt.style.transform = "translateY(10px)";
                             requestAnimationFrame(() => {
                                 txt.style.transform = "translateY(0)";
@@ -860,10 +869,8 @@
                             });
                             idx++;
                         }, 200);
-                        
-                        // Randomize timing slightly for realism (2s - 4s)
                     }, 2500 + Math.random() * 1500);
-                }, 1500); // Fake analysis time
+                }, 1500); 
             }
         }
 
@@ -956,7 +963,6 @@
             const mix = await search('True Crime');
             const mixContainer = document.getElementById('mix-container');
             mixContainer.innerHTML = '';
-            
             if(mix.length > 0) {
                 mix.slice(0, 10).forEach(item => {
                     const el = document.createElement('div');
@@ -1071,7 +1077,6 @@
                 let chartBadge = '';
                 const chartRank = getChartRank(item.id.toString());
                 const newRank = getTopNewRank(item.id.toString(), item.date);
-                
                 if (newRank) chartBadge = `<span class="chart-badge">🔥 #${newRank} Top New</span>`;
                 else if (chartRank) chartBadge = `<span class="chart-badge">🏆 #${chartRank} Top Podcasts</span>`;
 
@@ -1144,40 +1149,34 @@
             view.classList.remove('hidden');
             switchProfileTab('episodes');
             
-            activeProfileStats = null;
-            document.getElementById('stat-chirps').innerHTML = '';
-            document.getElementById('stat-cash').innerHTML = '';
-            document.getElementById('pd-verified').classList.remove('visible');
+            // Sync with Search using same ID logic
+            activeProfileStats = getDeterministicStats(currentProfileId, true);
+            
+            const badgeEl = document.getElementById('pd-verified');
+            if(activeProfileStats.chirps >= 50000000) {
+                badgeEl.classList.add('visible');
+            } else {
+                badgeEl.classList.remove('visible');
+            }
+
+            const chirpsEl = document.getElementById('stat-chirps');
+            const cashEl = document.getElementById('stat-cash');
+            chirpsEl.innerHTML = '';
+            cashEl.innerHTML = '';
+
+            setTimeout(() => {
+                updateOdometer(chirpsEl, activeProfileStats.chirps);
+                updateOdometer(cashEl, formatCurrency(activeProfileStats.cash));
+            }, 50);
 
             document.getElementById('pd-content-episodes').innerHTML = '<div class="spinner"></div>';
             
             const idToFetch = item.collectionId || item.id; 
             currentProfileEpisodes = await fetchProfileEpisodes(idToFetch, item.artist);
 
-            // AGGREGATE STATS
-            let aggChirps = 0;
-            let aggCash = 0;
-            
             if(currentProfileEpisodes.length === 0) {
                 document.getElementById('pd-content-episodes').innerHTML = '<div style="padding:20px; text-align:center; color:var(--text-secondary)">No episodes found.</div>';
             } else {
-                currentProfileEpisodes.forEach(ep => {
-                    const s = getDeterministicStats(ep.id.toString(), false, ep.date);
-                    aggChirps += s.chirps;
-                    aggCash += s.cash;
-                });
-                
-                activeProfileStats = { chirps: aggChirps, cash: aggCash };
-                
-                setTimeout(() => {
-                    updateOdometer(document.getElementById('stat-chirps'), aggChirps);
-                    updateOdometer(document.getElementById('stat-cash'), formatCurrency(aggCash));
-                }, 50);
-
-                if (aggChirps >= 50000000) {
-                    document.getElementById('pd-verified').classList.add('visible');
-                }
-
                 document.getElementById('pd-content-episodes').innerHTML = '';
                 renderedEpisodeCount = 0;
                 renderMoreEpisodes();
@@ -1265,7 +1264,7 @@
                 document.getElementById('pd-chirp-btn').classList.add('popping');
                 setTimeout(() => document.getElementById('pd-chirp-btn').classList.remove('popping'), 300);
             }
-            localStorage.setItem('profile_chirps_v21', JSON.stringify(savedProfileChirps));
+            localStorage.setItem('profile_chirps_v22', JSON.stringify(savedProfileChirps));
         }
 
         function updateProfileChirpBtn(active) {
@@ -1280,7 +1279,7 @@
             }
         }
 
-        /* --- PLAYER & VISUALS --- */
+        /* --- PLAYER & VISUALS (Standard) --- */
         function playTrack(track) {
             currentTrack = track;
             const artistName = track.artist || "Unknown Creator";
@@ -1327,7 +1326,7 @@
                 btn.style.color = 'var(--bg-color)';
                 showToast();
             }
-            localStorage.setItem('chirps_v21', JSON.stringify(savedChirps));
+            localStorage.setItem('chirps_v22', JSON.stringify(savedChirps));
             renderLibrary();
         }
 
