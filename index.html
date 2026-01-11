@@ -114,6 +114,10 @@
         }
         main::-webkit-scrollbar { display: none; }
 
+        /* VIEWS */
+        .view { width: 100%; animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
         /* --- COMPONENTS --- */
         .section-title { font-size: 1.3rem; margin: 24px var(--padding) 12px; font-weight: 700; }
         
@@ -311,7 +315,16 @@
 
         .player-top { flex: 0 0 auto; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
         .player-art-area { flex: 1; display: flex; align-items: center; justify-content: center; min-height: 0; margin-bottom: 20px; position: relative; }
-        .player-art-wrapper { width: 100%; height: 100%; max-width: 340px; max-height: 340px; aspect-ratio: 1; border-radius: 24px; overflow: hidden; box-shadow: 0 10px 40px rgba(0,0,0,0.3); }
+        
+        /* Updated Wrapper for Better Mobile Fit */
+        .player-art-wrapper { 
+            width: 100%; height: auto; 
+            max-width: 340px; 
+            aspect-ratio: 1;
+            /* Max height constraints to prevent push-off */
+            max-height: 40vh; 
+            border-radius: 24px; overflow: hidden; box-shadow: 0 10px 40px rgba(0,0,0,0.3); 
+        }
         .player-art-wrapper img { width: 100%; height: 100%; object-fit: cover; }
         .player-info { flex: 0 0 auto; margin-bottom: 10px; text-align: left; }
         .player-controls-area { flex: 0 0 auto; width: 100%; }
@@ -661,14 +674,19 @@
         function simLive(){if(activeProfileStats&&!document.getElementById('pd-content-stats').classList.contains('hidden')){activeProfileStats.chirps+=Math.floor(Math.random()*5)+1;activeProfileStats.cash=activeProfileStats.chirps*20*0.006;updateOdometer(document.getElementById('stat-chirps'),activeProfileStats.chirps);updateOdometer(document.getElementById('stat-cash'),formatCurrency(activeProfileStats.cash));}}
 
         // --- 5. APP LOGIC ---
-        async function search(q){
-            let ent='podcastEpisode'; if(currentFilter==='profile')ent='podcast';
+        async function search(q, entityOverride=null){
+            // Use Override if provided, else use global filter
+            let ent = entityOverride || (currentFilter==='profile' ? 'podcast' : 'podcastEpisode');
             try{
+                // Force podcast search for homepage content or explicit overrides
                 const r=await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(q)}&media=podcast&entity=${ent}&limit=45&_t=${Date.now()}`);
                 const d=await r.json(); return (d.results||[]).map(i=>({
-                    id:i.trackId||i.collectionId, type:i.kind==='podcast'?'profile':'episode',
-                    title:i.trackName||i.collectionName||'Untitled', collectionName:i.collectionName||i.trackName,
-                    artist:i.artistName||i.collectionName||'Unknown', image:i.artworkUrl600,
+                    id:i.trackId||i.collectionId, 
+                    type:i.kind==='podcast'?'profile':'episode',
+                    title:i.trackName||i.collectionName||'Untitled', 
+                    collectionName:i.collectionName||i.trackName,
+                    artist:i.artistName||i.collectionName||'Unknown', 
+                    image:i.artworkUrl600,
                     src:i.episodeUrl, collectionId:i.collectionId, date:i.releaseDate
                 }));
             }catch(e){return[]}
@@ -695,10 +713,15 @@
 
         async function loadHomeContent(){
             const t=document.getElementById('trending-container'); t.innerHTML='';
-            const res=await search('Popular'); if(res.length===0)t.innerHTML='<div style="padding:20px;opacity:0.5">Offline</div>';
+            // Force 'podcast' entity for homepage cards
+            const res=await search('Popular', 'podcast'); 
+            if(res.length===0)t.innerHTML='<div style="padding:20px;opacity:0.5">Offline</div>';
             else res.slice(0,10).forEach(i=>createCard(i,t));
+            
             const m=document.getElementById('mix-container'); m.innerHTML='';
-            const mix=await search('Documentary'); if(mix.length>0)mix.slice(0,10).forEach(i=>createCard(i,m));
+            // Force 'podcast' entity
+            const mix=await search('Documentary', 'podcast'); 
+            if(mix.length>0)mix.slice(0,10).forEach(i=>createCard(i,m));
         }
 
         function createCard(i,c){
@@ -724,7 +747,9 @@
         
         async function renderCharts(){
             const c=document.getElementById('search-results'); c.innerHTML='<div class="spinner"></div>';
-            const r=await search('Podcast Hits'); c.innerHTML='';
+            // Force 'podcast' entity for charts
+            const r=await search('Podcast Hits', 'podcast'); 
+            c.innerHTML='';
             const tDiv = document.createElement('div'); tDiv.className='section-title'; tDiv.innerText='Top 45 Global'; c.appendChild(tDiv);
             r.slice(0,45).forEach((i,x)=>{
                 const el=document.createElement('div');el.className='list-item premium-hover';
@@ -753,6 +778,7 @@
 
         async function doSearch(q){
             const c=document.getElementById('search-results'); c.innerHTML='<div class="spinner"></div>';
+            // Search respects currentFilter (all=episode, profile=podcast)
             const r=await search(q); c.innerHTML=''; 
             if(r.length===0){c.innerHTML='<div style="text-align:center;opacity:0.5;padding:20px">No results</div>';return;}
             r.forEach(i=>{
@@ -768,7 +794,10 @@
                 }else{
                     el.onclick=()=>playTrack(i);
                     const n=isNewEpisode(i.date)?'<span class="new-badge">NEW</span>':'';
-                     const viewProfileBtn = `<button onclick="event.stopPropagation(); openProfile({id:'${i.collectionId}', collectionId:'${i.collectionId}', title:'${i.collectionName?.replace(/'/g, "\\'") || ''}', artist:'${i.artist?.replace(/'/g, "\\'") || ''}', image:'${i.image}'})" style="font-size:0.7rem; padding:4px 8px; background:rgba(255,255,255,0.1); border-radius:8px; margin-left:auto; z-index:2; border:none; color:inherit;">Profile</button>`;
+                     // Safe replace logic for strings
+                     const safeTitle = (i.collectionName || '').replace(/'/g, "\\'");
+                     const safeArtist = (i.artist || '').replace(/'/g, "\\'");
+                     const viewProfileBtn = `<button onclick="event.stopPropagation(); openProfile({id:'${i.collectionId}', collectionId:'${i.collectionId}', title:'${safeTitle}', artist:'${safeArtist}', image:'${i.image}'})" style="font-size:0.7rem; padding:4px 8px; background:rgba(255,255,255,0.1); border-radius:8px; margin-left:auto; z-index:2; border:none; color:inherit;">Profile</button>`;
                     el.innerHTML=`<img src="${i.image}" class="list-img"><div style="flex:1"><div style="font-weight:700;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden;">${i.title} ${n}</div><div style="display:flex;align-items:center;gap:6px;font-size:0.8rem;opacity:0.6;margin-top:2px;"><span>${timeAgo(i.date)}</span> • <span class="odo-c"></span> Chirps</div></div>${viewProfileBtn}`;
                     setTimeout(()=>updateOdometer(el.querySelector('.odo-c'),s.chirps),300);
                 }
@@ -841,13 +870,30 @@
             const s=document.getElementById('pd-content-stats'); const e=document.getElementById('pd-content-episodes');
             if(t==='stats'){e.classList.add('hidden');s.classList.remove('hidden');if(activeProfileStats){const c=document.getElementById('stat-chirps'),m=document.getElementById('stat-cash');c.innerHTML='';m.innerHTML='';setTimeout(()=>{updateOdometer(c,activeProfileStats.chirps);updateOdometer(m,formatCurrency(activeProfileStats.cash));},50);}}else{s.classList.add('hidden');e.classList.remove('hidden');}
         }
-        
         function toggleTrackChirp(){if(!currentTrack)return; const i=savedChirps.findIndex(x=>x.id===currentTrack.id); if(i>-1)savedChirps.splice(i,1); else{savedChirps.unshift(currentTrack);showToast();} localStorage.setItem('chirps_v29',JSON.stringify(savedChirps)); renderLibrary(); const b=document.getElementById('fp-bird-btn'); const is=savedChirps.some(x=>x.id===currentTrack.id); b.style.background=is?'var(--text-primary)':'rgba(255,255,255,0.1)'; b.style.color=is?'var(--bg-color)':'inherit';}
         function toggleProfileChirp(){const i=savedProfileChirps.indexOf(currentProfileId); if(i>-1)savedProfileChirps.splice(i,1); else{savedProfileChirps.push(currentProfileId);showToast();} localStorage.setItem('profile_chirps_v29',JSON.stringify(savedProfileChirps)); updateProfBtn();}
         function updateProfBtn(){const a=savedProfileChirps.includes(currentProfileId); const b=document.getElementById('pd-chirp-btn'), t=document.getElementById('pd-chirp-text'); if(a){b.classList.add('active');t.innerText="Chirped!";}else{b.classList.remove('active');t.innerText="Chirp";}}
         function updPlay(){const p=isPlaying?'<rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect>':'<polygon points="5 3 19 12 5 21 5 3"></polygon>'; document.querySelectorAll('#mini-play-btn svg,#fp-play-icon').forEach(s=>s.innerHTML=p);}
         function togglePlay(){const a=document.getElementById('audio-player'); if(a.paused&&a.src){a.play();isPlaying=true;startWaveform();}else{a.pause();isPlaying=false;}updPlay();}
-        function playTrack(t){currentTrack=t; document.getElementById('mini-img').src=t.image; document.getElementById('mini-title').innerText=t.title; document.getElementById('mini-artist').innerText=t.artist; document.getElementById('fp-img').src=t.image; document.getElementById('fp-title').innerText=t.title; document.getElementById('fp-artist').innerText=t.artist; if(t.artist.includes(','))document.getElementById('fp-artist').classList.add('has-multi'); else document.getElementById('fp-artist').classList.remove('has-multi'); const b=document.getElementById('fp-bird-btn'); const is=savedChirps.some(x=>x.id===t.id); b.style.background=is?'var(--text-primary)':'rgba(255,255,255,0.1)'; b.style.color=is?'var(--bg-color)':'inherit'; const a=document.getElementById('audio-player'); a.src=t.src; a.play().then(()=>{isPlaying=true;updPlay();openFullPlayer();startWaveform();});}
+        function playTrack(t){
+            currentTrack=t; 
+            // Feature Regex Extraction
+            let finalArtist = t.artist;
+            const featRegex = /\((?:feat\.|ft\.|featuring)\s+([^)]+)\)/i;
+            const match = t.title.match(featRegex);
+            if (match) {
+                const featuredArtist = match[1];
+                if (!finalArtist.toLowerCase().includes(featuredArtist.toLowerCase())) {
+                    finalArtist += `, ${featuredArtist}`;
+                }
+            }
+
+            document.getElementById('mini-img').src=t.image; document.getElementById('mini-title').innerText=t.title; document.getElementById('mini-artist').innerText=finalArtist; 
+            document.getElementById('fp-img').src=t.image; document.getElementById('fp-title').innerText=t.title; document.getElementById('fp-artist').innerText=finalArtist; 
+            if(finalArtist.includes(','))document.getElementById('fp-artist').classList.add('has-multi'); else document.getElementById('fp-artist').classList.remove('has-multi'); 
+            const b=document.getElementById('fp-bird-btn'); const is=savedChirps.some(x=>x.id===t.id); b.style.background=is?'var(--text-primary)':'rgba(255,255,255,0.1)'; b.style.color=is?'var(--bg-color)':'inherit'; 
+            const a=document.getElementById('audio-player'); a.src=t.src; a.play().then(()=>{isPlaying=true;updPlay();openFullPlayer();startWaveform();});
+        }
         function openFullPlayer(){document.getElementById('full-player').classList.add('active');document.getElementById('mini-player').classList.add('expanded');}
         function closeFullPlayer(){document.getElementById('full-player').classList.remove('active');document.getElementById('mini-player').classList.remove('expanded');}
         function showToast(){const t=document.getElementById('toast');t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2000);}
