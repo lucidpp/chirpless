@@ -419,7 +419,7 @@
                         <span class="text-xs text-secondary">Total Chirps</span>
                         <span class="font-bold odometer-container" style="font-size:1.5rem" id="stat-chirps"></span>
                     </div>
-                    <!-- Listens Removed -->
+                    <!-- Listens Removed, only Chirps and Cash -->
                     <div class="stat-box">
                         <span class="text-xs text-secondary">Total Cash Earned ($0.006/stream)</span>
                         <span class="font-bold odometer-container" style="font-size:1.8rem; color:var(--text-primary);" id="stat-cash">--</span>
@@ -427,7 +427,7 @@
                 </div>
                 <div style="padding:20px; text-align:center; color:var(--text-secondary); font-size:0.8rem; line-height:1.5;">
                     Lifetime Analytics across all platforms.<br>
-                    (Based on Lifetime Popularity)
+                    (Includes historical data not shown in episode list)
                 </div>
             </div>
         </div>
@@ -600,8 +600,8 @@
         let playbackSpeed = 1.0;
         let currentFilter = 'all';
         
-        let savedChirps = JSON.parse(localStorage.getItem('chirps_v22') || '[]');
-        let savedProfileChirps = JSON.parse(localStorage.getItem('profile_chirps_v22') || '[]');
+        let savedChirps = JSON.parse(localStorage.getItem('chirps_v23') || '[]');
+        let savedProfileChirps = JSON.parse(localStorage.getItem('profile_chirps_v23') || '[]');
         
         let currentProfileId = null;
         let currentProfileEpisodes = [];
@@ -633,42 +633,63 @@
 
         function getDeterministicStats(id, isProfile = false, dateStr = null) {
             const rng = seededRandom(id);
-            const val = rng();
+            const tierSelector = rng(); // 0-1 for Tier
+            const val = rng();          // 0-1 for Value in Tier
+
+            let minChirps, maxChirps;
+
+            // --- TIER LOGIC ---
+            if (tierSelector < 0.4) {
+                // Low Popularity (40%)
+                minChirps = 3000;
+                maxChirps = 281000;
+            } else if (tierSelector < 0.7) {
+                // Unique/General Range (30%)
+                minChirps = 1200;
+                maxChirps = 14200000;
+            } else if (tierSelector < 0.9) {
+                // Medium Popularity (20%)
+                minChirps = 827000;
+                maxChirps = 28000000;
+            } else {
+                // High Popularity (10%)
+                minChirps = 5000000;
+                maxChirps = 5000000000;
+            }
             
             if (isProfile) {
-                // UPDATED RANGE: 50M to 5B to match potential sum of episodes for search
-                const minChirps = 50000000;
-                const maxChirps = 5000000000;
-                const chirps = Math.floor(minChirps + val * (maxChirps - minChirps));
-                const listens = Math.floor(chirps * (10 + val * 20)); // Approx listen/chirp ratio
+                const chirps = Math.floor(minChirps + Math.pow(val, 2) * (maxChirps - minChirps));
+                const listens = Math.floor(chirps * (10 + val * 40)); 
                 const cash = listens * 0.006;
-                // SAFEGUARD NAN
                 if(isNaN(chirps) || isNaN(cash)) return { chirps: minChirps, cash: 0, listens: 0 };
                 return { listens, chirps, cash };
             }
 
-            // Episode Logic
-            let maxListens = 748000000; 
-            let minListens = 1000;
+            // --- EPISODE LOGIC (Scaled down + Time Gated) ---
+            // Scale down range significantly for single episode (approx 1/20th of profile total)
+            let epMin = Math.floor(minChirps / 50); 
+            let epMax = Math.floor(maxChirps / 20); 
             
+            // Ensure min is at least somewhat visible
+            if (epMin < 100) epMin = 100;
+
+            // Time Gating
             if (dateStr) {
                 const date = new Date(dateStr);
-                // Safe date check
                 if(!isNaN(date.getTime())) {
                     const now = new Date();
                     const hoursOld = (now - date) / (1000 * 60 * 60);
-                    if (hoursOld < 24) { minListens = 100; maxListens = 50000; } 
-                    else if (hoursOld < 168) { maxListens = 1000000; } 
-                    else if (hoursOld < 720) { maxListens = 10000000; }
+                    // New episodes can't have billions yet
+                    if (hoursOld < 24) { epMax = Math.min(epMax, 15000); } 
+                    else if (hoursOld < 168) { epMax = Math.min(epMax, 500000); } 
+                    else if (hoursOld < 720) { epMax = Math.min(epMax, 5000000); }
                 }
             }
 
-            const listenCurve = Math.pow(val, 3);
-            const listens = Math.floor(minListens + listenCurve * (maxListens - minListens));
-            const chirps = Math.floor(listens * (0.02 + val * 0.08));
+            const chirps = Math.floor(epMin + Math.pow(val, 3) * (epMax - epMin));
+            const listens = chirps * 20; // Approx
             const cash = listens * 0.006;
             
-            // Safeguard NaN
             if(isNaN(listens) || isNaN(chirps) || isNaN(cash)) {
                 return { listens: 1000, chirps: 50, cash: 6 };
             }
@@ -963,6 +984,7 @@
             const mix = await search('True Crime');
             const mixContainer = document.getElementById('mix-container');
             mixContainer.innerHTML = '';
+            
             if(mix.length > 0) {
                 mix.slice(0, 10).forEach(item => {
                     const el = document.createElement('div');
@@ -1149,9 +1171,9 @@
             view.classList.remove('hidden');
             switchProfileTab('episodes');
             
-            // Sync with Search using same ID logic
             activeProfileStats = getDeterministicStats(currentProfileId, true);
             
+            // Verification Badge Logic
             const badgeEl = document.getElementById('pd-verified');
             if(activeProfileStats.chirps >= 50000000) {
                 badgeEl.classList.add('visible');
@@ -1264,7 +1286,7 @@
                 document.getElementById('pd-chirp-btn').classList.add('popping');
                 setTimeout(() => document.getElementById('pd-chirp-btn').classList.remove('popping'), 300);
             }
-            localStorage.setItem('profile_chirps_v22', JSON.stringify(savedProfileChirps));
+            localStorage.setItem('profile_chirps_v23', JSON.stringify(savedProfileChirps));
         }
 
         function updateProfileChirpBtn(active) {
@@ -1279,7 +1301,7 @@
             }
         }
 
-        /* --- PLAYER & VISUALS (Standard) --- */
+        /* --- PLAYER & VISUALS --- */
         function playTrack(track) {
             currentTrack = track;
             const artistName = track.artist || "Unknown Creator";
@@ -1326,7 +1348,7 @@
                 btn.style.color = 'var(--bg-color)';
                 showToast();
             }
-            localStorage.setItem('chirps_v22', JSON.stringify(savedChirps));
+            localStorage.setItem('chirps_v23', JSON.stringify(savedChirps));
             renderLibrary();
         }
 
