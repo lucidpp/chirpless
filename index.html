@@ -600,8 +600,8 @@
         let playbackSpeed = 1.0;
         let currentFilter = 'all';
         
-        let savedChirps = JSON.parse(localStorage.getItem('chirps_v23') || '[]');
-        let savedProfileChirps = JSON.parse(localStorage.getItem('profile_chirps_v23') || '[]');
+        let savedChirps = JSON.parse(localStorage.getItem('chirps_v24') || '[]');
+        let savedProfileChirps = JSON.parse(localStorage.getItem('profile_chirps_v24') || '[]');
         
         let currentProfileId = null;
         let currentProfileEpisodes = [];
@@ -633,66 +633,64 @@
 
         function getDeterministicStats(id, isProfile = false, dateStr = null) {
             const rng = seededRandom(id);
-            const tierSelector = rng(); // 0-1 for Tier
-            const val = rng();          // 0-1 for Value in Tier
-
-            let minChirps, maxChirps;
-
-            // --- TIER LOGIC ---
-            if (tierSelector < 0.4) {
-                // Low Popularity (40%)
-                minChirps = 3000;
-                maxChirps = 281000;
-            } else if (tierSelector < 0.7) {
-                // Unique/General Range (30%)
-                minChirps = 1200;
-                maxChirps = 14200000;
-            } else if (tierSelector < 0.9) {
-                // Medium Popularity (20%)
-                minChirps = 827000;
-                maxChirps = 28000000;
-            } else {
-                // High Popularity (10%)
-                minChirps = 5000000;
-                maxChirps = 5000000000;
-            }
+            const pVal = rng(); // Popularity Seed (0-1)
+            const vVal = rng(); // Variance Seed (0-1)
             
             if (isProfile) {
-                const chirps = Math.floor(minChirps + Math.pow(val, 2) * (maxChirps - minChirps));
-                const listens = Math.floor(chirps * (10 + val * 40)); 
+                const minChirps = 50000000;
+                const maxChirps = 5000000000;
+                const chirps = Math.floor(minChirps + Math.pow(pVal, 2) * (maxChirps - minChirps));
+                const listens = Math.floor(chirps * (10 + pVal * 40)); 
                 const cash = listens * 0.006;
                 if(isNaN(chirps) || isNaN(cash)) return { chirps: minChirps, cash: 0, listens: 0 };
                 return { listens, chirps, cash };
             }
 
-            // --- EPISODE LOGIC (Scaled down + Time Gated) ---
-            // Scale down range significantly for single episode (approx 1/20th of profile total)
-            let epMin = Math.floor(minChirps / 50); 
-            let epMax = Math.floor(maxChirps / 20); 
-            
-            // Ensure min is at least somewhat visible
-            if (epMin < 100) epMin = 100;
+            // --- EPISODE LOGIC (UNIQUE & TIME AWARE) ---
+            let chirps = 0;
+            let listens = 0;
 
-            // Time Gating
+            // Base Potential (500 to 50,000,000) using curve
+            // Power 4.5 makes high numbers rare
+            const rawPotential = Math.floor(500 + Math.pow(pVal, 4.5) * 50000000);
+
             if (dateStr) {
                 const date = new Date(dateStr);
-                if(!isNaN(date.getTime())) {
+                if (!isNaN(date.getTime())) {
                     const now = new Date();
                     const hoursOld = (now - date) / (1000 * 60 * 60);
-                    // New episodes can't have billions yet
-                    if (hoursOld < 24) { epMax = Math.min(epMax, 15000); } 
-                    else if (hoursOld < 168) { epMax = Math.min(epMax, 500000); } 
-                    else if (hoursOld < 720) { epMax = Math.min(epMax, 5000000); }
+
+                    if (hoursOld < 24) {
+                        // < 24H: Cap at 25k usually, allow 500k if "viral" (vVal > 0.95)
+                        const cap = vVal > 0.95 ? 500000 : 25000;
+                        chirps = Math.min(rawPotential, cap);
+                        // Add freshness jitter
+                        chirps += Math.floor(vVal * 1000);
+                    } else if (hoursOld < 168) { // 1 week
+                         // < 7D: Cap at 2m for hits
+                         const cap = vVal > 0.9 ? 2000000 : 150000;
+                         chirps = Math.min(rawPotential, cap);
+                    } else {
+                         // Older: Unlocked
+                         chirps = rawPotential;
+                    }
+                } else {
+                    chirps = rawPotential;
                 }
+            } else {
+                chirps = rawPotential;
             }
 
-            const chirps = Math.floor(epMin + Math.pow(val, 3) * (epMax - epMin));
-            const listens = chirps * 20; // Approx
+            // Final Unique Jitter: Vary by +/- 10%
+            chirps = Math.floor(chirps * (0.9 + vVal * 0.2));
+            if (chirps < 12) chirps = 12 + Math.floor(vVal * 50);
+
+            // Calculate Listens derived from Chirps
+            // Higher popularity = better ratio
+            const ratio = 15 + (1 - pVal) * 35;
+            listens = Math.floor(chirps * ratio);
             const cash = listens * 0.006;
             
-            if(isNaN(listens) || isNaN(chirps) || isNaN(cash)) {
-                return { listens: 1000, chirps: 50, cash: 6 };
-            }
             return { listens, chirps, cash };
         }
 
@@ -788,6 +786,7 @@
             if(profileView.classList.contains('hidden') || !activeProfileStats) return;
 
             activeProfileStats.chirps += Math.floor(Math.random() * 5) + 1;
+            // Listen increment is derived from ratio logic in stats
             activeProfileStats.listens += Math.floor(Math.random() * 100) + 10;
             activeProfileStats.cash = activeProfileStats.listens * 0.006;
 
@@ -1171,34 +1170,40 @@
             view.classList.remove('hidden');
             switchProfileTab('episodes');
             
-            activeProfileStats = getDeterministicStats(currentProfileId, true);
-            
-            // Verification Badge Logic
-            const badgeEl = document.getElementById('pd-verified');
-            if(activeProfileStats.chirps >= 50000000) {
-                badgeEl.classList.add('visible');
-            } else {
-                badgeEl.classList.remove('visible');
-            }
-
-            const chirpsEl = document.getElementById('stat-chirps');
-            const cashEl = document.getElementById('stat-cash');
-            chirpsEl.innerHTML = '';
-            cashEl.innerHTML = '';
-
-            setTimeout(() => {
-                updateOdometer(chirpsEl, activeProfileStats.chirps);
-                updateOdometer(cashEl, formatCurrency(activeProfileStats.cash));
-            }, 50);
+            activeProfileStats = null;
+            document.getElementById('stat-chirps').innerHTML = '';
+            document.getElementById('stat-cash').innerHTML = '';
+            document.getElementById('pd-verified').classList.remove('visible');
 
             document.getElementById('pd-content-episodes').innerHTML = '<div class="spinner"></div>';
             
             const idToFetch = item.collectionId || item.id; 
             currentProfileEpisodes = await fetchProfileEpisodes(idToFetch, item.artist);
 
+            // AGGREGATE STATS
+            let aggChirps = 0;
+            let aggCash = 0;
+            
             if(currentProfileEpisodes.length === 0) {
                 document.getElementById('pd-content-episodes').innerHTML = '<div style="padding:20px; text-align:center; color:var(--text-secondary)">No episodes found.</div>';
             } else {
+                currentProfileEpisodes.forEach(ep => {
+                    const s = getDeterministicStats(ep.id.toString(), false, ep.date);
+                    aggChirps += s.chirps;
+                    aggCash += s.cash;
+                });
+                
+                activeProfileStats = { chirps: aggChirps, cash: aggCash };
+                
+                setTimeout(() => {
+                    updateOdometer(document.getElementById('stat-chirps'), aggChirps);
+                    updateOdometer(document.getElementById('stat-cash'), formatCurrency(aggCash));
+                }, 50);
+
+                if (aggChirps >= 50000000) {
+                    document.getElementById('pd-verified').classList.add('visible');
+                }
+
                 document.getElementById('pd-content-episodes').innerHTML = '';
                 renderedEpisodeCount = 0;
                 renderMoreEpisodes();
@@ -1286,7 +1291,7 @@
                 document.getElementById('pd-chirp-btn').classList.add('popping');
                 setTimeout(() => document.getElementById('pd-chirp-btn').classList.remove('popping'), 300);
             }
-            localStorage.setItem('profile_chirps_v23', JSON.stringify(savedProfileChirps));
+            localStorage.setItem('profile_chirps_v24', JSON.stringify(savedProfileChirps));
         }
 
         function updateProfileChirpBtn(active) {
@@ -1301,7 +1306,7 @@
             }
         }
 
-        /* --- PLAYER & VISUALS --- */
+        /* --- PLAYER & VISUALS (Standard) --- */
         function playTrack(track) {
             currentTrack = track;
             const artistName = track.artist || "Unknown Creator";
@@ -1348,7 +1353,7 @@
                 btn.style.color = 'var(--bg-color)';
                 showToast();
             }
-            localStorage.setItem('chirps_v23', JSON.stringify(savedChirps));
+            localStorage.setItem('chirps_v24', JSON.stringify(savedChirps));
             renderLibrary();
         }
 
