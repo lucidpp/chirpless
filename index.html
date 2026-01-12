@@ -206,39 +206,93 @@
             display: flex; flex-direction: column; gap: 4px;
         }
         
-        /* CHAT UI */
+        /* --- CHAT UI (Fixed Layout) --- */
         #view-ai {
-            display: flex; flex-direction: column; height: 100%; padding-bottom: calc(var(--nav-height) + 20px);
+            display: flex; flex-direction: column; height: 100%; 
+            position: relative;
+            background: var(--bg-color);
         }
         #chat-history {
-            flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 15px;
+            flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 20px;
             padding-top: max(80px, var(--safe-top));
+            padding-bottom: 100px; /* Space for input */
+        }
+        .chat-row { display: flex; gap: 12px; width: 100%; animation: fadeIn 0.3s ease; }
+        .chat-row.user { justify-content: flex-end; }
+        
+        .chat-avatar {
+            width: 32px; height: 32px; border-radius: 50%; background: var(--surface-highlight);
+            display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+            color: var(--text-primary);
         }
         .chat-msg {
-            max-width: 80%; padding: 12px 16px; border-radius: 18px; font-size: 0.95rem; line-height: 1.5;
-            animation: fadeIn 0.3s ease;
+            max-width: 85%; padding: 14px 18px; border-radius: 18px; font-size: 0.95rem; line-height: 1.6;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05); word-wrap: break-word;
         }
-        .msg-user {
-            align-self: flex-end; background: var(--text-primary); color: var(--bg-color);
+        .chat-row.user .chat-msg {
+            background: var(--text-primary); color: var(--bg-color);
             border-bottom-right-radius: 4px;
         }
-        .msg-ai {
-            align-self: flex-start; background: var(--surface-highlight); color: var(--text-primary);
-            border-bottom-left-radius: 4px; border: 1px solid var(--glass-border);
+        .chat-row.ai .chat-msg {
+            background: var(--glass-panel); border: 1px solid var(--glass-border);
+            border-bottom-left-radius: 4px;
+            color: var(--text-primary);
+        }
+        
+        .chat-actions {
+            display: flex; gap: 8px; margin-top: 6px; margin-left: 44px; opacity: 0.7;
+        }
+        .chat-action-btn {
+            font-size: 0.75rem; background: none; border: none; color: var(--text-secondary); cursor: pointer; padding: 4px 8px; border-radius: 6px;
+        }
+        .chat-action-btn:hover { background: var(--surface-highlight); color: var(--text-primary); }
+
+        .chat-input-wrapper {
+            position: absolute; 
+            bottom: 0; left: 0; width: 100%; 
+            padding: 15px 20px calc(20px + var(--nav-height) + var(--safe-bottom)); 
+            background: linear-gradient(to top, var(--bg-color) 20%, transparent);
+            z-index: 120;
         }
         .chat-input-area {
-            padding: 15px 20px; background: var(--glass-panel); backdrop-filter: blur(20px);
-            border-top: 1px solid var(--glass-border); display: flex; gap: 10px;
-            position: absolute; bottom: calc(var(--nav-height) + var(--safe-bottom)); width: 100%;
-            left: 0; z-index: 60;
+            background: var(--glass-panel); backdrop-filter: blur(25px);
+            border: 1px solid var(--glass-border); border-radius: 24px;
+            padding: 8px; display: flex; align-items: center; gap: 8px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
         }
         .chat-input {
-            flex: 1; background: var(--surface-color); border: 1px solid var(--glass-border);
-            padding: 12px; border-radius: 20px; color: var(--text-primary); font-size: 1rem;
+            flex: 1; background: transparent; border: none;
+            padding: 10px 14px; font-size: 1rem; color: var(--text-primary);
         }
+        .deep-think-btn {
+            width: 36px; height: 36px; border-radius: 50%; border: none;
+            background: var(--surface-highlight); color: var(--text-secondary);
+            display: flex; align-items: center; justify-content: center; transition: 0.3s;
+        }
+        .deep-think-btn.active { background: #8e44ad; color: white; box-shadow: 0 0 10px #8e44ad; }
         .chat-send {
-            background: var(--text-primary); color: var(--bg-color); width: 44px; height: 44px;
+            background: var(--text-primary); color: var(--bg-color); width: 40px; height: 40px;
             border-radius: 50%; display: flex; align-items: center; justify-content: center; border: none;
+        }
+
+        /* TYPING INDICATOR */
+        .typing-dots { display: flex; align-items: center; gap: 4px; height: 24px; }
+        .typing-dots span {
+            width: 6px; height: 6px; background: currentColor; border-radius: 50%;
+            animation: blink 1.4s infinite both;
+        }
+        .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes blink { 0% { opacity: 0.2; } 20% { opacity: 1; } 100% { opacity: 0.2; } }
+
+        /* EMOJI EXPLOSION */
+        .emoji-particle {
+            position: fixed; pointer-events: none; font-size: 2rem; z-index: 1000;
+            animation: flyOut 1s ease-out forwards;
+        }
+        @keyframes flyOut {
+            0% { transform: translate(-50%, -50%) scale(0.5); opacity: 1; }
+            100% { transform: translate(var(--tx), var(--ty)) scale(1.5) rotate(var(--rot)); opacity: 0; }
         }
 
         #creators-modal {
@@ -372,8 +426,8 @@
             }
             #full-player.active::before { opacity: 1; pointer-events: auto; }
             
-            #view-ai { margin-left: var(--sidebar-width); width: calc(100% - var(--sidebar-width)); }
-            .chat-input-area { left: var(--sidebar-width); width: calc(100% - var(--sidebar-width)); bottom: 0; }
+            #view-ai { margin-left: var(--sidebar-width); width: calc(100% - var(--sidebar-width)); padding-bottom: 20px; }
+            .chat-input-wrapper { left: var(--sidebar-width); width: calc(100% - var(--sidebar-width)); bottom: 20px; padding-bottom: 20px; }
         }
     </style>
 </head>
@@ -445,11 +499,17 @@
 
             <div id="view-ai" class="view hidden">
                 <div id="chat-history">
-                    <div class="chat-msg msg-ai">Hello! I'm Chirpless AI. Ask me about podcasts, stats, or how to use the app.</div>
+                    <div class="chat-row ai">
+                        <div class="chat-avatar"><svg class="icon" viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg></div>
+                        <div class="chat-msg">Hello! I'm Chirpless X4.2. Ask me about podcasts, stats, or how to use the app.</div>
+                    </div>
                 </div>
-                <div class="chat-input-area">
-                    <input type="text" id="ai-input" class="chat-input" placeholder="Ask Llama..." onkeypress="if(event.key==='Enter')sendAI()">
-                    <button class="chat-send" onclick="sendAI()"><svg class="icon" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>
+                <div class="chat-input-wrapper">
+                    <div class="chat-input-area">
+                        <button class="deep-think-btn" id="deep-think-toggle" onclick="toggleDeepThink()"><svg class="icon" viewBox="0 0 24 24"><path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 2.96-3.08A2.5 2.5 0 0 1 9.5 2z M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-2.96-3.08A2.5 2.5 0 0 0 14.5 2z"/></svg></button>
+                        <input type="text" id="ai-input" class="chat-input" placeholder="Ask Chirpless X4.2..." onkeypress="if(event.key==='Enter')sendAI()">
+                        <button class="chat-send" onclick="sendAI()"><svg class="icon" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>
+                    </div>
                 </div>
             </div>
         </main>
@@ -610,7 +670,8 @@
     <audio id="audio-player" preload="none"></audio>
 
     <script>
-        // PWA
+        // PWA REGISTRATION
+        /* [Re-declared logic handled by removing duplicates below] */
         let deferredPrompt;
         window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredPrompt = e; });
         if ('serviceWorker' in navigator) {
@@ -624,15 +685,28 @@
 
         /* --- STATE --- */
         let currentTrack = null; let isPlaying = false; let playbackSpeed = 1.0; let currentFilter = 'all';
-        let savedChirps = JSON.parse(localStorage.getItem('chirps_v33') || '[]');
-        let savedProfileChirps = JSON.parse(localStorage.getItem('profile_chirps_v33') || '[]');
+        let savedChirps = JSON.parse(localStorage.getItem('chirps_v35') || '[]');
+        let savedProfileChirps = JSON.parse(localStorage.getItem('profile_chirps_v35') || '[]');
         let currentProfileId = null; let currentProfileEpisodes = []; let renderedEpisodeCount = 0; const EPISODES_PER_PAGE = 10;
         let activeProfileStats = null;
         let lyricsInterval;
+        let lastUserQuery = "";
+        let isDeepThink = false;
+        
         const CHAT_API_KEY = "sk-sN2S_4qIvqZqJKC_H6_htCRFzH6VmDn4XovLYmhbtM7D77Oy5k0rB_zLcQ6a1Ciro9jWsRdiUE_-TT1I0uA6U68D";
-
         const VERIFIED_BADGE_HTML = `<svg class="verified-badge" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>`;
         const PODCAST_SCRIPT = ["So, I was thinking about this the other day.","Right, exactly.","It's a complex issue.","Data suggests otherwise.","Wait, let me pull that up.","Ideally, yes.","That's fascinating.","Moving on.","Incredible point.","Let's dive deeper."];
+
+        const FALLBACK_RESPONSES = {
+            "support": "You can reach support at pricepeyton987@gmail.com.",
+            "email": "Please email pricepeyton987@gmail.com for assistance.",
+            "chirp": "Chirps are like likes. They show popularity. >50M Chirps gets you verified!",
+            "money": "The current payout rate is $0.0000011 per stream based on engagement.",
+            "cash": "Cash is calculated at $0.0000011 per stream.",
+            "code": "I cannot write code. My contract with Chirpless Technology restricts me to app support only.",
+            "coding": "I cannot write code. My contract with Chirpless Technology restricts me to app support only.",
+            "default": "I'm having trouble connecting to the neural network, but I'm here to help with Chirpless features!"
+        };
 
         // --- UTILS ---
         function formatTime(s) { if(!s) return "0:00"; const m = Math.floor(s/60); const sec = Math.floor(s%60); return `${m}:${sec<10?'0':''}${sec}`; }
@@ -642,7 +716,6 @@
         function isNewEpisode(d) { if(!d)return false; const date=new Date(d); if(isNaN(date.getTime()))return false; return(new Date()-date)<(7*24*60*60*1000); }
         function timeAgo(d) { const s=Math.floor((new Date()-new Date(d))/1000); if(s<60)return'now'; if(s<3600)return Math.floor(s/60)+'m'; if(s<86400)return Math.floor(s/3600)+'h'; if(s<604800)return Math.floor(s/86400)+'d'; return Math.floor(s/604800)+'w'; }
         
-        // Clean Title & Extract Artists
         function parseTitleAndArtist(title, originalArtist) {
             const featRegex = /\s*[\(\[](?:feat\.|ft\.|featuring)\s+([^)\].]+)[\)\]]/i;
             const match = title.match(featRegex);
@@ -675,7 +748,7 @@
             let epMin=Math.floor(minC/50), epMax=Math.floor(maxC/20); if(epMin<100)epMin=100;
             if(dateStr){ const d=new Date(dateStr); if(!isNaN(d.getTime())) { const h=(new Date()-d)/(1000*60*60); if(h<24)epMax=Math.min(epMax,15000); else if(h<168)epMax=Math.min(epMax,500000); else if(h<720)epMax=Math.min(epMax,5000000); } }
             const c=Math.floor(epMin+Math.pow(v,3)*(epMax-epMin));
-            const l=c*20; const cash=l*0.0000011; // UPDATED CASH VALUE
+            const l=c*20; const cash=l*0.0000011;
             return {listens:l, chirps:c, cash:cash};
         }
         function getChartRank(id) { const rng=seededRandom(id+"_chart"); return rng()>0.8?Math.floor(rng()*45)+1:null; }
@@ -826,7 +899,9 @@
                     el.onclick=()=>openProfile(i);
                     const v=s.chirps>5e7?VERIFIED_BADGE_HTML:'';
                     el.innerHTML=`<img src="${i.image}" class="list-img" style="border-radius:50%"><div style="flex:1" class="info-col"><div style="font-weight:700">${parsed.title} ${v}</div><div style="opacity:0.6;font-size:0.85rem">Podcast • ${parsed.artist}</div></div><button style="padding:6px 14px;border-radius:20px;background:var(--glass-border);border:none;color:inherit;font-weight:600">View</button>`;
-                    // No odometer on profile search card
+                    const statContainer = document.createElement('div'); statContainer.className = 'text-xs text-secondary flex items-center gap-1 info-col'; statContainer.style.marginTop = '4px'; statContainer.innerHTML = `<svg class="icon" style="width:12px;height:12px" viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg> <span class="odometer-container"></span>`;
+                    el.querySelector('.info-col').appendChild(statContainer);
+                    setTimeout(() => updateOdometer(statContainer.querySelector('.odometer-container'), s.chirps), 600);
                 }else{
                     el.onclick=()=>playTrack(i);
                     const n=isNewEpisode(i.date)?'<span class="new-badge">NEW</span>':'';
@@ -901,8 +976,8 @@
             const s=document.getElementById('pd-content-stats'); const e=document.getElementById('pd-content-episodes');
             if(t==='stats'){e.classList.add('hidden');s.classList.remove('hidden');if(activeProfileStats){const c=document.getElementById('stat-chirps'),m=document.getElementById('stat-cash');c.innerHTML='';m.innerHTML='';setTimeout(()=>{updateOdometer(c,activeProfileStats.chirps);updateOdometer(m,formatCurrency(activeProfileStats.cash));},50);}}else{s.classList.add('hidden');e.classList.remove('hidden');}
         }
-        function toggleTrackChirp(){if(!currentTrack)return; const i=savedChirps.findIndex(x=>x.id===currentTrack.id); if(i>-1)savedChirps.splice(i,1); else{savedChirps.unshift(currentTrack);showToast();} localStorage.setItem('chirps_v33',JSON.stringify(savedChirps)); renderLibrary(); const b=document.getElementById('fp-bird-btn'); const is=savedChirps.some(x=>x.id===currentTrack.id); b.style.background=is?'var(--text-primary)':'rgba(255,255,255,0.1)'; b.style.color=is?'var(--bg-color)':'inherit';}
-        function toggleProfileChirp(){const i=savedProfileChirps.indexOf(currentProfileId); if(i>-1)savedProfileChirps.splice(i,1); else{savedProfileChirps.push(currentProfileId);showToast();} localStorage.setItem('profile_chirps_v33',JSON.stringify(savedProfileChirps)); updateProfBtn();}
+        function toggleTrackChirp(){if(!currentTrack)return; const i=savedChirps.findIndex(x=>x.id===currentTrack.id); if(i>-1)savedChirps.splice(i,1); else{savedChirps.unshift(currentTrack);showToast();} localStorage.setItem('chirps_v34',JSON.stringify(savedChirps)); renderLibrary(); const b=document.getElementById('fp-bird-btn'); const is=savedChirps.some(x=>x.id===currentTrack.id); b.style.background=is?'var(--text-primary)':'rgba(255,255,255,0.1)'; b.style.color=is?'var(--bg-color)':'inherit';}
+        function toggleProfileChirp(){const i=savedProfileChirps.indexOf(currentProfileId); if(i>-1)savedProfileChirps.splice(i,1); else{savedProfileChirps.push(currentProfileId);showToast();} localStorage.setItem('profile_chirps_v34',JSON.stringify(savedProfileChirps)); updateProfBtn();}
         function updateProfBtn(){const a=savedProfileChirps.includes(currentProfileId); const b=document.getElementById('pd-chirp-btn'), t=document.getElementById('pd-chirp-text'); if(a){b.classList.add('active');t.innerText="Chirped!";}else{b.classList.remove('active');t.innerText="Chirp";}}
         function updPlay(){const p=isPlaying?'<rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect>':'<polygon points="5 3 19 12 5 21 5 3"></polygon>'; document.querySelectorAll('#mini-play-btn svg,#fp-play-icon').forEach(s=>s.innerHTML=p);}
         function togglePlay(){const a=document.getElementById('audio-player'); if(a.paused&&a.src){a.play();isPlaying=true;startWaveform();}else{a.pause();isPlaying=false;}updPlay();}
@@ -934,45 +1009,115 @@
         }
         function toggleTrackChirpSearch(id) { alert("Saved to Library!"); }
 
-        /* --- AI CHAT LOGIC --- */
+        /* --- AI LOGIC --- */
         async function sendAI() {
-            const input = document.getElementById('ai-input');
-            const txt = input.value.trim();
-            if(!txt) return;
-
-            // Render User Msg
-            const hist = document.getElementById('chat-history');
-            const uDiv = document.createElement('div'); uDiv.className='chat-msg msg-user'; uDiv.innerText = txt;
-            hist.appendChild(uDiv);
-            input.value = '';
+            const i=document.getElementById('ai-input'), t=i.value.trim(); if(!t)return;
+            lastUserQuery=t;
+            const h=document.getElementById('chat-history');
+            const u=document.createElement('div'); u.className='chat-row user'; u.innerHTML=`<div class="chat-msg">${t}</div>`; h.appendChild(u);
+            i.value='';
+            
+            // Emoji Explosion
+            const emojis = t.match(/[\p{Emoji_Presentation}\u2600-\u27BF]/gu);
+            if(emojis) emojis.forEach(e => triggerEmojiExplosion(e));
             
             // Loading
-            const lDiv = document.createElement('div'); lDiv.className='chat-msg msg-ai'; lDiv.innerText = 'Thinking...';
-            hist.appendChild(lDiv);
-            hist.scrollTop = hist.scrollHeight;
-
-            // API Call
+            const l=document.createElement('div'); l.className='chat-row ai'; 
+            l.innerHTML=`<div class="chat-avatar"><svg class="icon" viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg></div><div class="chat-msg"><div class="typing-dots"><span></span><span></span><span></span></div></div>`;
+            h.appendChild(l); h.scrollTop=h.scrollHeight;
+            
             try {
-                const res = await fetch('https://api.routeway.co/v1/chat/completions', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${CHAT_API_KEY}`
-                    },
-                    body: JSON.stringify({
-                        model: "llama-3.1-70b-instruct",
-                        messages: [
-                            {role: "system", content: "You are the AI assistant for Chirpless, a modern podcast app. Features: Search podcasts, listen to episodes, view 'Chirps' (likes), view estimated cash value (0.0000011 per stream). Support email: pricepeyton987@gmail.com. Keep answers short and helpful."},
-                            {role: "user", content: txt}
-                        ]
-                    })
+                let sysPrompt = "You are Chirpless X4.2, a helpful AI owned by Chirpless Technology. You assist users with the Chirpless podcast app. Features: Search podcasts, Chirps (likes), Cash Value ($0.0000011/stream), Top Charts. Support: pricepeyton987@gmail.com. If asked to code or do unrelated tasks, refuse politiely as per your contract.";
+                if(isDeepThink) sysPrompt += " Provide a deep, analytical, detailed response.";
+                else sysPrompt += " Keep responses concise and helpful.";
+
+                // Attempt API Call
+                const r = await fetch('https://api.routeway.co/v1/chat/completions', {
+                    method: 'POST', headers: {'Content-Type':'application/json','Authorization':`Bearer ${CHAT_API_KEY}`},
+                    body: JSON.stringify({model:"llama-3.3-70b-instruct", messages:[{role:"system",content:sysPrompt},{role:"user",content:t}]})
                 });
-                const data = await res.json();
-                lDiv.innerText = data.choices?.[0]?.message?.content || "I couldn't reach the server.";
-            } catch(e) {
-                lDiv.innerText = "Connection error. Try again.";
+                
+                if(!r.ok) throw new Error("API Error");
+                
+                const d=await r.json();
+                const aiTxt = d.choices?.[0]?.message?.content || "Connection error.";
+                renderAIResponse(l, aiTxt);
+
+            } catch(e){ 
+                // FALLBACK MODE
+                setTimeout(() => {
+                    const fallback = getFallbackResponse(t);
+                    renderAIResponse(l, fallback);
+                }, 2000); // Simulate thinking time
             }
-            hist.scrollTop = hist.scrollHeight;
+            h.scrollTop=h.scrollHeight;
+        }
+
+        function getFallbackResponse(query) {
+            const q = query.toLowerCase();
+            if(q.includes('code') || q.includes('programming') || q.includes('html')) return FALLBACK_RESPONSES.code;
+            if(q.includes('support') || q.includes('help')) return FALLBACK_RESPONSES.support;
+            if(q.includes('chirp')) return FALLBACK_RESPONSES.chirp;
+            if(q.includes('cash') || q.includes('money') || q.includes('value')) return FALLBACK_RESPONSES.cash;
+            return FALLBACK_RESPONSES.default;
+        }
+
+        function renderAIResponse(el, txt) {
+            el.innerHTML = `
+                <div class="chat-avatar"><svg class="icon" viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg></div>
+                <div style="flex:1">
+                    <div class="chat-msg">${txt}</div>
+                    <div class="chat-actions">
+                        <button class="chat-action-btn" onclick="copyText('${txt.replace(/'/g, "\\'")}')">Copy</button>
+                        <button class="chat-action-btn" onclick="refineResponse('${txt.replace(/'/g, "\\'")}')">Refine</button>
+                        <button class="chat-action-btn" onclick="redoResponse()">Redo</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function toggleDeepThink() {
+            isDeepThink = !isDeepThink;
+            document.getElementById('deep-think-toggle').classList.toggle('active');
+        }
+
+        function copyText(txt) {
+            navigator.clipboard.writeText(txt).then(() => alert("Copied!"));
+        }
+        
+        function refineResponse(txt) {
+            const input = document.getElementById('ai-input');
+            input.value = `Refine this: "${txt.substring(0, 50)}..."`;
+            input.focus();
+        }
+
+        function redoResponse() {
+            if(lastUserQuery) {
+                document.getElementById('ai-input').value = lastUserQuery;
+                sendAI();
+            }
+        }
+
+        function triggerEmojiExplosion(emoji) {
+            for(let i=0; i<30; i++) {
+                const el = document.createElement('div');
+                el.innerText = emoji;
+                el.className = 'emoji-particle';
+                el.style.left = '50%'; el.style.top = '50%';
+                
+                const angle = Math.random() * Math.PI * 2;
+                const dist = 100 + Math.random() * 300;
+                const tx = Math.cos(angle) * dist + 'px';
+                const ty = Math.sin(angle) * dist + 'px';
+                const rot = (Math.random() * 360) + 'deg';
+                
+                el.style.setProperty('--tx', tx);
+                el.style.setProperty('--ty', ty);
+                el.style.setProperty('--rot', rot);
+                
+                document.body.appendChild(el);
+                setTimeout(() => el.remove(), 1000);
+            }
         }
 
         // --- AUDIO ---
