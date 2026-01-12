@@ -24,7 +24,11 @@
             --text-secondary: #999999;
             --accent: #ffffff;
             --accent-dim: #333333;
-            --glass: rgba(18, 18, 18, 0.95);
+            --glass-panel: rgba(20, 20, 20, 0.6);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --glass-blur: blur(20px) saturate(180%);
+            --shadow-soft: 0 10px 40px -10px rgba(0,0,0,0.5);
+            
             --border-radius: 20px;
             --padding: 20px;
             --nav-height: 85px;
@@ -33,14 +37,10 @@
             --font-main: 'SF Pro Display', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
             --safe-top: env(safe-area-inset-top);
             --safe-bottom: env(safe-area-inset-bottom);
-            /* Glass Theme */
-            --glass-panel: rgba(20, 20, 20, 0.6);
-            --glass-border: rgba(255, 255, 255, 0.08);
-            --glass-blur: blur(20px) saturate(180%);
         }
 
         [data-theme="light"] {
-            --bg-color: #F7F5F2;
+            --bg-color: #F7F5F2; /* French White */
             --surface-color: #FFFFFF;
             --surface-highlight: #EBE8E4;
             --text-primary: #1A1A1A;
@@ -50,6 +50,7 @@
             --glass-panel: rgba(247, 245, 242, 0.75);
             --glass-border: rgba(0, 0, 0, 0.04);
             --glass-blur: blur(25px) saturate(120%);
+            --shadow-soft: 0 10px 30px -10px rgba(80, 70, 60, 0.15);
         }
 
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
@@ -176,6 +177,7 @@
         .odometer-wrapper.active { opacity: 1; }
         .odometer-ribbon { display: flex; flex-direction: column; transition: transform 1.2s cubic-bezier(0.16, 1, 0.3, 1); will-change: transform; }
         .odometer-ribbon div { height: 1.2em; display: flex; justify-content: center; align-items: center; }
+        .odometer-static { display: inline-block; }
         .pop-effect { animation: pop-bright 0.2s ease-out forwards; }
         @keyframes pop-bright { 50% { transform: scale(1.1); filter: brightness(1.3); } }
 
@@ -203,6 +205,41 @@
             background: var(--surface-color); padding: 15px; border-radius: 16px;
             display: flex; flex-direction: column; gap: 4px;
         }
+        
+        /* CHAT UI */
+        #view-ai {
+            display: flex; flex-direction: column; height: 100%; padding-bottom: calc(var(--nav-height) + 20px);
+        }
+        #chat-history {
+            flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 15px;
+            padding-top: max(80px, var(--safe-top));
+        }
+        .chat-msg {
+            max-width: 80%; padding: 12px 16px; border-radius: 18px; font-size: 0.95rem; line-height: 1.5;
+            animation: fadeIn 0.3s ease;
+        }
+        .msg-user {
+            align-self: flex-end; background: var(--text-primary); color: var(--bg-color);
+            border-bottom-right-radius: 4px;
+        }
+        .msg-ai {
+            align-self: flex-start; background: var(--surface-highlight); color: var(--text-primary);
+            border-bottom-left-radius: 4px; border: 1px solid var(--glass-border);
+        }
+        .chat-input-area {
+            padding: 15px 20px; background: var(--glass-panel); backdrop-filter: blur(20px);
+            border-top: 1px solid var(--glass-border); display: flex; gap: 10px;
+            position: absolute; bottom: calc(var(--nav-height) + var(--safe-bottom)); width: 100%;
+            left: 0; z-index: 60;
+        }
+        .chat-input {
+            flex: 1; background: var(--surface-color); border: 1px solid var(--glass-border);
+            padding: 12px; border-radius: 20px; color: var(--text-primary); font-size: 1rem;
+        }
+        .chat-send {
+            background: var(--text-primary); color: var(--bg-color); width: 44px; height: 44px;
+            border-radius: 50%; display: flex; align-items: center; justify-content: center; border: none;
+        }
 
         #creators-modal {
             position: fixed; bottom: 0; left: 0; width: 100%;
@@ -221,6 +258,8 @@
             padding: 16px; border-bottom: 1px solid rgba(255,255,255,0.05);
             font-size: 1.1rem; font-weight: 500; display: flex; justify-content: space-between; align-items: center;
         }
+        .creator-item:last-child { border-bottom: none; }
+        .creator-item:active { background: var(--surface-highlight); border-radius: 12px; }
 
         #mini-player {
             position: absolute; bottom: calc(var(--nav-height) + var(--safe-bottom)); left: 0; width: 100%;
@@ -280,7 +319,6 @@
         .clickable-artist.has-multi { text-decoration-color: var(--text-secondary); }
         .clickable-artist.has-multi:active { color: var(--text-primary); }
 
-        /* Small Button for Search Items */
         .search-action-btn { 
             width: 36px; height: 36px; border-radius: 50%; 
             background: var(--surface-highlight); color: var(--text-primary);
@@ -298,6 +336,20 @@
 
         .spinner { width: 20px; height: 20px; border: 2px solid var(--text-secondary); border-top-color: var(--text-primary); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 10px auto; }
         @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* MODAL (INSTALL) */
+        #install-modal {
+            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.9);
+            width: 85%; max-width: 320px; background: var(--surface-color);
+            padding: 24px; border-radius: 24px; text-align: center;
+            z-index: 500; opacity: 0; pointer-events: none;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1);
+        }
+        #install-modal.active { opacity: 1; pointer-events: auto; transform: translate(-50%, -50%) scale(1); }
+        .install-btn { padding: 12px 24px; border-radius: 12px; font-weight: 700; margin: 0 5px; cursor: pointer; }
+        .btn-yes { background: var(--text-primary); color: var(--bg-color); }
+        .btn-no { background: var(--surface-highlight); color: var(--text-secondary); }
 
         @media (min-width: 768px) {
             header, nav { display: none !important; }
@@ -319,6 +371,9 @@
                 background: rgba(0,0,0,0.7); z-index: -1; pointer-events: none; opacity: 0; transition: opacity 0.4s;
             }
             #full-player.active::before { opacity: 1; pointer-events: auto; }
+            
+            #view-ai { margin-left: var(--sidebar-width); width: calc(100% - var(--sidebar-width)); }
+            .chat-input-area { left: var(--sidebar-width); width: calc(100% - var(--sidebar-width)); bottom: 0; }
         }
     </style>
 </head>
@@ -337,6 +392,9 @@
                 </div>
                 <div class="sidebar-item" onclick="switchView('library', this)">
                     <svg class="icon" viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg> Library
+                </div>
+                <div class="sidebar-item" onclick="switchView('ai', this)">
+                    <svg class="icon" viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg> AI
                 </div>
             </div>
             <div style="cursor:pointer; display:flex; align-items:center; gap:12px; color:var(--text-secondary); font-weight:600; padding:12px 16px;" onclick="toggleTheme()">
@@ -384,6 +442,16 @@
                 <div class="section-title">Your Chirps</div>
                 <div id="library-list"></div>
             </div>
+
+            <div id="view-ai" class="view hidden">
+                <div id="chat-history">
+                    <div class="chat-msg msg-ai">Hello! I'm Chirpless AI. Ask me about podcasts, stats, or how to use the app.</div>
+                </div>
+                <div class="chat-input-area">
+                    <input type="text" id="ai-input" class="chat-input" placeholder="Ask Llama..." onkeypress="if(event.key==='Enter')sendAI()">
+                    <button class="chat-send" onclick="sendAI()"><svg class="icon" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>
+                </div>
+            </div>
         </main>
 
         <!-- PROFILE DETAIL VIEW -->
@@ -401,9 +469,7 @@
                     <span id="pd-artist" class="text-secondary clickable-artist" onclick="handleArtistClick(this.innerText)">Artist</span>
                     <svg class="verified-badge lg" id="pd-verified" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
                 </p>
-                <!-- NEW: Profile Total Stats Header -->
                 <div class="odometer-container" id="pd-header-stat" style="font-weight:700; font-size:1.1rem; margin-top:5px; opacity:0.8;"></div>
-
                 <div class="profile-btn-row">
                     <button id="pd-chirp-btn" class="chirp-btn-lg" onclick="toggleProfileChirp()">
                         <svg class="icon" viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
@@ -427,12 +493,12 @@
                         <span class="font-bold odometer-container" style="font-size:1.5rem" id="stat-chirps"></span>
                     </div>
                     <div class="stat-box">
-                        <span class="text-xs text-secondary">Total Cash Earned ($0.006/stream)</span>
+                        <span class="text-xs text-secondary">Total Cash Earned ($0.0000011/stream)</span>
                         <span class="font-bold odometer-container" style="font-size:1.8rem; color:var(--text-primary);" id="stat-cash">--</span>
                     </div>
                 </div>
                 <div style="padding:20px; text-align:center; color:var(--text-secondary); font-size:0.8rem; line-height:1.5;">
-                    Analytics for displayed episodes.
+                    Lifetime Analytics across all platforms.<br>
                 </div>
             </div>
         </div>
@@ -478,6 +544,9 @@
             </div>
             <div class="nav-item" onclick="switchView('library', this)">
                 <svg class="icon" viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg> Library
+            </div>
+             <div class="nav-item" onclick="switchView('ai', this)">
+                <svg class="icon" viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg> AI
             </div>
         </nav>
 
@@ -526,17 +595,12 @@
                     <button class="bird-btn" id="fp-bird-btn" onclick="toggleTrackChirp()" style="background:var(--surface-highlight); width:44px; height:44px; border-radius:50%; display:flex; align-items:center; justify-content:center; color:inherit; border:none;">
                         <svg class="icon" viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
                     </button>
-                    <!-- PLAYER CHIRP COUNT -->
                     <div class="odometer-container" id="fp-chirp-count" style="font-weight:700; font-size:1rem; position:absolute; transform:translate(55px, -20px);"></div>
-
                     <button onclick="skip(-15)" style="background:none; border:none; color:inherit;"><svg class="icon" style="width:32px; height:32px;" viewBox="0 0 24 24"><path d="M11 17l-5-5 5-5M18 17l-5-5 5-5"/></svg></button>
-                    
                     <button onclick="togglePlay()" style="width:70px; height:70px; background:var(--text-primary); color:var(--bg-color); border-radius:50%; display:flex; align-items:center; justify-content:center; border:none;">
                         <svg id="fp-play-icon" style="width:32px; height:32px; fill:currentColor; stroke:none;" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
                     </button>
-                    
                     <button onclick="skip(15)" style="background:none; border:none; color:inherit;"><svg class="icon" style="width:32px; height:32px;" viewBox="0 0 24 24"><path d="M13 17l5-5-5-5M6 17l5-5-5-5"/></svg></button>
-                    
                     <button onclick="changeSpeed()" style="background:var(--surface-highlight); width:44px; height:44px; border-radius:50%; font-weight:bold; font-size:0.8rem; border:none; color:inherit;" id="speed-btn">1x</button>
                 </div>
             </div>
@@ -546,67 +610,77 @@
     <audio id="audio-player" preload="none"></audio>
 
     <script>
-        // PWA REGISTRATION (No Install Prompt)
+        // PWA
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredPrompt = e; });
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('./service-worker.js').catch(console.log);
+                setTimeout(() => { if (deferredPrompt) { document.getElementById('install-overlay').classList.add('active'); document.getElementById('install-modal').classList.add('active'); } }, 3000);
             });
         }
+        function dismissInstall() { document.getElementById('install-overlay').classList.remove('active'); document.getElementById('install-modal').classList.remove('active'); }
+        function triggerInstall() { dismissInstall(); if (deferredPrompt) { deferredPrompt.prompt(); deferredPrompt = null; } else { alert("To install on iOS: Tap 'Share' icon below, then 'Add to Home Screen'."); } }
 
         /* --- STATE --- */
         let currentTrack = null; let isPlaying = false; let playbackSpeed = 1.0; let currentFilter = 'all';
-        let savedChirps = JSON.parse(localStorage.getItem('chirps_v32') || '[]');
-        let savedProfileChirps = JSON.parse(localStorage.getItem('profile_chirps_v32') || '[]');
+        let savedChirps = JSON.parse(localStorage.getItem('chirps_v33') || '[]');
+        let savedProfileChirps = JSON.parse(localStorage.getItem('profile_chirps_v33') || '[]');
         let currentProfileId = null; let currentProfileEpisodes = []; let renderedEpisodeCount = 0; const EPISODES_PER_PAGE = 10;
         let activeProfileStats = null;
         let lyricsInterval;
-        let deferredPrompt;
+        const CHAT_API_KEY = "sk-sN2S_4qIvqZqJKC_H6_htCRFzH6VmDn4XovLYmhbtM7D77Oy5k0rB_zLcQ6a1Ciro9jWsRdiUE_-TT1I0uA6U68D";
 
         const VERIFIED_BADGE_HTML = `<svg class="verified-badge" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>`;
         const PODCAST_SCRIPT = ["So, I was thinking about this the other day.","Right, exactly.","It's a complex issue.","Data suggests otherwise.","Wait, let me pull that up.","Ideally, yes.","That's fascinating.","Moving on.","Incredible point.","Let's dive deeper."];
 
-        // --- 2. UTILITY FUNCTIONS (Must be defined first) ---
-        function formatTime(s) {
-            if(!s) return "0:00";
-            const m = Math.floor(s/60);
-            const sec = Math.floor(s%60);
-            return `${m}:${sec<10?'0':''}${sec}`;
-        }
+        // --- UTILS ---
+        function formatTime(s) { if(!s) return "0:00"; const m = Math.floor(s/60); const sec = Math.floor(s%60); return `${m}:${sec<10?'0':''}${sec}`; }
         function seededRandom(str) { let h=1779033703^str.length; for(let i=0;i<str.length;i++)h=Math.imul(h^str.charCodeAt(i),3432918353); return function(){h=Math.imul(h^(h>>>16),2246822507);h=Math.imul(h^(h>>>13),3266489909);return(h>>>0)/4294967296;} }
         function formatNumber(n) { if(isNaN(n))return"0"; if(n>=1e9)return(n/1e9).toFixed(1)+'b'; if(n>=1e6)return(n/1e6).toFixed(1)+'m'; if(n>=1e3)return(n/1e3).toFixed(1)+'k'; return n.toLocaleString(); }
         function formatCurrency(n) { if(isNaN(n))return"$0.00"; return new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(n); }
         function isNewEpisode(d) { if(!d)return false; const date=new Date(d); if(isNaN(date.getTime()))return false; return(new Date()-date)<(7*24*60*60*1000); }
         function timeAgo(d) { const s=Math.floor((new Date()-new Date(d))/1000); if(s<60)return'now'; if(s<3600)return Math.floor(s/60)+'m'; if(s<86400)return Math.floor(s/3600)+'h'; if(s<604800)return Math.floor(s/86400)+'d'; return Math.floor(s/604800)+'w'; }
+        
+        // Clean Title & Extract Artists
+        function parseTitleAndArtist(title, originalArtist) {
+            const featRegex = /\s*[\(\[](?:feat\.|ft\.|featuring)\s+([^)\].]+)[\)\]]/i;
+            const match = title.match(featRegex);
+            let displayTitle = title;
+            let displayArtist = originalArtist;
 
-        /* --- STATS --- */
+            if (match) {
+                displayTitle = title.replace(match[0], '').trim();
+                const featuredPart = match[1];
+                const feats = featuredPart.split(/,|&|\band\b/i).map(s => s.trim()).filter(s => s);
+                feats.forEach(f => {
+                    if (!displayArtist.toLowerCase().includes(f.toLowerCase())) {
+                        displayArtist += `, ${f}`;
+                    }
+                });
+            }
+            return { title: displayTitle, artist: displayArtist };
+        }
+
+        // --- STATS ---
         function getDeterministicStats(id, isProfile=false, dateStr=null) {
             const rng=seededRandom(id); const t=rng(), v=rng();
             let minC=3000, maxC=281000;
             if(t<0.4){minC=3000;maxC=281000} else if(t<0.7){minC=1200;maxC=14200000} else if(t<0.9){minC=827000;maxC=28000000} else {minC=5000000;maxC=5000000000}
             
-            // Unified Profile Stats (Used for Header, Search Card, and Stats Tab)
             if(isProfile) {
                  const c=Math.floor(minC+Math.pow(v,2)*(maxC-minC));
                  return {chirps:c, listens:0, cash:0};
             }
-
-            // Episode Stats
             let epMin=Math.floor(minC/50), epMax=Math.floor(maxC/20); if(epMin<100)epMin=100;
-            if(dateStr){
-                const d=new Date(dateStr); if(!isNaN(d.getTime())) {
-                    const h=(new Date()-d)/(1000*60*60);
-                    if(h<24) epMax=Math.min(epMax,15000); else if(h<168) epMax=Math.min(epMax,500000); else if(h<720) epMax=Math.min(epMax,5000000);
-                }
-            }
+            if(dateStr){ const d=new Date(dateStr); if(!isNaN(d.getTime())) { const h=(new Date()-d)/(1000*60*60); if(h<24)epMax=Math.min(epMax,15000); else if(h<168)epMax=Math.min(epMax,500000); else if(h<720)epMax=Math.min(epMax,5000000); } }
             const c=Math.floor(epMin+Math.pow(v,3)*(epMax-epMin));
-            const l=c*20; const cash=l*0.006;
+            const l=c*20; const cash=l*0.0000011; // UPDATED CASH VALUE
             return {listens:l, chirps:c, cash:cash};
         }
-
         function getChartRank(id) { const rng=seededRandom(id+"_chart"); return rng()>0.8?Math.floor(rng()*45)+1:null; }
         function getTopNewRank(id,d) { if(!isNewEpisode(d))return null; const rng=seededRandom(id+"_newchart"); return rng()>0.7?Math.floor(rng()*45)+1:null; }
 
-        /* --- ODOMETER --- */
         function updateOdometer(c, val) {
             if(!c)return; const fmt=typeof val==='number'?formatNumber(val):val;
             if(!c.hasChildNodes()){
@@ -632,7 +706,7 @@
                 setTimeout(()=>c.classList.remove('pop-effect'),500);
             })});
         }
-        function simLive(){if(activeProfileStats&&!document.getElementById('pd-content-stats').classList.contains('hidden')){activeProfileStats.chirps+=Math.floor(Math.random()*5)+1;activeProfileStats.cash=activeProfileStats.chirps*20*0.006;updateOdometer(document.getElementById('stat-chirps'),activeProfileStats.chirps);updateOdometer(document.getElementById('stat-cash'),formatCurrency(activeProfileStats.cash));}}
+        function simLive(){if(activeProfileStats&&!document.getElementById('pd-content-stats').classList.contains('hidden')){activeProfileStats.chirps+=Math.floor(Math.random()*5)+1;activeProfileStats.cash=activeProfileStats.chirps*20*0.0000011;updateOdometer(document.getElementById('stat-chirps'),activeProfileStats.chirps);updateOdometer(document.getElementById('stat-cash'),formatCurrency(activeProfileStats.cash));}}
 
         /* --- API --- */
         async function search(q, entOverride=null){
@@ -684,16 +758,15 @@
         function createCard(i,c){
             const s=getDeterministicStats(i.id.toString(),true);
             const v=s.chirps>5e7?VERIFIED_BADGE_HTML:'';
+            const parsed = parseTitleAndArtist(i.title, i.artist);
             const d=document.createElement('div'); d.className='podcast-card premium-hover';
             d.onclick=()=>i.type==='profile'?openProfile(i):playTrack(i);
-            d.innerHTML=`<div class="cover-art"><img src="${i.image}"></div><div style="font-weight:700;font-size:0.9rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${i.title}</div><div style="font-size:0.8rem;opacity:0.6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${i.artist} ${v}</div>`;
+            d.innerHTML=`<div class="cover-art"><img src="${i.image}"></div><div style="font-weight:700;font-size:0.9rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${parsed.title}</div><div style="font-size:0.8rem;opacity:0.6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${parsed.artist} ${v}</div>`;
             c.appendChild(d);
         }
 
         function setFilter(f,b){
-            currentFilter=f; 
-            document.querySelectorAll('.filters .chip').forEach(c=>c.classList.remove('active')); 
-            b.classList.add('active'); 
+            currentFilter=f; document.querySelectorAll('.filters .chip').forEach(c=>c.classList.remove('active')); b.classList.add('active'); 
             if(f==='charts') renderCharts(); 
             else{
                 const v=document.getElementById('search-input').value; 
@@ -707,18 +780,20 @@
             const r=await search('Podcast Hits','podcast'); c.innerHTML='';
             const tDiv = document.createElement('div'); tDiv.className='section-title'; tDiv.innerText='Top 45 Global'; c.appendChild(tDiv);
             r.slice(0,45).forEach((i,x)=>{
+                const parsed = parseTitleAndArtist(i.title, i.artist);
                 const el=document.createElement('div');el.className='list-item premium-hover';
                 el.onclick=()=>i.type==='profile'?openProfile(i):playTrack(i);
-                el.innerHTML=`<div class="list-rank">${x+1}</div><img src="${i.image}" class="list-img"><div style="flex:1"><div style="font-weight:700;font-size:0.95rem">${i.title}</div><div style="font-size:0.8rem;opacity:0.6">${i.artist}</div></div>`;
+                el.innerHTML=`<div class="list-rank">${x+1}</div><img src="${i.image}" class="list-img"><div style="flex:1"><div style="font-weight:700;font-size:0.95rem">${parsed.title}</div><div style="font-size:0.8rem;opacity:0.6">${parsed.artist}</div></div>`;
                 c.appendChild(el);
             });
             const nDiv = document.createElement('div'); nDiv.className='section-title'; nDiv.innerText='Top New'; c.appendChild(nDiv);
             const n=r.filter(x=>isNewEpisode(x.date)).slice(0,45);
             if(!n.length) {const empty = document.createElement('div'); empty.style.cssText='padding:20px;opacity:0.5;text-align:center'; empty.innerText='No new entries'; c.appendChild(empty);}
             else n.forEach((i,x)=>{
+                const parsed = parseTitleAndArtist(i.title, i.artist);
                 const el=document.createElement('div');el.className='list-item premium-hover';
                 el.onclick=()=>playTrack(i);
-                el.innerHTML=`<div class="list-rank" style="color:var(--text-primary)">${x+1}</div><img src="${i.image}" class="list-img"><div style="flex:1"><div style="font-weight:700;font-size:0.95rem">${i.title} <span class="new-badge">NEW</span></div><div style="font-size:0.8rem;opacity:0.6">${i.artist}</div></div>`;
+                el.innerHTML=`<div class="list-rank" style="color:var(--text-primary)">${x+1}</div><img src="${i.image}" class="list-img"><div style="flex:1"><div style="font-weight:700;font-size:0.95rem">${parsed.title} <span class="new-badge">NEW</span></div><div style="font-size:0.8rem;opacity:0.6">${parsed.artist}</div></div>`;
                 c.appendChild(el);
             });
         }
@@ -737,12 +812,12 @@
             if(r.length===0){c.innerHTML='<div style="text-align:center;opacity:0.5;padding:20px">No results</div>';return;}
             r.forEach(i=>{
                 const s=getDeterministicStats(i.id.toString(), i.type==='profile', i.date);
+                const parsed = parseTitleAndArtist(i.title, i.artist);
                 const el=document.createElement('div'); el.className='list-item premium-hover';
                 
-                // Add Bookmark Button to Search Item
+                // Add Bookmark Button
                 const viewProfileBtn = `<button onclick="event.stopPropagation(); openProfile({id:'${i.collectionId}', collectionId:'${i.collectionId}', title:'${i.collectionName?.replace(/'/g, "\\'") || ''}', artist:'${i.artist?.replace(/'/g, "\\'") || ''}', image:'${i.image}'})" style="font-size:0.7rem; padding:4px 8px; background:rgba(255,255,255,0.1); border-radius:8px; margin-left:auto; z-index:2; border:none; color:inherit;">Profile</button>`;
                 
-                // Bird Button for Episode Search Item
                 const isSaved = savedChirps.some(x=>x.id===i.id);
                 const birdColor = isSaved ? 'var(--text-primary)' : 'rgba(255,255,255,0.3)';
                 const birdBtn = `<button onclick="event.stopPropagation(); toggleTrackChirpSearch('${i.id}')" style="background:none;border:none;margin-left:8px;z-index:2;color:${birdColor}"><svg class="icon" style="width:20px" viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg></button>`;
@@ -750,14 +825,12 @@
                 if(i.type==='profile'){
                     el.onclick=()=>openProfile(i);
                     const v=s.chirps>5e7?VERIFIED_BADGE_HTML:'';
-                    el.innerHTML=`<img src="${i.image}" class="list-img" style="border-radius:50%"><div style="flex:1" class="info-col"><div style="font-weight:700">${i.title} ${v}</div><div style="opacity:0.6;font-size:0.85rem">Podcast • ${i.artist}</div></div><button style="padding:6px 14px;border-radius:20px;background:var(--glass-border);border:none;color:inherit;font-weight:600">View</button>`;
-                    const statContainer = document.createElement('div'); statContainer.className = 'text-xs text-secondary flex items-center gap-1 info-col'; statContainer.style.marginTop = '4px'; statContainer.innerHTML = `<svg class="icon" style="width:12px;height:12px" viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg> <span class="odometer-container"></span>`;
-                    el.querySelector('.info-col').appendChild(statContainer);
-                    setTimeout(() => updateOdometer(statContainer.querySelector('.odometer-container'), s.chirps), 600);
+                    el.innerHTML=`<img src="${i.image}" class="list-img" style="border-radius:50%"><div style="flex:1" class="info-col"><div style="font-weight:700">${parsed.title} ${v}</div><div style="opacity:0.6;font-size:0.85rem">Podcast • ${parsed.artist}</div></div><button style="padding:6px 14px;border-radius:20px;background:var(--glass-border);border:none;color:inherit;font-weight:600">View</button>`;
+                    // No odometer on profile search card
                 }else{
                     el.onclick=()=>playTrack(i);
                     const n=isNewEpisode(i.date)?'<span class="new-badge">NEW</span>':'';
-                    el.innerHTML=`<img src="${i.image}" class="list-img"><div style="flex:1"><div style="font-weight:700;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden;">${i.title} ${n}</div><div style="display:flex;align-items:center;gap:6px;font-size:0.8rem;opacity:0.6;margin-top:2px;"><span>${timeAgo(i.date)}</span> • <span class="odo-c"></span> Chirps</div></div>${birdBtn}`;
+                    el.innerHTML=`<img src="${i.image}" class="list-img"><div style="flex:1"><div style="font-weight:700;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden;">${parsed.title} ${n}</div><div style="display:flex;align-items:center;gap:6px;font-size:0.8rem;opacity:0.6;margin-top:2px;"><span>${timeAgo(i.date)}</span> • <span class="odo-c"></span> Chirps</div></div>${birdBtn}`;
                     setTimeout(()=>updateOdometer(el.querySelector('.odo-c'),s.chirps),300);
                 }
                 c.appendChild(el);
@@ -769,7 +842,7 @@
             const v=document.getElementById('view-profile-detail');
             document.getElementById('pd-img').src=i.image; document.getElementById('pd-title').innerText=i.title||i.collectionName;
             document.getElementById('pd-artist').innerText=i.artist;
-            if(i.artist.includes(','))document.getElementById('pd-artist').classList.add('has-multi'); else document.getElementById('pd-artist').classList.remove('has-multi');
+            if(i.artist.includes(',')||i.artist.includes('&')||i.artist.includes(' and '))document.getElementById('pd-artist').classList.add('has-multi'); else document.getElementById('pd-artist').classList.remove('has-multi');
             
             updateProfBtn(); v.classList.remove('hidden'); 
             switchProfileTab('episodes');
@@ -795,11 +868,12 @@
             const end=Math.min(renderedEpisodeCount+EPISODES_PER_PAGE, currentProfileEpisodes.length);
             for(let i=renderedEpisodeCount;i<end;i++){
                 const e=currentProfileEpisodes[i]; const s=getDeterministicStats(e.id.toString(),false,e.date);
+                const parsed = parseTitleAndArtist(e.title, e.artist);
                 const d=document.createElement('div'); d.className='list-item premium-hover';
                 if(!e.artist)e.artist=document.getElementById('pd-artist').innerText;
                 const n=isNewEpisode(e.date)?'<span class="new-badge">NEW</span>':'';
                 d.onclick=()=>playTrack(e);
-                d.innerHTML=`<div style="width:44px;height:44px;background:rgba(255,255,255,0.1);border-radius:50%;display:flex;align-items:center;justify-content:center"><svg class="icon" style="width:18px" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg></div><div style="flex:1"><div style="font-weight:700;font-size:0.95rem;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden">${e.title} ${n}</div><div style="font-size:0.8rem;opacity:0.6;margin-top:4px;display:flex;gap:8px"><span>${timeAgo(e.date)}</span> • <span class="odo-sub"></span></div></div>`;
+                d.innerHTML=`<div style="width:44px;height:44px;background:rgba(255,255,255,0.1);border-radius:50%;display:flex;align-items:center;justify-content:center"><svg class="icon" style="width:18px" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg></div><div style="flex:1"><div style="font-weight:700;font-size:0.95rem;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden">${parsed.title} ${n}</div><div style="font-size:0.8rem;opacity:0.6;margin-top:4px;display:flex;gap:8px"><span>${timeAgo(e.date)}</span> • <span class="odo-sub"></span></div></div>`;
                 c.appendChild(d); setTimeout(()=>updateOdometer(d.querySelector('.odo-sub'),s.chirps),50+(i-renderedEpisodeCount)*30);
             }
             renderedEpisodeCount=end;
@@ -809,9 +883,7 @@
         function renderLibrary(){const l=document.getElementById('library-list'); l.innerHTML=''; if(!savedChirps.length){l.innerHTML='<div style="padding:20px;opacity:0.5;text-align:center">No saved chirps</div>';return;} savedChirps.forEach(i=>{const d=document.createElement('div');d.className='list-item premium-hover';d.onclick=()=>playTrack(i);d.innerHTML=`<img src="${i.image}" class="list-img"><div style="flex:1"><div style="font-weight:700;font-size:0.95rem">${i.title}</div><div style="font-size:0.8rem;opacity:0.6">Saved</div></div>`;l.appendChild(d);});}
         
         function switchView(n,el){
-            document.getElementById('view-home').classList.add('hidden');
-            document.getElementById('view-discover').classList.add('hidden');
-            document.getElementById('view-library').classList.add('hidden');
+            document.querySelectorAll('.view').forEach(v=>v.classList.add('hidden'));
             document.getElementById('view-'+n).classList.remove('hidden'); 
             if(el) {
                 const targetText = el.innerText.trim();
@@ -829,60 +901,89 @@
             const s=document.getElementById('pd-content-stats'); const e=document.getElementById('pd-content-episodes');
             if(t==='stats'){e.classList.add('hidden');s.classList.remove('hidden');if(activeProfileStats){const c=document.getElementById('stat-chirps'),m=document.getElementById('stat-cash');c.innerHTML='';m.innerHTML='';setTimeout(()=>{updateOdometer(c,activeProfileStats.chirps);updateOdometer(m,formatCurrency(activeProfileStats.cash));},50);}}else{s.classList.add('hidden');e.classList.remove('hidden');}
         }
-        function toggleTrackChirp(){if(!currentTrack)return; const i=savedChirps.findIndex(x=>x.id===currentTrack.id); if(i>-1)savedChirps.splice(i,1); else{savedChirps.unshift(currentTrack);showToast();} localStorage.setItem('chirps_v29',JSON.stringify(savedChirps)); renderLibrary(); const b=document.getElementById('fp-bird-btn'); const is=savedChirps.some(x=>x.id===currentTrack.id); b.style.background=is?'var(--text-primary)':'rgba(255,255,255,0.1)'; b.style.color=is?'var(--bg-color)':'inherit';}
-        function toggleProfileChirp(){const i=savedProfileChirps.indexOf(currentProfileId); if(i>-1)savedProfileChirps.splice(i,1); else{savedProfileChirps.push(currentProfileId);showToast();} localStorage.setItem('profile_chirps_v29',JSON.stringify(savedProfileChirps)); updateProfBtn();}
+        function toggleTrackChirp(){if(!currentTrack)return; const i=savedChirps.findIndex(x=>x.id===currentTrack.id); if(i>-1)savedChirps.splice(i,1); else{savedChirps.unshift(currentTrack);showToast();} localStorage.setItem('chirps_v33',JSON.stringify(savedChirps)); renderLibrary(); const b=document.getElementById('fp-bird-btn'); const is=savedChirps.some(x=>x.id===currentTrack.id); b.style.background=is?'var(--text-primary)':'rgba(255,255,255,0.1)'; b.style.color=is?'var(--bg-color)':'inherit';}
+        function toggleProfileChirp(){const i=savedProfileChirps.indexOf(currentProfileId); if(i>-1)savedProfileChirps.splice(i,1); else{savedProfileChirps.push(currentProfileId);showToast();} localStorage.setItem('profile_chirps_v33',JSON.stringify(savedProfileChirps)); updateProfBtn();}
         function updateProfBtn(){const a=savedProfileChirps.includes(currentProfileId); const b=document.getElementById('pd-chirp-btn'), t=document.getElementById('pd-chirp-text'); if(a){b.classList.add('active');t.innerText="Chirped!";}else{b.classList.remove('active');t.innerText="Chirp";}}
         function updPlay(){const p=isPlaying?'<rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect>':'<polygon points="5 3 19 12 5 21 5 3"></polygon>'; document.querySelectorAll('#mini-play-btn svg,#fp-play-icon').forEach(s=>s.innerHTML=p);}
         function togglePlay(){const a=document.getElementById('audio-player'); if(a.paused&&a.src){a.play();isPlaying=true;startWaveform();}else{a.pause();isPlaying=false;}updPlay();}
         function playTrack(t){
             currentTrack=t; 
-            // Feature Regex Extraction
-            let finalArtist = t.artist;
-            const featRegex = /\((?:feat\.|ft\.|featuring)\s+([^)]+)\)/i;
-            const match = t.title.match(featRegex);
-            if (match) {
-                const featured = match[1];
-                const parts = featured.split(/,|&|\band\b/i).map(s=>s.trim()).filter(s=>s);
-                parts.forEach(p => { if (!finalArtist.toLowerCase().includes(p.toLowerCase())) finalArtist += `, ${p}`; });
-            }
+            const parsed = parseTitleAndArtist(t.title, t.artist);
             const s=getDeterministicStats(t.id.toString(),false);
             
-            document.getElementById('mini-img').src=t.image; document.getElementById('mini-title').innerText=t.title; document.getElementById('mini-artist').innerText=finalArtist; 
-            document.getElementById('fp-img').src=t.image; document.getElementById('fp-title').innerText=t.title; document.getElementById('fp-artist').innerText=finalArtist; 
+            document.getElementById('mini-img').src=t.image; document.getElementById('mini-title').innerText=parsed.title; document.getElementById('mini-artist').innerText=parsed.artist; 
+            document.getElementById('fp-img').src=t.image; document.getElementById('fp-title').innerText=parsed.title; document.getElementById('fp-artist').innerText=parsed.artist; 
             
             const odo = document.getElementById('fp-chirp-count'); odo.innerHTML='';
             setTimeout(()=>updateOdometer(odo, s.chirps), 50);
 
-            if(finalArtist.includes(',') || finalArtist.includes('&') || finalArtist.includes(' and '))document.getElementById('fp-artist').classList.add('has-multi'); else document.getElementById('fp-artist').classList.remove('has-multi'); 
+            if(parsed.artist.includes(',') || parsed.artist.includes('&') || parsed.artist.includes(' and '))document.getElementById('fp-artist').classList.add('has-multi'); else document.getElementById('fp-artist').classList.remove('has-multi'); 
             const b=document.getElementById('fp-bird-btn'); const is=savedChirps.some(x=>x.id===t.id); b.style.background=is?'var(--text-primary)':'rgba(255,255,255,0.1)'; b.style.color=is?'var(--bg-color)':'inherit'; 
             const a=document.getElementById('audio-player'); a.src=t.src; a.play().then(()=>{isPlaying=true;updPlay();openFullPlayer();startWaveform();});
         }
         function openFullPlayer(){document.getElementById('full-player').classList.add('active');document.getElementById('mini-player').classList.add('expanded');}
         function closeFullPlayer(){document.getElementById('full-player').classList.remove('active');document.getElementById('mini-player').classList.remove('expanded');}
         function showToast(){const t=document.getElementById('toast');t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2000);}
-        function handleArtistClick(str){if(!str)return; const c=str.split(',').filter(x=>x.trim()); if(c.length>1){const l=document.getElementById('creators-list');l.innerHTML='';c.forEach(x=>{const d=document.createElement('div');d.className='creator-item';d.innerHTML=`${x} <svg class="icon" style="width:16px;opacity:0.5" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>`;d.onclick=()=>{closeCreatorsModal();closeFullPlayer();closeProfile();switchView('discover',document.querySelectorAll('.nav-item')[1]);document.getElementById('search-input').value=x.trim();doSearch(x.trim());};l.appendChild(d);});document.getElementById('modal-overlay').classList.add('active');document.getElementById('creators-modal').classList.add('active');}else{closeFullPlayer();closeProfile();switchView('discover',document.querySelectorAll('.nav-item')[1]);document.getElementById('search-input').value=str;doSearch(str);}}
+        function handleArtistClick(str){if(!str)return; const c=str.split(/,|&|\band\b/i).filter(x=>x.trim()); if(c.length>1){const l=document.getElementById('creators-list');l.innerHTML='';c.forEach(x=>{const d=document.createElement('div');d.className='creator-item';d.innerHTML=`${x.trim()} <svg class="icon" style="width:16px;opacity:0.5" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>`;d.onclick=()=>{closeCreatorsModal();closeFullPlayer();closeProfile();switchView('discover',document.querySelectorAll('.nav-item')[1]);document.getElementById('search-input').value=x.trim();doSearch(x.trim());};l.appendChild(d);});document.getElementById('modal-overlay').classList.add('active');document.getElementById('creators-modal').classList.add('active');}else{closeFullPlayer();closeProfile();switchView('discover',document.querySelectorAll('.nav-item')[1]);document.getElementById('search-input').value=str;doSearch(str);}}
         function closeCreatorsModal(){document.getElementById('modal-overlay').classList.remove('active');document.getElementById('creators-modal').classList.remove('active');}
         function toggleTheme(){document.body.setAttribute('data-theme',document.body.getAttribute('data-theme')==='dark'?'light':'dark');}
-
-        // --- EVENTS ---
-        const audioEl = document.getElementById('audio-player');
-        audioEl.ontimeupdate=()=>{if(audioEl.duration && !isNaN(audioEl.duration)){const p=(audioEl.currentTime/audioEl.duration)*100; document.getElementById('progress-fill').style.width=p+'%'; document.getElementById('time-current').innerText=formatTime(audioEl.currentTime); document.getElementById('time-total').innerText=formatTime(audioEl.duration);}};
-        function changeSpeed(){playbackSpeed=playbackSpeed===1.0?1.5:(playbackSpeed===1.5?2.0:1.0); aEl.playbackRate=playbackSpeed; document.getElementById('speed-btn').innerText=playbackSpeed+'x';}
-        function skip(v){audioEl.currentTime+=v;}
-        
         function toggleLyrics(){
             const o=document.getElementById('lyrics-overlay');
             if(o.classList.contains('active')){o.classList.remove('active');clearInterval(lyricsInterval);}
             else{o.classList.add('active'); const t=document.getElementById('lyrics-content'), s=document.getElementById('lyrics-spinner'); t.innerText="Analyzing..."; t.style.opacity=0.7; s.style.display="block"; setTimeout(()=>{s.style.display="none";t.style.opacity=1; let i=Math.floor(Math.random()*PODCAST_SCRIPT.length); lyricsInterval=setInterval(()=>{t.style.opacity=0; setTimeout(()=>{t.innerText=PODCAST_SCRIPT[i++%PODCAST_SCRIPT.length];t.style.opacity=1;},200);},3000);},1000);}
         }
+        function toggleTrackChirpSearch(id) { alert("Saved to Library!"); }
 
-        // Search Bird Toggle
-        function toggleTrackChirpSearch(id) {
-            // Need full object, tricky in search list. 
-            // Simplified: Just toggle ID in array for visual feedback, saving full object requires passing it.
-            // For now, visual toggle only.
-            alert("Saved to Library!"); 
+        /* --- AI CHAT LOGIC --- */
+        async function sendAI() {
+            const input = document.getElementById('ai-input');
+            const txt = input.value.trim();
+            if(!txt) return;
+
+            // Render User Msg
+            const hist = document.getElementById('chat-history');
+            const uDiv = document.createElement('div'); uDiv.className='chat-msg msg-user'; uDiv.innerText = txt;
+            hist.appendChild(uDiv);
+            input.value = '';
+            
+            // Loading
+            const lDiv = document.createElement('div'); lDiv.className='chat-msg msg-ai'; lDiv.innerText = 'Thinking...';
+            hist.appendChild(lDiv);
+            hist.scrollTop = hist.scrollHeight;
+
+            // API Call
+            try {
+                const res = await fetch('https://api.routeway.co/v1/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${CHAT_API_KEY}`
+                    },
+                    body: JSON.stringify({
+                        model: "llama-3.1-70b-instruct",
+                        messages: [
+                            {role: "system", content: "You are the AI assistant for Chirpless, a modern podcast app. Features: Search podcasts, listen to episodes, view 'Chirps' (likes), view estimated cash value (0.0000011 per stream). Support email: pricepeyton987@gmail.com. Keep answers short and helpful."},
+                            {role: "user", content: txt}
+                        ]
+                    })
+                });
+                const data = await res.json();
+                lDiv.innerText = data.choices?.[0]?.message?.content || "I couldn't reach the server.";
+            } catch(e) {
+                lDiv.innerText = "Connection error. Try again.";
+            }
+            hist.scrollTop = hist.scrollHeight;
         }
+
+        // --- AUDIO ---
+        const cvs=document.getElementById('wave-canvas'); const ctx=cvs.getContext('2d'); let aid;
+        function startWaveform(){if(aid)cancelAnimationFrame(aid); cvs.width=cvs.offsetWidth; cvs.height=cvs.offsetHeight; loop();}
+        function loop(){if(!isPlaying)return; ctx.clearRect(0,0,cvs.width,cvs.height); ctx.fillStyle=getComputedStyle(document.body).getPropertyValue('--text-primary'); const b=50,w=cvs.width/b; for(let i=0;i<b;i++){const h=Math.abs(Math.sin(Date.now()/200+i*0.5))*cvs.height; ctx.fillRect(i*w,(cvs.height-h)/2,w-2,h);} aid=requestAnimationFrame(loop);}
+        function seek(e){const r=document.getElementById('progress-container').getBoundingClientRect(); const p=(e.clientX-r.left)/r.width; document.getElementById('audio-player').currentTime=p*document.getElementById('audio-player').duration;}
+        const aEl=document.getElementById('audio-player');
+        aEl.ontimeupdate=()=>{if(aEl.duration && !isNaN(aEl.duration)){const p=(aEl.currentTime/aEl.duration)*100; document.getElementById('progress-fill').style.width=p+'%'; document.getElementById('time-current').innerText=formatTime(aEl.currentTime); document.getElementById('time-total').innerText=formatTime(aEl.duration);}};
+        function changeSpeed(){playbackSpeed=playbackSpeed===1.0?1.5:(playbackSpeed===1.5?2.0:1.0); aEl.playbackRate=playbackSpeed; document.getElementById('speed-btn').innerText=playbackSpeed+'x';}
+        function skip(v){aEl.currentTime+=v;}
 
         init();
     </script>
