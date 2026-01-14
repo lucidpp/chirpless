@@ -18,8 +18,7 @@
                         googleGray: '#9aa0a6',
                         googleBlue: '#8ab4f8',
                         googleDivider: '#3c4043',
-                        googleLink: '#8ab4f8',
-                        googleGreen: '#81c995',
+                        incognitoBg: '#151515',
                     },
                     fontFamily: {
                         sans: ['Roboto', 'Arial', 'sans-serif'],
@@ -49,7 +48,13 @@
             font-family: 'Roboto', -apple-system, BlinkMacSystemFont, sans-serif;
             -webkit-font-smoothing: antialiased;
             overflow-x: hidden;
+            transition: background-color 0.3s ease;
         }
+
+        /* Incognito Overrides */
+        body.incognito-mode { background-color: #151515; }
+        body.incognito-mode .sticky { background-color: #151515; }
+        body.incognito-mode ::-webkit-scrollbar-track { background: #151515; }
 
         /* Seasonal Layer */
         .seasonal-layer {
@@ -74,6 +79,7 @@
         
         .search-wrapper {
             transition: background 0.2s, box-shadow 0.2s;
+            position: relative;
         }
         .search-wrapper:hover {
             background-color: #3c4043;
@@ -83,8 +89,27 @@
         .search-wrapper:focus-within {
             background-color: #303134;
             box-shadow: 0 1px 6px rgba(0,0,0,0.3);
+            border-bottom-left-radius: 0;
+            border-bottom-right-radius: 0;
         }
 
+        /* History Dropdown */
+        .history-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: #303134;
+            border-bottom-left-radius: 24px;
+            border-bottom-right-radius: 24px;
+            padding-bottom: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            z-index: 50;
+            display: none;
+            border-top: 1px solid #3c4043;
+        }
+        .search-wrapper:focus-within .history-dropdown { display: block; }
+        
         /* View Management */
         .view-section { display: none; }
         .view-section.active { display: block; }
@@ -99,15 +124,61 @@
     <!-- Seasonal Background -->
     <div id="seasonal-layer" class="seasonal-layer"></div>
 
+    <!-- Help / Settings Modal -->
+    <div id="help-modal" class="fixed inset-0 z-[110] bg-black/80 flex items-center justify-center backdrop-blur-sm hidden animate-fade-in p-4">
+        <div class="bg-googleCard p-6 rounded-2xl max-w-md w-full shadow-2xl border border-googleDivider relative">
+            <button onclick="toggleHelp()" class="absolute top-4 right-4 text-googleGray hover:text-white"><i class="fas fa-times text-xl"></i></button>
+            
+            <div class="text-center mb-6">
+                <div class="w-12 h-12 bg-googleBlue/20 rounded-full flex items-center justify-center mx-auto mb-3 text-googleBlue text-xl">
+                    <i class="fas fa-wrench"></i>
+                </div>
+                <h2 class="text-xl text-white mb-1">Make Chirpless Default</h2>
+                <p class="text-googleGray text-sm">Use Chirpless directly from your browser's address bar.</p>
+            </div>
+
+            <div class="bg-[#202124] p-4 rounded-lg border border-googleDivider mb-4">
+                <label class="text-xs text-googleGray uppercase font-bold tracking-wider mb-2 block">1. Search Engine URL</label>
+                <div class="flex items-center gap-2 bg-[#303134] p-2 rounded border border-googleDivider">
+                    <code id="engine-url" class="text-xs text-googleBlue truncate flex-1">...</code>
+                    <button onclick="copyEngineUrl()" class="text-googleGray hover:text-white p-1"><i class="fas fa-copy"></i></button>
+                </div>
+            </div>
+
+            <div class="space-y-3 text-sm text-googleText">
+                <p><span class="font-bold text-white">Chrome/Edge:</span> Go to Settings > Search Engine > Manage Search Engines > Site Search > Add.</p>
+                <ul class="list-disc pl-5 text-googleGray space-y-1">
+                    <li>Name: <span class="text-white">Chirpless</span></li>
+                    <li>Shortcut: <span class="text-white">c</span></li>
+                    <li>URL: <span class="text-white">Paste the link above</span></li>
+                </ul>
+                <p class="text-xs text-googleGray mt-2">Now type 'c' + Tab in your address bar to search!</p>
+            </div>
+        </div>
+    </div>
+
     <!-- Limit Modal -->
     <div id="limit-modal" class="fixed inset-0 z-[100] bg-black/70 flex items-center justify-center backdrop-blur-sm hidden animate-fade-in">
         <div class="bg-googleCard p-6 rounded-xl max-w-sm text-center shadow-2xl border border-googleDivider mx-4">
             <i class="fas fa-hand-paper text-googleGray text-4xl mb-4"></i>
             <h2 class="text-xl text-white mb-2">Search Limit Reached</h2>
-            <p class="text-googleGray text-sm mb-4">You've used your searches for this week. It's time to touch some grass.</p>
-            <button onclick="localStorage.removeItem('chirpless_v5'); location.reload();" class="text-xs text-googleBlue hover:underline cursor-pointer">
-                (Dev: Click here to reset)
+            <p class="text-googleGray text-sm mb-4">You've used your searches for this week.</p>
+            <button onclick="localStorage.removeItem('chirpless_v6'); location.reload();" class="text-xs text-googleBlue hover:underline cursor-pointer">
+                (Dev: Reset Limit)
             </button>
+        </div>
+    </div>
+
+    <!-- Top Right Nav -->
+    <div class="fixed top-4 right-4 z-50 flex items-center gap-3">
+        <button onclick="toggleIncognito()" id="incognito-btn" class="w-10 h-10 rounded-full bg-googleCard hover:bg-[#3c4043] flex items-center justify-center text-googleGray hover:text-white transition-colors border border-transparent" title="Incognito Mode">
+            <i class="fas fa-user-secret"></i>
+        </button>
+        <button onclick="toggleHelp()" class="w-10 h-10 rounded-full bg-googleCard hover:bg-[#3c4043] flex items-center justify-center text-googleGray hover:text-white transition-colors" title="Settings">
+            <i class="fas fa-cog"></i>
+        </button>
+        <div class="w-8 h-8 rounded-full bg-purple-600 flex items-center justify-center text-sm font-bold text-white cursor-pointer select-none">
+            U
         </div>
     </div>
 
@@ -123,26 +194,37 @@
 
                 <!-- Logo -->
                 <div class="mb-8 flex flex-col items-center select-none">
-                    <h1 class="text-6xl md:text-8xl font-bold tracking-tighter text-white mb-2">
+                    <h1 class="text-6xl md:text-8xl font-bold tracking-tighter text-white mb-2 relative">
                         Chirpless
+                        <span id="incognito-badge" class="hidden absolute -right-4 -top-2 text-xs bg-[#202124] border border-white/20 px-2 py-0.5 rounded text-gray-400 font-normal tracking-normal">Private</span>
                     </h1>
                     <p class="text-googleGray text-lg relative -top-1 font-light">"Chirp Less, Learn More."</p>
                 </div>
 
                 <!-- Search Input Form -->
-                <form id="landing-form" class="w-full" onsubmit="event.preventDefault(); handleSearch('landing');">
-                    <div class="search-wrapper bg-googleCard border border-googleDivider rounded-full flex items-center px-4 py-3 shadow-md">
+                <div class="w-full relative search-wrapper bg-googleCard border border-googleDivider rounded-[24px] shadow-md z-20">
+                    <form id="landing-form" class="flex items-center px-4 py-3 w-full" onsubmit="event.preventDefault(); handleSearch('landing');">
                         <i class="fas fa-search text-googleGray mr-3 text-lg cursor-pointer hover:text-white" onclick="handleSearch('landing')"></i>
                         <input type="text" id="landing-input" 
                             class="bg-transparent border-none outline-none text-white w-full text-base h-full"
                             placeholder="Search Google or type a URL" autocomplete="off">
                         
+                        <!-- Voice Search -->
+                        <button type="button" class="p-2 rounded-full hover:bg-white/10 transition-colors text-googleBlue mr-1" onclick="startVoiceSearch('landing')">
+                            <i class="fas fa-microphone"></i>
+                        </button>
+
                         <!-- AI Toggle -->
-                        <button type="button" id="ai-toggle-landing" class="ml-2 p-2 rounded-full hover:bg-white/10 transition-colors flex items-center gap-2 group relative" onclick="toggleAI()">
+                        <button type="button" id="ai-toggle-landing" class="p-2 rounded-full hover:bg-white/10 transition-colors flex items-center gap-2 group relative" onclick="toggleAI()">
                             <i class="fas fa-brain text-googleGray group-[.active]:text-googleBlue"></i>
                         </button>
+                    </form>
+
+                    <!-- History Dropdown -->
+                    <div id="landing-history" class="history-dropdown hidden">
+                        <!-- Injected via JS -->
                     </div>
-                </form>
+                </div>
 
                 <!-- Quick Links -->
                 <div class="mt-8 grid grid-cols-4 gap-4 md:gap-8 w-full max-w-md">
@@ -164,16 +246,12 @@
                         </div>
                         <span class="text-xs text-googleGray">Reddit</span>
                     </div>
-                    <div class="flex flex-col items-center gap-3 group cursor-pointer">
+                    <div class="flex flex-col items-center gap-3 group cursor-pointer" onclick="toggleHelp()">
                         <div class="w-12 h-12 rounded-full bg-googleCard flex items-center justify-center group-hover:bg-[#3c4043] transition-colors border border-transparent group-hover:border-googleDivider">
-                            <i class="fas fa-plus text-white text-xl"></i>
+                            <i class="fas fa-question text-white text-xl"></i>
                         </div>
-                        <span class="text-xs text-googleGray">Add</span>
+                        <span class="text-xs text-googleGray">Help</span>
                     </div>
-                </div>
-
-                <div class="mt-12 text-xs text-googleGray">
-                    Searches left (Demo): <span id="searches-left" class="text-white font-bold">100</span>
                 </div>
             </div>
         </section>
@@ -181,7 +259,7 @@
         <!-- ================= RESULTS PAGE ================= -->
         <section id="results-view" class="view-section min-h-screen bg-googleBg pb-10">
             <!-- Header -->
-            <header class="sticky top-0 z-40 bg-googleBg border-b border-googleDivider pt-3 px-4 md:px-8">
+            <header class="sticky top-0 z-40 bg-googleBg border-b border-googleDivider pt-3 px-4 md:px-8 transition-colors">
                 <div class="flex items-center gap-4 mb-3 max-w-[1200px]">
                     <!-- Logo -->
                     <div class="text-xl font-bold text-white cursor-pointer hidden md:block select-none tracking-tight" onclick="goHome()">Chirpless</div>
@@ -194,17 +272,18 @@
                                 class="bg-transparent border-none outline-none text-white w-full text-base"
                                 value="">
                             <i class="fas fa-times text-googleGray ml-3 cursor-pointer hover:text-white px-2 border-r border-googleDivider mr-2" onclick="clearSearch()"></i>
+                            <i class="fas fa-microphone text-googleBlue cursor-pointer px-2" onclick="startVoiceSearch('results')"></i>
                             <i class="fas fa-search text-googleBlue cursor-pointer px-1" onclick="handleSearch('results')"></i>
                         </div>
                     </form>
 
-                    <!-- Header Icons -->
-                    <div class="flex items-center gap-2 pl-2">
+                    <!-- Header Icons (Restored) -->
+                    <div class="flex items-center gap-3 pl-2">
                         <button id="ai-toggle-header" class="w-10 h-10 rounded-full flex items-center justify-center hover:bg-white/10 group transition-colors" onclick="toggleAI()">
                             <i class="fas fa-brain text-googleGray group-[.active]:text-googleBlue"></i>
                         </button>
-                        <div class="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center text-sm font-bold text-white cursor-pointer">
-                            J
+                        <div class="w-8 h-8 rounded-full bg-purple-600 flex items-center justify-center text-sm font-bold text-white cursor-pointer select-none">
+                            U
                         </div>
                     </div>
                 </div>
@@ -223,11 +302,6 @@
                 
                 <!-- Loading State -->
                 <div id="loader" class="hidden max-w-[652px] space-y-8 pt-2">
-                    <div class="space-y-3">
-                        <div class="h-4 w-32 bg-[#303134] rounded animate-pulse"></div>
-                        <div class="h-5 w-3/4 bg-[#303134] rounded animate-pulse"></div>
-                        <div class="h-12 w-full bg-[#303134] rounded animate-pulse"></div>
-                    </div>
                     <div class="space-y-3">
                         <div class="h-4 w-32 bg-[#303134] rounded animate-pulse"></div>
                         <div class="h-5 w-3/4 bg-[#303134] rounded animate-pulse"></div>
@@ -253,18 +327,14 @@
                 <div class="flex flex-col lg:flex-row gap-12">
                     <!-- Left Column (Main Results) -->
                     <div class="flex-1 max-w-[652px] min-w-0">
-                        
-                        <!-- Mobile/Inline Knowledge Graph injected here -->
+                        <!-- Mobile/Inline Knowledge Graph -->
                         <div id="inline-kg-container" class="lg:hidden mb-6"></div>
-                        
                         <!-- Organic Results -->
                         <div id="main-feed" class="space-y-8"></div>
                     </div>
 
-                    <!-- Right Column (Desktop Sidebar Knowledge Graph) -->
-                    <div id="sidebar-container" class="hidden lg:block w-[368px] shrink-0">
-                        <!-- Desktop Knowledge Graph injected here -->
-                    </div>
+                    <!-- Right Column (Desktop Sidebar) -->
+                    <div id="sidebar-container" class="hidden lg:block w-[368px] shrink-0"></div>
                 </div>
             </div>
         </section>
@@ -274,7 +344,7 @@
         // --- CONFIG ---
         const API_KEY = "63295e5de863c9228036333af0971a6e69f108a3";
         const WEEKLY_LIMIT = 100;
-        const STORAGE_KEY = 'chirpless_v5';
+        const STORAGE_KEY = 'chirpless_v6';
         
         // --- DATA ---
         const dumbJokes = [
@@ -292,7 +362,9 @@
             weekStart: 0,
             aiMode: false,
             filter: 'all',
-            query: ''
+            query: '',
+            incognito: false,
+            history: []
         };
 
         const els = {
@@ -300,6 +372,7 @@
             resultsView: document.getElementById('results-view'),
             landingInput: document.getElementById('landing-input'),
             resultsInput: document.getElementById('results-input'),
+            landingHistory: document.getElementById('landing-history'),
             mainFeed: document.getElementById('main-feed'),
             sidebarContainer: document.getElementById('sidebar-container'),
             inlineKgContainer: document.getElementById('inline-kg-container'),
@@ -307,19 +380,226 @@
             dumbAiText: document.getElementById('dumb-ai-text'),
             loader: document.getElementById('loader'),
             limitModal: document.getElementById('limit-modal'),
-            searchesLeft: document.getElementById('searches-left'),
+            helpModal: document.getElementById('help-modal'),
+            engineUrl: document.getElementById('engine-url'),
+            incognitoBtn: document.getElementById('incognito-btn'),
+            incognitoBadge: document.getElementById('incognito-badge'),
+            seasonalLayer: document.getElementById('seasonal-layer'),
+            // Note: toggleHeader is fetched in init() after it's guaranteed to be in DOM or checked via optional chaining
             toggleLanding: document.getElementById('ai-toggle-landing'),
-            toggleHeader: document.getElementById('ai-toggle-header'),
-            seasonalLayer: document.getElementById('seasonal-layer')
         };
 
         // --- INIT ---
         function init() {
+            // Late binding for toggleHeader to ensure it exists if moved/restored
+            els.toggleHeader = document.getElementById('ai-toggle-header');
+
             loadState();
             checkReset();
+            checkUrlParams(); 
             updateUI();
             setSeasonalTheme();
             setWelcomeText();
+            renderHistory();
+            
+            // Set URL for help modal
+            const currentUrl = window.location.href.split('?')[0];
+            els.engineUrl.innerText = `${currentUrl}?q=%s`;
+            
+            // Input focus listeners for history
+            els.landingInput.addEventListener('focus', () => {
+                if(!state.incognito && state.history.length > 0) els.landingHistory.style.display = 'block';
+            });
+            // Hide delay to allow clicking
+            els.landingInput.addEventListener('blur', () => {
+                setTimeout(() => els.landingHistory.style.display = 'none', 200);
+            });
+        }
+
+        function checkUrlParams() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const q = urlParams.get('q');
+            if(q) {
+                performSearch(q);
+            }
+        }
+
+        // --- CORE FEATURES ---
+        function toggleIncognito() {
+            state.incognito = !state.incognito;
+            document.body.classList.toggle('incognito-mode');
+            
+            if(state.incognito) {
+                els.incognitoBtn.classList.add('text-white', 'bg-blue-600');
+                els.incognitoBtn.classList.remove('bg-googleCard');
+                els.incognitoBadge.classList.remove('hidden');
+            } else {
+                els.incognitoBtn.classList.remove('text-white', 'bg-blue-600');
+                els.incognitoBtn.classList.add('bg-googleCard');
+                els.incognitoBadge.classList.add('hidden');
+            }
+        }
+
+        function toggleHelp() {
+            els.helpModal.classList.toggle('hidden');
+        }
+
+        function copyEngineUrl() {
+            const text = els.engineUrl.innerText;
+            const textArea = document.createElement("textarea");
+            textArea.value = text;
+            
+            // Ensure textarea is not visible but part of DOM to allow selection
+            textArea.style.position = "fixed";
+            textArea.style.left = "-9999px";
+            textArea.style.top = "0";
+            document.body.appendChild(textArea);
+            
+            textArea.focus();
+            textArea.select();
+            
+            try {
+                const successful = document.execCommand('copy');
+                if(successful) {
+                    alert("URL copied! Paste this into your browser's search engine settings.");
+                } else {
+                    throw new Error("Copy command failed");
+                }
+            } catch (err) {
+                console.error('Fallback: Oops, unable to copy', err);
+                alert("Could not copy automatically. Please select and copy the URL manually.");
+            }
+            
+            document.body.removeChild(textArea);
+        }
+
+        function startVoiceSearch(source) {
+            if (!('webkitSpeechRecognition' in window)) {
+                alert("Voice search is not supported in this browser.");
+                return;
+            }
+            const recognition = new webkitSpeechRecognition();
+            recognition.continuous = false;
+            recognition.interimResults = false;
+            
+            recognition.onstart = function() {
+                const input = source === 'landing' ? els.landingInput : els.resultsInput;
+                input.placeholder = "Listening...";
+            };
+            
+            recognition.onresult = function(event) {
+                const text = event.results[0][0].transcript;
+                const input = source === 'landing' ? els.landingInput : els.resultsInput;
+                input.value = text;
+                performSearch(text);
+            };
+            
+            recognition.onend = function() {
+                const input = source === 'landing' ? els.landingInput : els.resultsInput;
+                input.placeholder = "Search Google or type a URL";
+            };
+
+            recognition.start();
+        }
+
+        // --- HISTORY LOGIC ---
+        function addToHistory(query) {
+            if(state.incognito) return;
+            
+            // Remove if exists then add to top
+            state.history = state.history.filter(h => h !== query);
+            state.history.unshift(query);
+            if(state.history.length > 5) state.history.pop();
+            
+            saveState();
+            renderHistory();
+        }
+
+        function renderHistory() {
+            if(state.history.length === 0) {
+                els.landingHistory.innerHTML = '';
+                return;
+            }
+            
+            els.landingHistory.innerHTML = state.history.map(h => `
+                <div class="px-4 py-2 hover:bg-[#3c4043] cursor-pointer flex items-center gap-3 text-white" onclick="handleSearchHistory('${h}')">
+                    <i class="fas fa-history text-googleGray text-sm"></i>
+                    <span>${h}</span>
+                </div>
+            `).join('');
+        }
+
+        function handleSearchHistory(q) {
+            performSearch(q);
+        }
+
+        // --- STORAGE ---
+        function loadState() {
+            const saved = localStorage.getItem(STORAGE_KEY);
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                state.count = parsed.count || 0;
+                state.weekStart = parsed.weekStart || Date.now();
+                state.history = parsed.history || [];
+            } else {
+                state.weekStart = Date.now();
+                saveState();
+            }
+        }
+
+        function saveState() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify({
+                count: state.count,
+                weekStart: state.weekStart,
+                history: state.history
+            }));
+        }
+
+        function checkReset() {
+            if (Date.now() - state.weekStart > 604800000) {
+                state.count = 0;
+                state.weekStart = Date.now();
+                saveState();
+            }
+        }
+
+        // --- UI UTILS ---
+        function updateUI() {
+            const activeClass = 'active';
+            
+            // Check for elements before accessing properties to prevent crashes
+            if(els.toggleLanding) {
+                if(state.aiMode) els.toggleLanding.classList.add(activeClass);
+                else els.toggleLanding.classList.remove(activeClass);
+            }
+            
+            if(els.toggleHeader) {
+                if(state.aiMode) els.toggleHeader.classList.add(activeClass);
+                else els.toggleHeader.classList.remove(activeClass);
+            }
+        }
+
+        function toggleAI() {
+            state.aiMode = !state.aiMode;
+            updateUI();
+        }
+
+        function goHome() {
+            els.resultsView.classList.remove('active');
+            els.landingView.classList.add('active');
+            els.landingInput.value = '';
+            els.landingInput.focus();
+            window.scrollTo(0,0);
+            
+            // Clear Query Param
+            const url = new URL(window.location);
+            url.searchParams.delete('q');
+            window.history.pushState({}, '', url);
+        }
+
+        function clearSearch() {
+            els.resultsInput.value = '';
+            els.resultsInput.focus();
         }
 
         function setWelcomeText() {
@@ -347,67 +627,6 @@
             }
         }
 
-        // --- STORAGE ---
-        function loadState() {
-            const saved = localStorage.getItem(STORAGE_KEY);
-            if (saved) {
-                const parsed = JSON.parse(saved);
-                state.count = parsed.count || 0;
-                state.weekStart = parsed.weekStart || Date.now();
-            } else {
-                state.weekStart = Date.now();
-                saveState();
-            }
-        }
-
-        function saveState() {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify({
-                count: state.count,
-                weekStart: state.weekStart
-            }));
-        }
-
-        function checkReset() {
-            if (Date.now() - state.weekStart > 604800000) {
-                state.count = 0;
-                state.weekStart = Date.now();
-                saveState();
-            }
-        }
-
-        // --- ACTIONS ---
-        function updateUI() {
-            els.searchesLeft.innerText = Math.max(0, WEEKLY_LIMIT - state.count);
-            
-            const activeClass = 'active';
-            
-            if(state.aiMode) {
-                els.toggleLanding.classList.add(activeClass);
-                els.toggleHeader.classList.add(activeClass);
-            } else {
-                els.toggleLanding.classList.remove(activeClass);
-                els.toggleHeader.classList.remove(activeClass);
-            }
-        }
-
-        function toggleAI() {
-            state.aiMode = !state.aiMode;
-            updateUI();
-        }
-
-        function goHome() {
-            els.resultsView.classList.remove('active');
-            els.landingView.classList.add('active');
-            els.landingInput.value = '';
-            els.landingInput.focus();
-            window.scrollTo(0,0);
-        }
-
-        function clearSearch() {
-            els.resultsInput.value = '';
-            els.resultsInput.focus();
-        }
-
         // --- SEARCH LOGIC ---
         function handleSearch(source) {
             const input = source === 'landing' ? els.landingInput : els.resultsInput;
@@ -423,27 +642,24 @@
                 return;
             }
 
+            addToHistory(query);
+
             // Prep UI
             els.landingView.classList.remove('active');
             els.resultsView.classList.add('active');
             els.resultsInput.value = query;
-            
-            // SCROLL FIX: Force scroll to top on mobile/desktop instantly
             window.scrollTo({ top: 0, behavior: 'instant' });
             
-            // Clear previous results
+            // Clear previous
             els.mainFeed.innerHTML = '';
             els.sidebarContainer.innerHTML = '';
             els.inlineKgContainer.innerHTML = '';
             els.dumbAiPanel.classList.add('hidden');
-            
-            // Show loader
             els.loader.classList.remove('hidden');
 
             if(increment) {
                 state.count++;
                 saveState();
-                updateUI();
             }
 
             // Dumb AI
@@ -468,7 +684,6 @@
                 });
                 
                 if (!res.ok) throw new Error("API Error");
-                
                 const data = await res.json();
                 renderResults(data, endpoint);
 
@@ -514,7 +729,7 @@
             
             let contentHTML = '';
 
-            // 2. Knowledge Graph Generation (With Verified Badge)
+            // 2. Knowledge Graph Generation (Verified)
             if(data.knowledgeGraph) {
                 const kg = data.knowledgeGraph;
                 const kgHTML = `
@@ -537,20 +752,14 @@
                         </div>
                     </div>
                 `;
-                
-                // Sidebar (Desktop)
                 els.sidebarContainer.innerHTML = kgHTML;
-                // Inline (Mobile) - Prepended immediately
                 els.inlineKgContainer.innerHTML = kgHTML;
             }
 
-            // 3. Main Results Generation
+            // 3. Main Results
             if(type === 'search' && data.organic) {
                 data.organic.forEach((res, idx) => {
                     if(idx === 1) contentHTML += adCard;
-
-                    const domain = new URL(res.link).hostname.replace('www.', '');
-                    
                     contentHTML += `
                         <div class="mb-8 animate-fade-in" style="animation-delay: ${idx * 0.05}s">
                             <div class="flex items-center gap-3 mb-1.5 group cursor-pointer">
@@ -606,7 +815,6 @@
                     `;
                 });
             }
-
             els.mainFeed.innerHTML = contentHTML;
         }
 
