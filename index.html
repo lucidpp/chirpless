@@ -294,6 +294,7 @@
         ];
 
         const SPONSORED_LINKS = [
+            { text: "Help keep this search engine going", link: "https://chirpless-shop.fourthwall.com/products/donation", displayLink: "chirpless.com/donate" },
             { text: "Check Out C@shXan's Music On Spotify!", link: "https://open.spotify.com", displayLink: "spotify.com" },
             { text: "Check out hobby lobby!", link: "https://www.hobbylobby.com/", displayLink: "hobbylobby.com" },
             { text: "Wow! LucidPP's New Album.", link: "https://open.spotify.com/artist/3egJ2gG5ocVFaoxWmayIII", displayLink: "open.spotify.com" }
@@ -301,7 +302,7 @@
 
         // List of domains to show "Verified" checkmark
         const VERIFIED_DOMAINS = [
-            'wikipedia.org', 'youtube.com', 'spotify.com', 'github.com', 
+            'chirpless.com', 'wikipedia.org', 'youtube.com', 'spotify.com', 'github.com', 
             'stackoverflow.com', 'apple.com', 'microsoft.com', 'amazon.com',
             'instagram.com', 'twitter.com', 'x.com', 'linkedin.com', 'netflix.com'
         ];
@@ -442,9 +443,22 @@
                 const webData = await webRes.json();
                 const imgData = await imgRes.json();
 
+                let organicResults = webData.organic || [];
+
+                // Custom Injection for "Chirpless" query
+                if (query.toLowerCase().includes('chirpless')) {
+                    const officialSite = {
+                        title: "Chirpless.com - Privacy Simplified",
+                        link: "https://chirpless.com",
+                        snippet: "The official search engine. Search the web without being tracked. Fast, secure, and lightweight."
+                    };
+                    // Ensure it's at the top
+                    organicResults = [officialSite, ...organicResults];
+                }
+
                 // Explicitly check for knowledge graph
                 state.results = {
-                    web: webData.organic || [],
+                    web: organicResults,
                     knowledgeGraph: webData.knowledgeGraph || null,
                     images: imgData.images || []
                 };
