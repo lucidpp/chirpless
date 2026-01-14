@@ -80,6 +80,44 @@
         @keyframes navPop { 0% { transform: scale(1); } 50% { transform: scale(0.9); } 100% { transform: scale(1); } }
         .nav-click { animation: navPop 0.2s ease-out; }
 
+        /* --- GLASS SHINE EFFECTS --- */
+        @keyframes shinePass {
+            0% { left: -100%; opacity: 0; }
+            50% { opacity: 0.5; }
+            100% { left: 200%; opacity: 0; }
+        }
+
+        .glass-shine-hover {
+            position: relative;
+            overflow: hidden;
+        }
+        .glass-shine-hover::before {
+            content: '';
+            position: absolute;
+            top: 0; left: -100%;
+            width: 50%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+            transform: skewX(-20deg);
+            pointer-events: none;
+            transition: none;
+            z-index: 5;
+        }
+        .glass-shine-hover:hover::before {
+            animation: shinePass 0.75s ease-in-out;
+        }
+
+        /* Static Premium Sheen */
+        .glass-sheen {
+            box-shadow: inset 0 1px 0 0 rgba(255,255,255,0.12), 
+                        inset 0 0 20px rgba(255,255,255,0.02);
+            background: linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0) 40%);
+        }
+        [data-theme="light"] .glass-sheen {
+            box-shadow: inset 0 1px 0 0 rgba(255,255,255,0.6);
+            background: linear-gradient(135deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0) 40%);
+        }
+
+
         /* --- LAYOUT --- */
         #app { height: 100%; display: flex; flex-direction: column; position: relative; }
         
@@ -189,6 +227,7 @@
             overflow-y: auto; padding-bottom: calc(100px + var(--safe-bottom) + 80px); 
             overscroll-behavior: contain; transition: left 0.3s, width 0.3s;
         }
+        /* Profile Background Glow Container */
         #profile-bg-glow {
             position: absolute; top: 0; left: 0; width: 100%; height: 60vh;
             z-index: -1; pointer-events: none; overflow: hidden;
@@ -331,6 +370,8 @@
             padding: max(15px, var(--safe-top)) 24px max(20px, var(--safe-bottom));
         }
         #full-player.active { transform: translateY(0); }
+        /* Add glass sheen to full player */
+        #full-player.glass-sheen { box-shadow: inset 0 1px 0 0 rgba(255,255,255,0.15), inset 0 0 20px rgba(255,255,255,0.02); }
         [data-theme="light"] #full-player { background: rgba(255, 255, 255, 0.65); }
 
         .player-top { flex: 0 0 auto; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
@@ -375,20 +416,6 @@
 
         .spinner { width: 20px; height: 20px; border: 2px solid var(--text-secondary); border-top-color: var(--text-primary); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 10px auto; }
         @keyframes spin { to { transform: rotate(360deg); } }
-
-        /* MODAL (INSTALL) */
-        #install-modal {
-            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.9);
-            width: 85%; max-width: 320px; background: var(--surface-color);
-            padding: 24px; border-radius: 24px; text-align: center;
-            z-index: 500; opacity: 0; pointer-events: none;
-            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            box-shadow: 0 20px 50px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1);
-        }
-        #install-modal.active { opacity: 1; pointer-events: auto; transform: translate(-50%, -50%) scale(1); }
-        .install-btn { padding: 12px 24px; border-radius: 12px; font-weight: 700; margin: 0 5px; cursor: pointer; }
-        .btn-yes { background: var(--text-primary); color: var(--bg-color); }
-        .btn-no { background: var(--surface-highlight); color: var(--text-secondary); }
 
         @media (min-width: 768px) {
             header, nav { display: none !important; }
@@ -442,7 +469,7 @@
         </aside>
 
         <!-- HEADER -->
-        <header>
+        <header class="glass-panel">
             <div class="brand"><img src="siteicon.png" alt="icon"> Chirpless</div>
             <button onclick="toggleTheme()" style="background:none; border:none; color:inherit;">
                 <svg class="icon" style="stroke: currentColor; stroke-width: 2;" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
@@ -461,7 +488,7 @@
             <div id="view-discover" class="view hidden">
                 <div class="section-title">Explore</div>
                 <div class="search-container">
-                    <div class="search-bar">
+                    <div class="search-bar glass-shine-hover">
                         <svg class="icon" style="opacity:0.5; width:20px;" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
                         <input type="search" id="search-input" placeholder="Search..." onkeypress="handleSearch(event)">
                     </div>
@@ -508,7 +535,7 @@
                 </button>
             </div>
             
-            <div class="profile-header">
+            <div class="profile-header glass-sheen">
                 <img id="pd-img" src="" class="profile-art">
                 <h1 id="pd-title" style="margin:0; font-size:1.8rem; line-height:1.2;">Title</h1>
                 <p id="pd-artist-container" style="margin:8px 0;">
@@ -578,7 +605,7 @@
         <div id="toast"><svg width="20" height="20" viewBox="0 0 24 24" fill="var(--bg-color)"><path d="M21 15C21 19 17 22 13 22C9 22 10 18 10 15C10 12 5 10 3 8C5.5 6 12 2 12 2Z"/></svg> Chirped!</div>
 
         <!-- MINI PLAYER -->
-        <div id="mini-player" onclick="openFullPlayer()">
+        <div id="mini-player" class="glass-sheen" onclick="openFullPlayer()">
             <img id="mini-img" src="" class="list-img" style="opacity:0">
             <div style="flex:1; margin-left:12px; overflow:hidden;">
                 <div id="mini-title" class="font-bold text-sm" style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Select a chirp</div>
@@ -606,7 +633,7 @@
         </nav>
 
         <!-- FULL PLAYER -->
-        <div id="full-player">
+        <div id="full-player" class="glass-sheen">
             <div class="player-top">
                 <button onclick="closeFullPlayer()" style="background:none; border:none; color:inherit;"><svg class="icon" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg></button>
                 <span class="text-xs font-bold" style="letter-spacing:2px;">NOW PLAYING</span>
@@ -690,6 +717,10 @@
         function timeAgo(d) { const s=Math.floor((new Date()-new Date(d))/1000); if(s<60)return'now'; if(s<3600)return Math.floor(s/60)+'m'; if(s<86400)return Math.floor(s/3600)+'h'; if(s<604800)return Math.floor(s/86400)+'d'; return Math.floor(s/604800)+'w'; }
         
         function parseTitleAndArtist(title, originalArtist) {
+            // Safety check for null/undefined inputs
+            if (!title) title = "Untitled";
+            if (!originalArtist) originalArtist = "Unknown Artist";
+
             const featRegex = /\s*[\(\[](?:feat\.|ft\.|featuring)\s+([^)\].]+)[\)\]]/i;
             const match = title.match(featRegex);
             let displayTitle = title;
@@ -708,7 +739,33 @@
             return { title: displayTitle, artist: displayArtist };
         }
 
-        // --- 3. DOM & UI LOGIC ---
+        // --- STATS ---
+        function getDeterministicStats(id, isProfile=false, dateStr=null) {
+            const rng=seededRandom(id); const t=rng(), v=rng();
+            let minC=3000, maxC=281000;
+            if(t<0.4){minC=3000;maxC=281000} else if(t<0.7){minC=1200;maxC=14200000} else if(t<0.9){minC=827000;maxC=28000000} else {minC=5000000;maxC=5000000000}
+            
+            if(isProfile) {
+                 const c=Math.floor(minC+Math.pow(v,2)*(maxC-minC));
+                 return {chirps:c, listens:0, cash:0};
+            }
+            let epMin=Math.floor(minC/50), epMax=Math.floor(maxC/20); if(epMin<100)epMin=100;
+            if(dateStr){ const d=new Date(dateStr); if(!isNaN(d.getTime())) { const h=(new Date()-d)/(1000*60*60); if(h<24)epMax=Math.min(epMax,15000); else if(h<168)epMax=Math.min(epMax,500000); else if(h<720)epMax=Math.min(epMax,5000000); } }
+            const c=Math.floor(epMin+Math.pow(v,3)*(epMax-epMin));
+            const l=c*20; const cash=l*0.0000011;
+            return {listens:l, chirps:c, cash:cash};
+        }
+        function getChartRank(id) { const rng=seededRandom(id+"_chart"); return rng()>0.8?Math.floor(rng()*45)+1:null; }
+        function getTopNewRank(id,d) { if(!isNewEpisode(d))return null; const rng=seededRandom(id+"_newchart"); return rng()>0.7?Math.floor(rng()*45)+1:null; }
+        function getExtraBadge(id) {
+             const rng = seededRandom(id+"_badg");
+             const r = rng();
+             if(r > 0.95) return `<span class="trending-badge">#${Math.floor(rng()*50)+1} On Top Trending ⚠︎</span>`;
+             if(r < 0.05) return `<span class="new-badge">Recommended ᯓ★</span>`;
+             return '';
+        }
+
+        // --- 4. DOM & ANIMATION HELPERS ---
         function updateOdometer(c, val) {
             if(!c)return; const fmt=typeof val==='number'?formatNumber(val):val;
             if(!c.hasChildNodes()){
@@ -736,61 +793,7 @@
         }
         function simLive(){if(activeProfileStats&&!document.getElementById('pd-content-stats').classList.contains('hidden')){activeProfileStats.chirps+=Math.floor(Math.random()*5)+1;activeProfileStats.cash=activeProfileStats.chirps*20*0.0000011;updateOdometer(document.getElementById('stat-chirps'),activeProfileStats.chirps);updateOdometer(document.getElementById('stat-cash'),formatCurrency(activeProfileStats.cash));}}
 
-        // --- 4. PLAYER LOGIC (Moved Up) ---
-        function togglePlay(){const a=document.getElementById('audio-player'); if(a.paused&&a.src){a.play();isPlaying=true;startWaveform();}else{a.pause();isPlaying=false;}updPlay();}
-        function playTrack(t){
-            currentTrack=t; 
-            const parsed = parseTitleAndArtist(t.title, t.artist);
-            const s=getDeterministicStats(t.id.toString(),false);
-            
-            document.getElementById('mini-img').src=t.image; document.getElementById('mini-title').innerText=parsed.title; document.getElementById('mini-artist').innerText=parsed.artist; 
-            document.getElementById('fp-img').src=t.image; document.getElementById('fp-title').innerText=parsed.title; document.getElementById('fp-artist').innerText=parsed.artist; 
-            
-            const odo = document.getElementById('fp-chirp-count'); odo.innerHTML='';
-            setTimeout(()=>updateOdometer(odo, s.chirps), 50);
-
-            if(parsed.artist.includes(',') || parsed.artist.includes('&') || parsed.artist.includes(' and '))document.getElementById('fp-artist').classList.add('has-multi'); else document.getElementById('fp-artist').classList.remove('has-multi'); 
-            const b=document.getElementById('fp-bird-btn'); const is=savedChirps.some(x=>x.id===t.id); b.style.background=is?'var(--text-primary)':'rgba(255,255,255,0.1)'; b.style.color=is?'var(--bg-color)':'inherit'; 
-            const a=document.getElementById('audio-player'); a.src=t.src; a.play().then(()=>{isPlaying=true;updPlay();openFullPlayer();startWaveform();});
-        }
-        function toggleTrackChirp(){if(!currentTrack)return; const i=savedChirps.findIndex(x=>x.id===currentTrack.id); if(i>-1)savedChirps.splice(i,1); else{savedChirps.unshift(currentTrack);showToast();} localStorage.setItem('chirps_v36',JSON.stringify(savedChirps)); renderLibrary(); const b=document.getElementById('fp-bird-btn'); const is=savedChirps.some(x=>x.id===currentTrack.id); b.style.background=is?'var(--text-primary)':'rgba(255,255,255,0.1)'; b.style.color=is?'var(--bg-color)':'inherit';}
-        function toggleTrackChirpSearch(id) { alert("Saved to Library!"); }
-
-        function openFullPlayer(){document.getElementById('full-player').classList.add('active');document.getElementById('mini-player').classList.add('expanded');}
-        function closeFullPlayer(){document.getElementById('full-player').classList.remove('active');document.getElementById('mini-player').classList.remove('expanded');}
-        function updPlay(){const p=isPlaying?'<rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect>':'<polygon points="5 3 19 12 5 21 5 3"></polygon>'; document.querySelectorAll('#mini-play-btn svg,#fp-play-icon').forEach(s=>s.innerHTML=p);}
-
-        function toggleLyrics(){
-            const o=document.getElementById('lyrics-overlay');
-            if(o.classList.contains('active')){o.classList.remove('active');clearInterval(lyricsInterval);}
-            else{o.classList.add('active'); const t=document.getElementById('lyrics-content'), s=document.getElementById('lyrics-spinner'); t.innerText="Analyzing..."; t.style.opacity=0.7; s.style.display="block"; setTimeout(()=>{s.style.display="none";t.style.opacity=1; let i=Math.floor(Math.random()*PODCAST_SCRIPT.length); lyricsInterval=setInterval(()=>{t.style.opacity=0; setTimeout(()=>{t.innerText=PODCAST_SCRIPT[i++%PODCAST_SCRIPT.length];t.style.opacity=1;},200);},3000);},1000);}
-        }
-
-        // --- 5. STATS GENERATORS ---
-        function getDeterministicStats(id, isProfile=false, dateStr=null) {
-            const rng=seededRandom(id); const t=rng(), v=rng();
-            let minC=3000, maxC=281000;
-            if(t<0.4){minC=3000;maxC=281000} else if(t<0.7){minC=1200;maxC=14200000} else if(t<0.9){minC=827000;maxC=28000000} else {minC=5000000;maxC=5000000000}
-            
-            if(isProfile) {
-                 const c=Math.floor(minC+Math.pow(v,2)*(maxC-minC));
-                 return {chirps:c, listens:0, cash:0};
-            }
-            let epMin=Math.floor(minC/50), epMax=Math.floor(maxC/20); if(epMin<100)epMin=100;
-            if(dateStr){ const d=new Date(dateStr); if(!isNaN(d.getTime())) { const h=(new Date()-d)/(1000*60*60); if(h<24)epMax=Math.min(epMax,15000); else if(h<168)epMax=Math.min(epMax,500000); else if(h<720)epMax=Math.min(epMax,5000000); } }
-            const c=Math.floor(epMin+Math.pow(v,3)*(epMax-epMin));
-            const l=c*20; const cash=l*0.0000011;
-            return {listens:l, chirps:c, cash:cash};
-        }
-        function getExtraBadge(id) {
-             const rng = seededRandom(id+"_badg");
-             const r = rng();
-             if(r > 0.95) return `<span class="trending-badge">#${Math.floor(rng()*50)+1} On Top Trending ⚠︎</span>`;
-             if(r < 0.05) return `<span class="new-badge">Recommended ᯓ★</span>`;
-             return '';
-        }
-
-        // --- 6. API ---
+        // --- 5. APP LOGIC ---
         async function search(q, entOverride=null){
             let ent = entOverride || (currentFilter==='profile'?'podcast':'podcastEpisode');
             try{
@@ -820,7 +823,6 @@
             }
         }
 
-        // --- 7. MAIN INIT ---
         function init(){
             renderLibrary(); loadHomeContent(); setInterval(simLive,1400); 
             document.getElementById('view-profile-detail').addEventListener('scroll',e=>{if(e.target.scrollTop+e.target.clientHeight>=e.target.scrollHeight-50)renderMore();});
@@ -849,14 +851,16 @@
             const s=getDeterministicStats(i.id.toString(),true);
             const v=s.chirps>5e7?VERIFIED_BADGE_HTML:'';
             const parsed = parseTitleAndArtist(i.title, i.artist);
-            const d=document.createElement('div'); d.className='podcast-card premium-hover';
+            const d=document.createElement('div'); d.className='podcast-card premium-hover hover-shine';
             d.onclick=()=>i.type==='profile'?openProfile(i):playTrack(i);
             d.innerHTML=`<div class="cover-art"><img src="${i.image}"></div><div style="font-weight:700;font-size:0.9rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${parsed.title}</div><div style="font-size:0.8rem;opacity:0.6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${parsed.artist} ${v}</div>`;
             c.appendChild(d);
         }
 
         function setFilter(f,b){
-            currentFilter=f; document.querySelectorAll('.filters .chip').forEach(c=>c.classList.remove('active')); b.classList.add('active'); 
+            currentFilter=f; 
+            document.querySelectorAll('.filters .chip').forEach(c=>c.classList.remove('active')); 
+            b.classList.add('active'); 
             if(f==='charts') renderCharts(); 
             else{
                 const v=document.getElementById('search-input').value; 
@@ -871,7 +875,7 @@
             const tDiv = document.createElement('div'); tDiv.className='section-title'; tDiv.innerText='Top 45 Global'; c.appendChild(tDiv);
             r.slice(0,45).forEach((i,x)=>{
                 const parsed = parseTitleAndArtist(i.title, i.artist);
-                const el=document.createElement('div');el.className='list-item premium-hover';
+                const el=document.createElement('div');el.className='list-item premium-hover glass-shine-hover';
                 el.onclick=()=>i.type==='profile'?openProfile(i):playTrack(i);
                 el.innerHTML=`<div class="list-rank">${x+1}</div><img src="${i.image}" class="list-img"><div style="flex:1"><div style="font-weight:700;font-size:0.95rem">${parsed.title}</div><div style="font-size:0.8rem;opacity:0.6">${parsed.artist}</div></div>`;
                 c.appendChild(el);
@@ -881,7 +885,7 @@
             if(!n.length) {const empty = document.createElement('div'); empty.style.cssText='padding:20px;opacity:0.5;text-align:center'; empty.innerText='No new entries'; c.appendChild(empty);}
             else n.forEach((i,x)=>{
                 const parsed = parseTitleAndArtist(i.title, i.artist);
-                const el=document.createElement('div');el.className='list-item premium-hover';
+                const el=document.createElement('div');el.className='list-item premium-hover glass-shine-hover';
                 el.onclick=()=>playTrack(i);
                 el.innerHTML=`<div class="list-rank" style="color:var(--text-primary)">${x+1}</div><img src="${i.image}" class="list-img"><div style="flex:1"><div style="font-weight:700;font-size:0.95rem">${parsed.title} <span class="new-badge">NEW</span></div><div style="font-size:0.8rem;opacity:0.6">${parsed.artist}</div></div>`;
                 c.appendChild(el);
@@ -903,7 +907,7 @@
             r.forEach(i=>{
                 const s=getDeterministicStats(i.id.toString(), i.type==='profile', i.date);
                 const parsed = parseTitleAndArtist(i.title, i.artist);
-                const el=document.createElement('div'); el.className='list-item premium-hover';
+                const el=document.createElement('div'); el.className='list-item premium-hover glass-shine-hover';
                 
                 const viewProfileBtn = `<button class="search-action-btn" onclick="event.stopPropagation(); openProfile({id:'${i.collectionId}', collectionId:'${i.collectionId}', title:'${i.collectionName?.replace(/'/g, "\\'") || ''}', artist:'${i.artist?.replace(/'/g, "\\'") || ''}', image:'${i.image}'})"><svg class="icon" style="width:16px" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></button>`;
                 const isSaved = savedChirps.some(x=>x.id===i.id);
@@ -960,7 +964,6 @@
             }
         }
 
-        // --- 8. HELPER FUNCTIONS ---
         function renderMore(){
             if(renderedEpisodeCount>=currentProfileEpisodes.length)return;
             const c=document.getElementById('pd-content-episodes');
@@ -968,7 +971,7 @@
             for(let i=renderedEpisodeCount;i<end;i++){
                 const e=currentProfileEpisodes[i]; const s=getDeterministicStats(e.id.toString(),false,e.date);
                 const parsed = parseTitleAndArtist(e.title, e.artist);
-                const d=document.createElement('div'); d.className='list-item premium-hover';
+                const d=document.createElement('div'); d.className='list-item premium-hover glass-shine-hover';
                 if(!e.artist)e.artist=document.getElementById('pd-artist').innerText;
                 const n=isNewEpisode(e.date)?'<span class="new-badge">NEW</span>': getExtraBadge(e.id.toString());
                 d.onclick=()=>playTrack(e);
@@ -978,24 +981,8 @@
             renderedEpisodeCount=end;
         }
 
-        function switchProfileTab(t){
-            document.getElementById('tab-episodes').classList.toggle('active',t==='episodes'); 
-            document.getElementById('tab-stats').classList.toggle('active',t==='stats');
-            const s=document.getElementById('pd-content-stats'); 
-            const e=document.getElementById('pd-content-episodes');
-            if(t==='stats'){
-                e.classList.add('hidden');s.classList.remove('hidden');
-                if(activeProfileStats){
-                    const c=document.getElementById('stat-chirps'),m=document.getElementById('stat-cash');
-                    c.innerHTML='';m.innerHTML='';
-                    setTimeout(()=>{updateOdometer(c,activeProfileStats.chirps);updateOdometer(m,formatCurrency(activeProfileStats.cash));},50);
-                }
-            }else{
-                s.classList.add('hidden');e.classList.remove('hidden');
-            }
-        }
-        
-        function renderLibrary(){const l=document.getElementById('library-list'); l.innerHTML=''; if(!savedChirps.length){l.innerHTML='<div style="padding:20px;opacity:0.5;text-align:center">No saved chirps</div>';return;} savedChirps.forEach(i=>{const d=document.createElement('div');d.className='list-item premium-hover';d.onclick=()=>playTrack(i);d.innerHTML=`<img src="${i.image}" class="list-img"><div style="flex:1"><div style="font-weight:700;font-size:0.95rem">${i.title}</div><div style="font-size:0.8rem;opacity:0.6">Saved</div></div>`;l.appendChild(d);});}
+        // --- UI HANDLERS ---
+        function renderLibrary(){const l=document.getElementById('library-list'); l.innerHTML=''; if(!savedChirps.length){l.innerHTML='<div style="padding:20px;opacity:0.5;text-align:center">No saved chirps</div>';return;} savedChirps.forEach(i=>{const d=document.createElement('div');d.className='list-item premium-hover glass-shine-hover';d.onclick=()=>playTrack(i);d.innerHTML=`<img src="${i.image}" class="list-img"><div style="flex:1"><div style="font-weight:700;font-size:0.95rem">${i.title}</div><div style="font-size:0.8rem;opacity:0.6">Saved</div></div>`;l.appendChild(d);});}
         
         function switchView(n,el){
             document.getElementById('view-home').classList.add('hidden');
@@ -1012,8 +999,9 @@
                 });
             }
         }
-
+        
         function closeProfile(){document.getElementById('view-profile-detail').classList.add('hidden'); activeProfileStats=null; document.getElementById('pd-error-view').classList.add('hidden'); document.getElementById('pd-content-stats').classList.remove('hidden'); }
+        function switchProfileTab(t){document.getElementById('tab-episodes').classList.toggle('active',t==='episodes'); document.getElementById('tab-stats').classList.toggle('active',t==='stats'); const s=document.getElementById('pd-content-stats'); const e=document.getElementById('pd-content-episodes'); if(t==='stats'){e.classList.add('hidden');s.classList.remove('hidden');if(activeProfileStats){const c=document.getElementById('stat-chirps'),m=document.getElementById('stat-cash');c.innerHTML='';m.innerHTML='';setTimeout(()=>{updateOdometer(c,activeProfileStats.chirps);updateOdometer(m,formatCurrency(activeProfileStats.cash));},50);}}else{s.classList.add('hidden');e.classList.remove('hidden');}}
         function toggleTrackChirp(){if(!currentTrack)return; const i=savedChirps.findIndex(x=>x.id===currentTrack.id); if(i>-1)savedChirps.splice(i,1); else{savedChirps.unshift(currentTrack);showToast();} localStorage.setItem('chirps_v36',JSON.stringify(savedChirps)); renderLibrary(); const b=document.getElementById('fp-bird-btn'); const is=savedChirps.some(x=>x.id===currentTrack.id); b.style.background=is?'var(--text-primary)':'rgba(255,255,255,0.1)'; b.style.color=is?'var(--bg-color)':'inherit';}
         function toggleProfileChirp(){const i=savedProfileChirps.indexOf(currentProfileId); if(i>-1)savedProfileChirps.splice(i,1); else{savedProfileChirps.push(currentProfileId);showToast();} localStorage.setItem('profile_chirps_v36',JSON.stringify(savedProfileChirps)); updateProfBtn();}
         function updateProfBtn(){const a=savedProfileChirps.includes(currentProfileId); const b=document.getElementById('pd-chirp-btn'), t=document.getElementById('pd-chirp-text'); if(a){b.classList.add('active');t.innerText="Chirped!";}else{b.classList.remove('active');t.innerText="Chirp";}}
