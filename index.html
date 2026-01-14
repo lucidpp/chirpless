@@ -152,6 +152,7 @@
         .list-img { width: 56px; height: 56px; border-radius: 12px; background: var(--surface-highlight); object-fit: cover; flex-shrink: 0; }
         .list-rank { font-size: 1.2rem; font-weight: 900; color: var(--text-secondary); width: 30px; text-align: center; font-variant-numeric: tabular-nums; }
         
+        /* --- BADGES --- */
         .verified-badge { width: 14px; height: 14px; margin-left: 4px; vertical-align: middle; display: inline-block; visibility: hidden; }
         .verified-badge.visible { visibility: visible; }
         .verified-badge.lg { width: 18px; height: 18px; margin-left: 6px; }
@@ -357,7 +358,6 @@
         .clickable-artist.has-multi:active { color: var(--text-primary); }
 
         .search-action-btn { 
-            /* Button Style defined here to be used in JS */
             width: 36px; height: 36px; border-radius: 50%; 
             background: var(--surface-highlight); color: var(--text-primary);
             display: flex; align-items: center; justify-content: center; border: none; z-index: 2; margin-left: auto;
@@ -667,8 +667,8 @@
     <script>
         // --- 1. STATE & CONFIG ---
         let currentTrack = null; let isPlaying = false; let playbackSpeed = 1.0; let currentFilter = 'all';
-        let savedChirps = JSON.parse(localStorage.getItem('chirps_v37') || '[]');
-        let savedProfileChirps = JSON.parse(localStorage.getItem('profile_chirps_v37') || '[]');
+        let savedChirps = JSON.parse(localStorage.getItem('chirps_v38') || '[]');
+        let savedProfileChirps = JSON.parse(localStorage.getItem('profile_chirps_v38') || '[]');
         let currentProfileId = null; let currentProfileEpisodes = []; let renderedEpisodeCount = 0; const EPISODES_PER_PAGE = 10;
         let activeProfileStats = null;
         let lyricsInterval = null;
@@ -690,10 +690,6 @@
         function timeAgo(d) { const s=Math.floor((new Date()-new Date(d))/1000); if(s<60)return'now'; if(s<3600)return Math.floor(s/60)+'m'; if(s<86400)return Math.floor(s/3600)+'h'; if(s<604800)return Math.floor(s/86400)+'d'; return Math.floor(s/604800)+'w'; }
         
         function parseTitleAndArtist(title, originalArtist) {
-            // Safety check for null/undefined inputs
-            if (!title) title = "Untitled";
-            if (!originalArtist) originalArtist = "Unknown Artist";
-
             const featRegex = /\s*[\(\[](?:feat\.|ft\.|featuring)\s+([^)\].]+)[\)\]]/i;
             const match = title.match(featRegex);
             let displayTitle = title;
@@ -712,32 +708,7 @@
             return { title: displayTitle, artist: displayArtist };
         }
 
-        // --- STATS ---
-        function getDeterministicStats(id, isProfile=false, dateStr=null) {
-            const rng=seededRandom(id); const t=rng(), v=rng();
-            let minC=3000, maxC=281000;
-            if(t<0.4){minC=3000;maxC=281000} else if(t<0.7){minC=1200;maxC=14200000} else if(t<0.9){minC=827000;maxC=28000000} else {minC=5000000;maxC=5000000000}
-            
-            if(isProfile) {
-                 const c=Math.floor(minC+Math.pow(v,2)*(maxC-minC));
-                 return {chirps:c, listens:0, cash:0};
-            }
-            let epMin=Math.floor(minC/50), epMax=Math.floor(maxC/20); if(epMin<100)epMin=100;
-            if(dateStr){ const d=new Date(dateStr); if(!isNaN(d.getTime())) { const h=(new Date()-d)/(1000*60*60); if(h<24)epMax=Math.min(epMax,15000); else if(h<168)epMax=Math.min(epMax,500000); else if(h<720)epMax=Math.min(epMax,5000000); } }
-            const c=Math.floor(epMin+Math.pow(v,3)*(epMax-epMin));
-            const l=c*20; const cash=l*0.0000011;
-            return {listens:l, chirps:c, cash:cash};
-        }
-        function getChartRank(id) { const rng=seededRandom(id+"_chart"); return rng()>0.8?Math.floor(rng()*45)+1:null; }
-        function getTopNewRank(id,d) { if(!isNewEpisode(d))return null; const rng=seededRandom(id+"_newchart"); return rng()>0.7?Math.floor(rng()*45)+1:null; }
-        function getExtraBadge(id) {
-             const rng = seededRandom(id+"_badg");
-             const r = rng();
-             if(r > 0.95) return `<span class="trending-badge">#${Math.floor(rng()*50)+1} On Top Trending ⚠︎</span>`;
-             if(r < 0.05) return `<span class="new-badge">Recommended ᯓ★</span>`;
-             return '';
-        }
-
+        // --- 3. DOM & UI LOGIC ---
         function updateOdometer(c, val) {
             if(!c)return; const fmt=typeof val==='number'?formatNumber(val):val;
             if(!c.hasChildNodes()){
@@ -765,7 +736,61 @@
         }
         function simLive(){if(activeProfileStats&&!document.getElementById('pd-content-stats').classList.contains('hidden')){activeProfileStats.chirps+=Math.floor(Math.random()*5)+1;activeProfileStats.cash=activeProfileStats.chirps*20*0.0000011;updateOdometer(document.getElementById('stat-chirps'),activeProfileStats.chirps);updateOdometer(document.getElementById('stat-cash'),formatCurrency(activeProfileStats.cash));}}
 
-        /* --- API --- */
+        // --- 4. PLAYER LOGIC (Moved Up) ---
+        function togglePlay(){const a=document.getElementById('audio-player'); if(a.paused&&a.src){a.play();isPlaying=true;startWaveform();}else{a.pause();isPlaying=false;}updPlay();}
+        function playTrack(t){
+            currentTrack=t; 
+            const parsed = parseTitleAndArtist(t.title, t.artist);
+            const s=getDeterministicStats(t.id.toString(),false);
+            
+            document.getElementById('mini-img').src=t.image; document.getElementById('mini-title').innerText=parsed.title; document.getElementById('mini-artist').innerText=parsed.artist; 
+            document.getElementById('fp-img').src=t.image; document.getElementById('fp-title').innerText=parsed.title; document.getElementById('fp-artist').innerText=parsed.artist; 
+            
+            const odo = document.getElementById('fp-chirp-count'); odo.innerHTML='';
+            setTimeout(()=>updateOdometer(odo, s.chirps), 50);
+
+            if(parsed.artist.includes(',') || parsed.artist.includes('&') || parsed.artist.includes(' and '))document.getElementById('fp-artist').classList.add('has-multi'); else document.getElementById('fp-artist').classList.remove('has-multi'); 
+            const b=document.getElementById('fp-bird-btn'); const is=savedChirps.some(x=>x.id===t.id); b.style.background=is?'var(--text-primary)':'rgba(255,255,255,0.1)'; b.style.color=is?'var(--bg-color)':'inherit'; 
+            const a=document.getElementById('audio-player'); a.src=t.src; a.play().then(()=>{isPlaying=true;updPlay();openFullPlayer();startWaveform();});
+        }
+        function toggleTrackChirp(){if(!currentTrack)return; const i=savedChirps.findIndex(x=>x.id===currentTrack.id); if(i>-1)savedChirps.splice(i,1); else{savedChirps.unshift(currentTrack);showToast();} localStorage.setItem('chirps_v36',JSON.stringify(savedChirps)); renderLibrary(); const b=document.getElementById('fp-bird-btn'); const is=savedChirps.some(x=>x.id===currentTrack.id); b.style.background=is?'var(--text-primary)':'rgba(255,255,255,0.1)'; b.style.color=is?'var(--bg-color)':'inherit';}
+        function toggleTrackChirpSearch(id) { alert("Saved to Library!"); }
+
+        function openFullPlayer(){document.getElementById('full-player').classList.add('active');document.getElementById('mini-player').classList.add('expanded');}
+        function closeFullPlayer(){document.getElementById('full-player').classList.remove('active');document.getElementById('mini-player').classList.remove('expanded');}
+        function updPlay(){const p=isPlaying?'<rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect>':'<polygon points="5 3 19 12 5 21 5 3"></polygon>'; document.querySelectorAll('#mini-play-btn svg,#fp-play-icon').forEach(s=>s.innerHTML=p);}
+
+        function toggleLyrics(){
+            const o=document.getElementById('lyrics-overlay');
+            if(o.classList.contains('active')){o.classList.remove('active');clearInterval(lyricsInterval);}
+            else{o.classList.add('active'); const t=document.getElementById('lyrics-content'), s=document.getElementById('lyrics-spinner'); t.innerText="Analyzing..."; t.style.opacity=0.7; s.style.display="block"; setTimeout(()=>{s.style.display="none";t.style.opacity=1; let i=Math.floor(Math.random()*PODCAST_SCRIPT.length); lyricsInterval=setInterval(()=>{t.style.opacity=0; setTimeout(()=>{t.innerText=PODCAST_SCRIPT[i++%PODCAST_SCRIPT.length];t.style.opacity=1;},200);},3000);},1000);}
+        }
+
+        // --- 5. STATS GENERATORS ---
+        function getDeterministicStats(id, isProfile=false, dateStr=null) {
+            const rng=seededRandom(id); const t=rng(), v=rng();
+            let minC=3000, maxC=281000;
+            if(t<0.4){minC=3000;maxC=281000} else if(t<0.7){minC=1200;maxC=14200000} else if(t<0.9){minC=827000;maxC=28000000} else {minC=5000000;maxC=5000000000}
+            
+            if(isProfile) {
+                 const c=Math.floor(minC+Math.pow(v,2)*(maxC-minC));
+                 return {chirps:c, listens:0, cash:0};
+            }
+            let epMin=Math.floor(minC/50), epMax=Math.floor(maxC/20); if(epMin<100)epMin=100;
+            if(dateStr){ const d=new Date(dateStr); if(!isNaN(d.getTime())) { const h=(new Date()-d)/(1000*60*60); if(h<24)epMax=Math.min(epMax,15000); else if(h<168)epMax=Math.min(epMax,500000); else if(h<720)epMax=Math.min(epMax,5000000); } }
+            const c=Math.floor(epMin+Math.pow(v,3)*(epMax-epMin));
+            const l=c*20; const cash=l*0.0000011;
+            return {listens:l, chirps:c, cash:cash};
+        }
+        function getExtraBadge(id) {
+             const rng = seededRandom(id+"_badg");
+             const r = rng();
+             if(r > 0.95) return `<span class="trending-badge">#${Math.floor(rng()*50)+1} On Top Trending ⚠︎</span>`;
+             if(r < 0.05) return `<span class="new-badge">Recommended ᯓ★</span>`;
+             return '';
+        }
+
+        // --- 6. API ---
         async function search(q, entOverride=null){
             let ent = entOverride || (currentFilter==='profile'?'podcast':'podcastEpisode');
             try{
@@ -795,10 +820,18 @@
             }
         }
 
+        // --- 7. MAIN INIT ---
         function init(){
             renderLibrary(); loadHomeContent(); setInterval(simLive,1400); 
             document.getElementById('view-profile-detail').addEventListener('scroll',e=>{if(e.target.scrollTop+e.target.clientHeight>=e.target.scrollHeight-50)renderMore();});
             switchView('home', document.querySelectorAll('.nav-item')[0]);
+            
+            window.onpopstate = (event) => {
+                if(event.state && event.state.view) {
+                    if(event.state.view === 'profile') { closeProfile(); switchView(event.state.prevView || 'home'); } 
+                    else { closeProfile(); switchView(event.state.view); }
+                }
+            };
         }
 
         async function loadHomeContent(){
@@ -872,9 +905,7 @@
                 const parsed = parseTitleAndArtist(i.title, i.artist);
                 const el=document.createElement('div'); el.className='list-item premium-hover';
                 
-                // Add Bookmark Button
                 const viewProfileBtn = `<button class="search-action-btn" onclick="event.stopPropagation(); openProfile({id:'${i.collectionId}', collectionId:'${i.collectionId}', title:'${i.collectionName?.replace(/'/g, "\\'") || ''}', artist:'${i.artist?.replace(/'/g, "\\'") || ''}', image:'${i.image}'})"><svg class="icon" style="width:16px" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></button>`;
-                
                 const isSaved = savedChirps.some(x=>x.id===i.id);
                 const birdColor = isSaved ? 'var(--text-primary)' : 'var(--text-secondary)';
                 const birdBtn = `<button class="search-action-btn" onclick="event.stopPropagation(); toggleTrackChirpSearch('${i.id}')"><svg class="icon" style="width:16px; color:${birdColor}" viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg></button>`;
@@ -882,7 +913,7 @@
                 if(i.type==='profile'){
                     el.onclick=()=>openProfile(i);
                     const v=s.chirps>5e7?VERIFIED_BADGE_HTML:'';
-                    el.innerHTML=`<img src="${i.image}" class="list-img" style="border-radius:50%"><div style="flex:1" class="info-col"><div style="font-weight:700">${parsed.title} ${v}</div><div style="opacity:0.6;font-size:0.85rem">Podcast • ${parsed.artist}</div></div>${viewProfileBtn}`;
+                    el.innerHTML=`<img src="${i.image}" class="list-img" style="border-radius:50%"><div style="flex:1" class="info-col"><div style="font-weight:700">${parsed.title} ${v}</div><div style="opacity:0.6;font-size:0.85rem">Podcast • ${parsed.artist}</div></div><button style="padding:6px 14px;border-radius:20px;background:var(--glass-border);border:none;color:inherit;font-weight:600">View</button>`;
                 }else{
                     el.onclick=()=>playTrack(i);
                     const n=isNewEpisode(i.date)?'<span class="new-badge">NEW</span>':'';
@@ -929,6 +960,7 @@
             }
         }
 
+        // --- 8. HELPER FUNCTIONS ---
         function renderMore(){
             if(renderedEpisodeCount>=currentProfileEpisodes.length)return;
             const c=document.getElementById('pd-content-episodes');
@@ -946,7 +978,23 @@
             renderedEpisodeCount=end;
         }
 
-        // --- UI HANDLERS ---
+        function switchProfileTab(t){
+            document.getElementById('tab-episodes').classList.toggle('active',t==='episodes'); 
+            document.getElementById('tab-stats').classList.toggle('active',t==='stats');
+            const s=document.getElementById('pd-content-stats'); 
+            const e=document.getElementById('pd-content-episodes');
+            if(t==='stats'){
+                e.classList.add('hidden');s.classList.remove('hidden');
+                if(activeProfileStats){
+                    const c=document.getElementById('stat-chirps'),m=document.getElementById('stat-cash');
+                    c.innerHTML='';m.innerHTML='';
+                    setTimeout(()=>{updateOdometer(c,activeProfileStats.chirps);updateOdometer(m,formatCurrency(activeProfileStats.cash));},50);
+                }
+            }else{
+                s.classList.add('hidden');e.classList.remove('hidden');
+            }
+        }
+        
         function renderLibrary(){const l=document.getElementById('library-list'); l.innerHTML=''; if(!savedChirps.length){l.innerHTML='<div style="padding:20px;opacity:0.5;text-align:center">No saved chirps</div>';return;} savedChirps.forEach(i=>{const d=document.createElement('div');d.className='list-item premium-hover';d.onclick=()=>playTrack(i);d.innerHTML=`<img src="${i.image}" class="list-img"><div style="flex:1"><div style="font-weight:700;font-size:0.95rem">${i.title}</div><div style="font-size:0.8rem;opacity:0.6">Saved</div></div>`;l.appendChild(d);});}
         
         function switchView(n,el){
@@ -964,16 +1012,11 @@
                 });
             }
         }
-        
+
         function closeProfile(){document.getElementById('view-profile-detail').classList.add('hidden'); activeProfileStats=null; document.getElementById('pd-error-view').classList.add('hidden'); document.getElementById('pd-content-stats').classList.remove('hidden'); }
-        function switchProfileTab(t){document.getElementById('tab-episodes').classList.toggle('active',t==='episodes'); document.getElementById('tab-stats').classList.toggle('active',t==='stats'); const s=document.getElementById('pd-content-stats'); const e=document.getElementById('pd-content-episodes'); if(t==='stats'){e.classList.add('hidden');s.classList.remove('hidden');if(activeProfileStats){const c=document.getElementById('stat-chirps'),m=document.getElementById('stat-cash');c.innerHTML='';m.innerHTML='';setTimeout(()=>{updateOdometer(c,activeProfileStats.chirps);updateOdometer(m,formatCurrency(activeProfileStats.cash));},50);}}else{s.classList.add('hidden');e.classList.remove('hidden');}}
         function toggleTrackChirp(){if(!currentTrack)return; const i=savedChirps.findIndex(x=>x.id===currentTrack.id); if(i>-1)savedChirps.splice(i,1); else{savedChirps.unshift(currentTrack);showToast();} localStorage.setItem('chirps_v36',JSON.stringify(savedChirps)); renderLibrary(); const b=document.getElementById('fp-bird-btn'); const is=savedChirps.some(x=>x.id===currentTrack.id); b.style.background=is?'var(--text-primary)':'rgba(255,255,255,0.1)'; b.style.color=is?'var(--bg-color)':'inherit';}
         function toggleProfileChirp(){const i=savedProfileChirps.indexOf(currentProfileId); if(i>-1)savedProfileChirps.splice(i,1); else{savedProfileChirps.push(currentProfileId);showToast();} localStorage.setItem('profile_chirps_v36',JSON.stringify(savedProfileChirps)); updateProfBtn();}
         function updateProfBtn(){const a=savedProfileChirps.includes(currentProfileId); const b=document.getElementById('pd-chirp-btn'), t=document.getElementById('pd-chirp-text'); if(a){b.classList.add('active');t.innerText="Chirped!";}else{b.classList.remove('active');t.innerText="Chirp";}}
-        function updPlay(){const p=isPlaying?'<rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect>':'<polygon points="5 3 19 12 5 21 5 3"></polygon>'; document.querySelectorAll('#mini-play-btn svg,#fp-play-icon').forEach(s=>s.innerHTML=p);}
-        function togglePlay(){const a=document.getElementById('audio-player'); if(a.paused&&a.src){a.play();isPlaying=true;startWaveform();}else{a.pause();isPlaying=false;}updPlay();}
-        function openFullPlayer(){document.getElementById('full-player').classList.add('active');document.getElementById('mini-player').classList.add('expanded');}
-        function closeFullPlayer(){document.getElementById('full-player').classList.remove('active');document.getElementById('mini-player').classList.remove('expanded');}
         function showToast(){const t=document.getElementById('toast');t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2000);}
         function handleArtistClick(str){if(!str)return; const c=str.split(/,|&|\band\b/i).filter(x=>x.trim()); if(c.length>1){const l=document.getElementById('creators-list');l.innerHTML='';c.forEach(x=>{const d=document.createElement('div');d.className='creator-item';d.innerHTML=`${x.trim()} <svg class="icon" style="width:16px;opacity:0.5" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>`;d.onclick=()=>{closeCreatorsModal();closeFullPlayer();closeProfile();switchView('discover',document.querySelectorAll('.nav-item')[1]);document.getElementById('search-input').value=x.trim();doSearch(x.trim());};l.appendChild(d);});document.getElementById('modal-overlay').classList.add('active');document.getElementById('creators-modal').classList.add('active');}else{closeFullPlayer();closeProfile();switchView('discover',document.querySelectorAll('.nav-item')[1]);document.getElementById('search-input').value=str;doSearch(str);}}
         function closeCreatorsModal(){document.getElementById('modal-overlay').classList.remove('active');document.getElementById('creators-modal').classList.remove('active');}
