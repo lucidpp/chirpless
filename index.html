@@ -2,837 +2,1077 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chirpless.com - Privacy Simplified</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#050505">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Chirpless">
     
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- PWA Links -->
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/png" href="siteicon.png">
+    <link rel="apple-touch-icon" href="siteicon.png">
     
-    <!-- Lucide Icons -->
-    <script src="https://unpkg.com/lucide@latest"></script>
-
+    <title>Chirpless | Connected</title>
     <style>
-        /* Custom Animations & Styles */
-        @keyframes blob {
-            0% { transform: translate(0px, 0px) scale(1); }
-            33% { transform: translate(30px, -50px) scale(1.1); }
-            66% { transform: translate(-20px, 20px) scale(0.9); }
-            100% { transform: translate(0px, 0px) scale(1); }
+        /* --- CSS VARIABLES & THEME --- */
+        :root {
+            --bg-color: #050505;
+            --surface-color: #121212;
+            --surface-highlight: #1e1e1e;
+            --text-primary: #ffffff;
+            --text-secondary: #999999;
+            --accent: #ffffff;
+            --accent-dim: #333333;
+            --glass-panel: rgba(20, 20, 20, 0.6);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --glass-blur: blur(20px) saturate(180%);
+            --shadow-soft: 0 10px 40px -10px rgba(0,0,0,0.5);
+            
+            --border-radius: 20px;
+            --padding: 20px;
+            --nav-height: 85px;
+            --mini-player-height: 70px;
+            --sidebar-width: 250px;
+            --font-main: 'SF Pro Display', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+            --safe-top: env(safe-area-inset-top);
+            --safe-bottom: env(safe-area-inset-bottom);
         }
-        .animate-blob {
-            animation: blob 7s infinite;
+
+        [data-theme="light"] {
+            --bg-color: #F7F5F2; /* French White */
+            --surface-color: #FFFFFF;
+            --surface-highlight: #EBE8E4;
+            --text-primary: #1A1A1A;
+            --text-secondary: #6B6661;
+            --accent: #1A1A1A;
+            --accent-dim: #D1CDC7;
+            --glass-panel: rgba(247, 245, 242, 0.75);
+            --glass-border: rgba(0, 0, 0, 0.04);
+            --glass-blur: blur(25px) saturate(120%);
+            --shadow-soft: 0 10px 30px -10px rgba(80, 70, 60, 0.15);
         }
-        .animation-delay-2000 {
-            animation-delay: 2s;
-        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
         
-        @keyframes fade-in-up {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .animate-fade-in-up {
-            animation: fade-in-up 0.5s ease-out forwards;
-        }
-
-        @keyframes shimmer {
-            0% { transform: translateX(-150%) skewX(-20deg); }
-            100% { transform: translateX(150%) skewX(-20deg); }
-        }
-        
-        /* Shimmer Class - Applied on Hover or Focus */
-        .shimmer-effect {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(
-                90deg, 
-                transparent, 
-                rgba(255, 255, 255, 0.08), 
-                transparent
-            );
-            pointer-events: none;
-            /* Hidden by default, animated via JS or hover classes */
-            display: none; 
-        }
-
-        .group:hover .shimmer-effect {
-            display: block;
-            animation: shimmer 0.8s ease-out forwards;
-        }
-        
-        .animate-shimmer-active {
-            display: block;
-            animation: shimmer 1s ease-out forwards;
-        }
-
-        /* Hide Scrollbar */
-        .no-scrollbar::-webkit-scrollbar {
-            display: none;
-        }
-        .no-scrollbar {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
-        }
-
-        /* Base Styles */
         body {
-            background-color: #0a0a0a; /* Darker Background */
-            color: #d4d4d8; /* zinc-300 */
-        }
-        ::selection {
-            background-color: rgba(147, 51, 234, 0.3); /* purple-600/30 */
-            color: #e9d5ff; /* purple-200 */
-        }
-
-        .search-dropdown {
-            z-index: 60;
-            backdrop-filter: blur(16px);
-            background-color: rgba(23, 23, 23, 0.8);
-            border: 1px solid rgba(255,255,255,0.05);
+            background-color: var(--bg-color); color: var(--text-primary);
+            font-family: var(--font-main); margin: 0; padding: 0;
+            height: 100dvh; width: 100vw;
+            overflow: hidden;
+            transition: background-color 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+            user-select: none;
         }
 
-        /* Filter Click Animation */
-        .tab-btn:active {
-            transform: scale(0.95);
+        /* --- UTILITIES --- */
+        .hidden { display: none !important; }
+        .flex { display: flex; }
+        .flex-col { flex-direction: column; }
+        .items-center { align-items: center; }
+        .justify-between { justify-content: space-between; }
+        .w-full { width: 100%; }
+        .text-sm { font-size: 0.9rem; }
+        .text-xs { font-size: 0.75rem; }
+        .font-bold { font-weight: 700; }
+        .text-secondary { color: var(--text-secondary); }
+        .icon { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+        
+        @keyframes navPop { 0% { transform: scale(1); } 50% { transform: scale(0.9); } 100% { transform: scale(1); } }
+        .nav-click { animation: navPop 0.2s ease-out; }
+
+        /* --- LAYOUT --- */
+        #app { height: 100%; display: flex; flex-direction: column; position: relative; }
+        
+        header {
+            padding: var(--padding); padding-top: max(15px, var(--safe-top));
+            display: flex; justify-content: space-between; align-items: center; z-index: 10;
+        }
+        .brand { font-size: 1.4rem; font-weight: 800; display: flex; align-items: center; gap: 8px; letter-spacing: -0.5px; }
+        .brand img { width: 28px; height: 28px; border-radius: 6px; }
+
+        #desktop-sidebar {
+            display: none;
+            position: fixed; top: 0; left: 0; height: 100%; width: var(--sidebar-width);
+            background: var(--surface-color); border-right: 1px solid var(--surface-highlight);
+            padding: 30px 20px; z-index: 150;
+            flex-direction: column; justify-content: space-between;
+        }
+        .sidebar-menu { display: flex; flex-direction: column; gap: 10px; margin-top: 40px; }
+        .sidebar-item {
+            display: flex; align-items: center; gap: 12px; padding: 12px 16px;
+            border-radius: 12px; color: var(--text-secondary); cursor: pointer; transition: 0.2s; font-weight: 600;
+        }
+        .sidebar-item:hover { background: var(--surface-highlight); color: var(--text-primary); }
+        .sidebar-item.active { background: var(--text-primary); color: var(--bg-color); }
+
+        main {
+            flex: 1; overflow-y: scroll; scroll-behavior: smooth;
+            padding-bottom: calc(var(--nav-height) + var(--mini-player-height) + 20px);
+            overscroll-behavior: contain; transition: margin-left 0.3s;
+        }
+        main::-webkit-scrollbar { display: none; }
+
+        .section-title { font-size: 1.3rem; margin: 24px var(--padding) 12px; font-weight: 700; }
+        
+        .search-container { padding: 0 var(--padding); margin-bottom: 15px; }
+        .search-bar {
+            width: 100%; background: var(--glass-panel);
+            backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            padding: 12px 16px; border-radius: 14px;
+            display: flex; align-items: center; font-size: 1rem;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+        }
+        .search-bar input { background: transparent; border: none; width: 100%; color: inherit; font-size: inherit; margin-left: 10px; }
+
+        .filters { display: flex; gap: 10px; padding: 0 var(--padding); margin-bottom: 20px; overflow-x: auto; }
+        .chip {
+            padding: 8px 16px; background: var(--surface-color); border-radius: 20px;
+            font-size: 0.85rem; font-weight: 600; color: var(--text-secondary);
+            border: 1px solid transparent; transition: all 0.2s; white-space: nowrap;
+        }
+        .chip.active { background: var(--text-primary); color: var(--bg-color); }
+
+        .horizontal-scroll { display: flex; gap: 16px; overflow-x: auto; padding: 0 var(--padding) 10px; }
+        .horizontal-scroll::-webkit-scrollbar { display: none; }
+        
+        .podcast-card { min-width: 140px; width: 140px; display: flex; flex-direction: column; gap: 8px; cursor: pointer; }
+        .cover-art {
+            width: 100%; aspect-ratio: 1; background: var(--surface-highlight);
+            border-radius: 16px; overflow: hidden; position: relative;
+        }
+        .cover-art img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s; }
+        .podcast-card:active .cover-art img { transform: scale(0.95); }
+
+        .list-item {
+            display: flex; align-items: center; gap: 16px; padding: 12px var(--padding);
+            border-bottom: 1px solid rgba(255,255,255,0.03); transition: background 0.2s; cursor: pointer;
+        }
+        .list-item:active { background: var(--surface-highlight); }
+        .list-img { width: 56px; height: 56px; border-radius: 12px; background: var(--surface-highlight); object-fit: cover; flex-shrink: 0; }
+        .list-rank { font-size: 1.2rem; font-weight: 900; color: var(--text-secondary); width: 30px; text-align: center; font-variant-numeric: tabular-nums; }
+        
+        .verified-badge { width: 14px; height: 14px; margin-left: 4px; vertical-align: middle; display: inline-block; visibility: hidden; }
+        .verified-badge.visible { visibility: visible; }
+        .verified-badge.lg { width: 18px; height: 18px; margin-left: 6px; }
+        [data-theme="dark"] .verified-badge { fill: #ffffff; filter: drop-shadow(0 0 4px rgba(255,255,255,0.5)); }
+        [data-theme="light"] .verified-badge { fill: #000000; filter: none; }
+
+        .new-badge {
+            font-size: 0.6rem; font-weight: 900; letter-spacing: 0.5px;
+            background: var(--text-primary); color: var(--bg-color);
+            padding: 3px 6px; border-radius: 6px; margin-left: 8px;
+            vertical-align: middle; display: inline-block;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+        .trending-badge {
+            font-size: 0.6rem; font-weight: 800; letter-spacing: 0.3px;
+            background: linear-gradient(135deg, #FF9500, #FF3B30); color: white;
+            padding: 3px 8px; border-radius: 6px; margin-left: 8px;
+            vertical-align: middle; display: inline-block;
+            box-shadow: 0 2px 8px rgba(255, 59, 48, 0.3);
         }
 
-        /* Glassmorphism Card Style */
-        .glass-card {
-            background: rgba(255, 255, 255, 0.03);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        .odometer-wrapper { display: inline-flex; height: 1.2em; overflow: hidden; vertical-align: bottom; font-variant-numeric: tabular-nums; opacity: 0; transition: opacity 0.3s ease; }
+        .odometer-wrapper.active { opacity: 1; }
+        .odometer-ribbon { display: flex; flex-direction: column; transition: transform 1.2s cubic-bezier(0.16, 1, 0.3, 1); will-change: transform; }
+        .odometer-ribbon div { height: 1.2em; display: flex; justify-content: center; align-items: center; }
+        .odometer-static { display: inline-block; }
+        .pop-effect { animation: pop-bright 0.2s ease-out forwards; }
+        @keyframes pop-bright { 50% { transform: scale(1.1); filter: brightness(1.3); } }
+
+        /* PROFILE VIEW */
+        #view-profile-detail { 
+            background: var(--bg-color); 
+            z-index: 50; position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            overflow-y: auto; padding-bottom: calc(100px + var(--safe-bottom) + 80px); 
+            overscroll-behavior: contain; transition: left 0.3s, width 0.3s;
+        }
+        #profile-bg-glow {
+            position: absolute; top: 0; left: 0; width: 100%; height: 60vh;
+            z-index: -1; pointer-events: none; overflow: hidden;
+        }
+        #profile-bg-glow img {
+            width: 100%; height: 100%; object-fit: cover;
+            filter: blur(80px) brightness(0.6); transform: scale(1.2);
+            mask-image: linear-gradient(to bottom, black 0%, transparent 100%);
+            -webkit-mask-image: linear-gradient(to bottom, black 0%, transparent 100%);
+        }
+        [data-theme="light"] #profile-bg-glow img { filter: blur(80px) brightness(1.2) saturate(1.5); }
+
+        .profile-header { padding: var(--padding); padding-top: 80px; display: flex; flex-direction: column; align-items: center; text-align: center; }
+        .profile-art { width: 160px; height: 160px; border-radius: 30px; margin-bottom: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); object-fit: cover; }
+        .profile-btn-row { display: flex; gap: 15px; margin-top: 15px; width: 100%; justify-content: center; }
+        
+        .chirp-btn-lg {
+            display: flex; align-items: center; gap: 8px; padding: 12px 30px;
+            border-radius: 30px; font-weight: 700; border: 1px solid var(--surface-highlight);
+            background: var(--surface-color); color: var(--text-primary); transition: all 0.2s;
+        }
+        .chirp-btn-lg.active { background: var(--text-primary); color: var(--bg-color); transform: scale(1.05); }
+        .chirp-btn-lg:active { transform: scale(0.95); }
+
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 0 var(--padding); margin-top: 20px; }
+        .stat-box {
+            background: var(--surface-color); padding: 15px; border-radius: 16px;
+            display: flex; flex-direction: column; gap: 4px;
+        }
+        
+        /* ERROR VIEW */
+        .error-container {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            height: 60vh; text-align: center; opacity: 0.7; gap: 20px;
+        }
+        .error-code { font-size: 3rem; font-weight: 900; letter-spacing: -2px; }
+
+        /* --- CHAT UI --- */
+        #view-ai {
+            display: flex; flex-direction: column; height: 100%; 
+            position: relative; background: var(--bg-color);
+        }
+        #chat-history {
+            flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 20px;
+            padding-top: max(80px, var(--safe-top)); padding-bottom: 100px;
+        }
+        .chat-row { display: flex; gap: 12px; width: 100%; animation: fadeIn 0.3s ease; }
+        .chat-row.user { justify-content: flex-end; }
+        .chat-avatar {
+            width: 32px; height: 32px; border-radius: 50%; background: var(--surface-highlight);
+            display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: var(--text-primary);
+        }
+        .chat-msg {
+            max-width: 85%; padding: 14px 18px; border-radius: 18px; font-size: 0.95rem; line-height: 1.6;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05); word-wrap: break-word;
+        }
+        .chat-row.user .chat-msg { background: var(--text-primary); color: var(--bg-color); border-bottom-right-radius: 4px; }
+        .chat-row.ai .chat-msg { background: var(--glass-panel); border: 1px solid var(--glass-border); border-bottom-left-radius: 4px; color: var(--text-primary); }
+        .chat-actions { display: flex; gap: 8px; margin-top: 6px; margin-left: 44px; opacity: 0.7; }
+        .chat-action-btn { font-size: 0.75rem; background: none; border: none; color: var(--text-secondary); cursor: pointer; padding: 4px 8px; border-radius: 6px; }
+        .chat-action-btn:hover { background: var(--surface-highlight); color: var(--text-primary); }
+        .chat-input-wrapper {
+            position: absolute; bottom: 0; left: 0; width: 100%; 
+            padding: 15px 20px calc(20px + var(--nav-height) + var(--safe-bottom)); 
+            background: linear-gradient(to top, var(--bg-color) 20%, transparent); z-index: 120;
+        }
+        .chat-input-area {
+            background: var(--glass-panel); backdrop-filter: blur(25px);
+            border: 1px solid var(--glass-border); border-radius: 24px;
+            padding: 8px; display: flex; align-items: center; gap: 8px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+        .chat-input { flex: 1; background: transparent; border: none; padding: 10px 14px; font-size: 1rem; color: var(--text-primary); }
+        .deep-think-btn {
+            width: 36px; height: 36px; border-radius: 50%; border: none;
+            background: var(--surface-highlight); color: var(--text-secondary);
+            display: flex; align-items: center; justify-content: center; transition: 0.3s;
+        }
+        .deep-think-btn.active { background: #8e44ad; color: white; box-shadow: 0 0 10px #8e44ad; }
+        .chat-send {
+            background: var(--text-primary); color: var(--bg-color); width: 40px; height: 40px;
+            border-radius: 50%; display: flex; align-items: center; justify-content: center; border: none;
+        }
+        .typing-dots { display: flex; align-items: center; gap: 4px; height: 24px; }
+        .typing-dots span { width: 6px; height: 6px; background: currentColor; border-radius: 50%; animation: blink 1.4s infinite both; }
+        .typing-dots span:nth-child(2) { animation-delay: 0.2s; } .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes blink { 0% { opacity: 0.2; } 20% { opacity: 1; } 100% { opacity: 0.2; } }
+
+        .emoji-particle { position: fixed; pointer-events: none; font-size: 2rem; z-index: 1000; animation: flyOut 1s ease-out forwards; }
+        @keyframes flyOut { 0% { transform: translate(-50%, -50%) scale(0.5); opacity: 1; } 100% { transform: translate(var(--tx), var(--ty)) scale(1.5) rotate(var(--rot)); opacity: 0; } }
+
+        #creators-modal {
+            position: fixed; bottom: 0; left: 0; width: 100%;
+            background: var(--surface-color); border-top-left-radius: 30px; border-top-right-radius: 30px;
+            z-index: 400; transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+            padding: 20px; padding-bottom: max(40px, var(--safe-bottom));
+            box-shadow: 0 -10px 40px rgba(0,0,0,0.5);
+        }
+        #creators-modal.active { transform: translateY(0); }
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5); z-index: 350; opacity: 0; pointer-events: none; transition: opacity 0.3s;
+        }
+        .modal-overlay.active { opacity: 1; pointer-events: auto; }
+        .creator-item {
+            padding: 16px; border-bottom: 1px solid rgba(255,255,255,0.05);
+            font-size: 1.1rem; font-weight: 500; display: flex; justify-content: space-between; align-items: center;
+        }
+        .creator-item:last-child { border-bottom: none; }
+        .creator-item:active { background: var(--surface-highlight); border-radius: 12px; }
+
+        #mini-player {
+            position: absolute; bottom: calc(var(--nav-height) + var(--safe-bottom)); left: 0; width: 100%;
+            height: var(--mini-player-height); background: var(--glass-panel);
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border-top: 1px solid rgba(255,255,255,0.05);
+            display: flex; align-items: center; padding: 0 var(--padding);
+            z-index: 90; transition: transform 0.3s ease, left 0.3s, width 0.3s;
+        }
+        #mini-player.expanded { transform: translateY(200%); }
+
+        nav {
+            position: absolute; bottom: 0; width: 100%; 
+            height: calc(var(--nav-height) + var(--safe-bottom));
+            background: var(--bg-color); display: flex; justify-content: space-around;
+            padding-top: 15px; padding-bottom: var(--safe-bottom);
+            border-top: 1px solid rgba(255,255,255,0.05); z-index: 100;
+            align-items: flex-start;
+        }
+        .nav-item { display: flex; flex-direction: column; align-items: center; gap: 6px; color: var(--text-secondary); opacity: 0.7; transition: 0.2s; }
+        .nav-item.active { color: var(--text-primary); opacity: 1; }
+
+        #full-player {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(10, 10, 10, 0.65);
+            backdrop-filter: blur(45px) saturate(180%); -webkit-backdrop-filter: blur(45px) saturate(180%);
+            z-index: 200; display: flex; flex-direction: column;
+            transform: translateY(100%); transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+            overflow: hidden; 
+            padding: max(15px, var(--safe-top)) 24px max(20px, var(--safe-bottom));
+        }
+        #full-player.active { transform: translateY(0); }
+        [data-theme="light"] #full-player { background: rgba(255, 255, 255, 0.65); }
+
+        .player-top { flex: 0 0 auto; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .player-art-wrapper { 
+            width: 100%; height: auto; max-width: 340px; aspect-ratio: 1; max-height: 40vh; 
+            border-radius: 24px; overflow: hidden; box-shadow: 0 10px 40px rgba(0,0,0,0.3); margin: 0 auto 20px; position: relative;
+        }
+        .player-art-wrapper img { width: 100%; height: 100%; object-fit: cover; }
+        .player-info { flex: 0 0 auto; margin-bottom: 10px; text-align: left; }
+        .player-controls-area { flex: 0 0 auto; width: 100%; }
+
+        #lyrics-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8); backdrop-filter: blur(15px);
+            z-index: 10; display: flex; flex-direction: column;
+            justify-content: center; align-items: center; text-align: center;
+            opacity: 0; pointer-events: none; transition: opacity 0.3s;
+            border-radius: 24px; padding: 30px;
+        }
+        #lyrics-overlay.active { opacity: 1; pointer-events: auto; }
+        .lyrics-text { font-size: 1.4rem; font-weight: 600; line-height: 1.6; color: #fff; min-height: 100px; transition: opacity 0.2s; }
+        
+        .clickable-artist { text-decoration: underline; text-decoration-color: transparent; transition: 0.2s; cursor: pointer; }
+        .clickable-artist.has-multi { text-decoration-color: var(--text-secondary); }
+        .clickable-artist.has-multi:active { color: var(--text-primary); }
+
+        .search-action-btn { 
+            /* Button Style defined here to be used in JS */
+            width: 36px; height: 36px; border-radius: 50%; 
+            background: var(--surface-highlight); color: var(--text-primary);
+            display: flex; align-items: center; justify-content: center; border: none; z-index: 2; margin-left: auto;
+            cursor: pointer;
+        }
+
+        #toast {
+            position: fixed; top: -60px; left: 50%; transform: translateX(-50%);
+            background: var(--text-primary); color: var(--bg-color);
+            padding: 12px 24px; border-radius: 30px; font-weight: 700;
+            z-index: 300; transition: top 0.4s;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2); display: flex; align-items: center; gap: 8px;
+        }
+        #toast.show { top: 20px; }
+
+        .spinner { width: 20px; height: 20px; border: 2px solid var(--text-secondary); border-top-color: var(--text-primary); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 10px auto; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* MODAL (INSTALL) */
+        #install-modal {
+            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.9);
+            width: 85%; max-width: 320px; background: var(--surface-color);
+            padding: 24px; border-radius: 24px; text-align: center;
+            z-index: 500; opacity: 0; pointer-events: none;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1);
+        }
+        #install-modal.active { opacity: 1; pointer-events: auto; transform: translate(-50%, -50%) scale(1); }
+        .install-btn { padding: 12px 24px; border-radius: 12px; font-weight: 700; margin: 0 5px; cursor: pointer; }
+        .btn-yes { background: var(--text-primary); color: var(--bg-color); }
+        .btn-no { background: var(--surface-highlight); color: var(--text-secondary); }
+
+        @media (min-width: 768px) {
+            header, nav { display: none !important; }
+            #desktop-sidebar { display: flex; }
+            main { margin-left: var(--sidebar-width); padding-bottom: calc(var(--mini-player-height) + 40px); height: 100vh; }
+            #view-profile-detail { left: var(--sidebar-width); width: calc(100% - var(--sidebar-width)); padding-bottom: 120px; }
+            #view-profile-detail > div:first-child { top: 20px; left: 30px; }
+            #mini-player { left: var(--sidebar-width); width: calc(100% - var(--sidebar-width)); bottom: 0; }
+            #full-player {
+                left: 50%; top: 50%; width: 450px; height: 85vh;
+                transform: translate(-50%, 150%); border-radius: 24px;
+                border: 1px solid var(--glass-border);
+                box-shadow: 0 40px 80px rgba(0,0,0,0.6);
+            }
+            #full-player.active { transform: translate(-50%, -50%); }
+            .player-top { margin-top: 10px; }
+            #full-player::before {
+                content: ''; position: fixed; top: -50vh; left: -50vw; width: 200vw; height: 200vh;
+                background: rgba(0,0,0,0.7); z-index: -1; pointer-events: none; opacity: 0; transition: opacity 0.4s;
+            }
+            #full-player.active::before { opacity: 1; pointer-events: auto; }
+            
+            #view-ai { margin-left: var(--sidebar-width); width: calc(100% - var(--sidebar-width)); padding-bottom: 20px; }
+            .chat-input-wrapper { left: var(--sidebar-width); width: calc(100% - var(--sidebar-width)); bottom: 20px; padding-bottom: 20px; }
         }
     </style>
 </head>
-<body class="min-h-screen font-sans">
+<body data-theme="dark">
 
-    <!-- STATE: HOME VIEW -->
-    <div id="home-view" class="flex flex-col items-center justify-center min-h-screen px-4 transition-all duration-500 ease-out relative z-10">
-        
-        <!-- Add to Browser Button (Top Right) -->
-        <button onclick="openModal()" class="absolute top-6 right-6 flex items-center gap-2 px-4 py-2 text-sm font-medium text-zinc-400 bg-[#171717] hover:bg-[#222] rounded-full border border-zinc-800 transition-colors">
-            <i data-lucide="plus" class="w-4 h-4"></i>
-            Add to Browser
-        </button>
-
-        <div class="w-full max-w-2xl flex flex-col items-center transform -translate-y-12 z-10">
-            <!-- Logo Large (Black & White) -->
-            <div class="flex items-center justify-center font-bold tracking-tight text-white text-5xl mb-8">
-                <span class="relative flex items-center justify-center mr-4">
-                   <div class="bg-white rounded-full flex items-center justify-center w-16 h-16 shadow-[0_0_15px_rgba(255,255,255,0.1)]">
-                      <!-- Feather Icon (Black) -->
-                      <i data-lucide="feather" class="text-black w-10 h-10 fill-black"></i>
-                   </div>
-                </span>
-                <span class="hidden sm:block tracking-tighter">Chirpless<span class="text-purple-500">.com</span></span>
-            </div>
-            
-            <!-- Home Search Form -->
-            <div class="w-full relative group">
-                <form id="home-form" class="w-full relative z-20 overflow-hidden rounded-full">
-                    <div id="home-shimmer-container" class="shimmer-effect"></div>
-                    <input
-                        type="text"
-                        id="home-input"
-                        placeholder="Search Chirpless..."
-                        class="w-full h-14 pl-6 pr-14 rounded-full bg-[#171717] border border-zinc-800 shadow-xl text-lg text-white placeholder-zinc-500 focus:outline-none focus:border-purple-600/50 focus:ring-4 focus:ring-purple-600/10 transition-all duration-300"
-                        autocomplete="off"
-                    />
-                    <button 
-                        type="submit" 
-                        class="absolute right-3 top-1/2 -translate-y-1/2 p-2 bg-zinc-800 text-zinc-400 rounded-full hover:bg-purple-600 hover:text-white transition-colors duration-200"
-                    >
-                        <i data-lucide="search" class="w-5 h-5"></i>
-                    </button>
-                </form>
-                
-                <!-- Home Dropdown -->
-                <div id="home-dropdown" class="search-dropdown absolute top-full mt-2 left-0 w-full rounded-xl shadow-2xl hidden overflow-hidden">
-                    <!-- Injected via JS -->
+    <div id="app">
+        <!-- DESKTOP SIDEBAR -->
+        <aside id="desktop-sidebar">
+            <div class="brand"><img src="siteicon.png" alt="icon"> Chirpless</div>
+            <div class="sidebar-menu">
+                <div class="sidebar-item active" onclick="switchView('home', this)">
+                    <svg class="icon" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg> Home
+                </div>
+                <div class="sidebar-item" onclick="switchView('discover', this)">
+                    <svg class="icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg> Discover
+                </div>
+                <div class="sidebar-item" onclick="switchView('library', this)">
+                    <svg class="icon" viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg> Library
+                </div>
+                <div class="sidebar-item" onclick="switchView('ai', this)">
+                    <svg class="icon" viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg> AI
                 </div>
             </div>
-
-            <div class="mt-8 flex gap-4 text-sm font-medium text-zinc-500">
-                <div class="flex items-center gap-2">
-                    <i data-lucide="shield-check" class="w-4 h-4 text-purple-500"></i>
-                    <span>Privacy Simplified</span>
-                </div>
-                <div class="hidden sm:flex items-center gap-2">
-                    <i data-lucide="zap" class="w-4 h-4 text-yellow-500"></i>
-                    <span>Lightning Fast</span>
-                </div>
+            <div style="cursor:pointer; display:flex; align-items:center; gap:12px; color:var(--text-secondary); font-weight:600; padding:12px 16px;" onclick="toggleTheme()">
+                <svg class="icon" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg> Theme
             </div>
-        </div>
-        
-        <!-- Animated Background Blobs (Purple/Dark Blue) -->
-        <div class="fixed top-0 left-0 w-full h-full overflow-hidden -z-0 pointer-events-none">
-             <div class="absolute top-1/4 left-1/4 w-96 h-96 bg-purple-900/10 rounded-full blur-3xl animate-blob"></div>
-             <div class="absolute bottom-1/4 right-1/4 w-96 h-96 bg-blue-900/10 rounded-full blur-3xl animate-blob animation-delay-2000"></div>
-        </div>
-    </div>
+        </aside>
 
-    <!-- STATE: RESULTS VIEW -->
-    <div id="results-view" class="min-h-screen flex-col animate-fade-in hidden bg-[#0a0a0a]">
-        
-        <!-- Header -->
-        <header class="sticky top-0 z-50 bg-[#0a0a0a]/80 backdrop-blur-xl border-b border-white/5 shadow-sm">
-            <div class="max-w-7xl mx-auto px-4 py-3 flex items-center gap-4 md:gap-8">
-                <!-- Logo Small (Black/White) -->
-                <div id="logo-reset" class="cursor-pointer hover:opacity-80 transition-opacity flex-shrink-0 flex items-center">
-                    <div class="bg-white rounded-full flex items-center justify-center w-10 h-10 mr-2">
-                        <i data-lucide="feather" class="text-black w-6 h-6 fill-black"></i>
-                    </div>
-                </div>
-                
-                <!-- Header Search Form -->
-                <div class="flex-1 max-w-2xl relative">
-                    <form id="header-form" class="w-full relative overflow-hidden rounded-md">
-                         <div id="header-shimmer-container" class="shimmer-effect"></div>
-                        <input
-                            type="text"
-                            id="header-input"
-                            class="w-full h-10 pl-4 pr-10 rounded-md bg-[#171717] border border-zinc-800 text-white placeholder-zinc-500 focus:outline-none focus:border-purple-500/50 focus:bg-[#222] transition-colors"
-                            autocomplete="off"
-                        />
-                        <button type="submit" class="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-purple-500">
-                            <i data-lucide="search" class="w-4 h-4"></i>
-                        </button>
-                    </form>
-                    <!-- Header Dropdown -->
-                    <div id="header-dropdown" class="search-dropdown absolute top-full mt-1 left-0 w-full rounded-lg shadow-xl hidden overflow-hidden">
-                        <!-- Injected via JS -->
-                    </div>
-                </div>
-            </div>
-
-            <!-- Tabs -->
-            <div class="max-w-7xl mx-auto px-4 mt-2">
-                <div class="flex gap-6 text-sm font-medium text-zinc-400 overflow-x-auto no-scrollbar" id="tabs-container">
-                    <button data-tab="all" class="tab-btn pb-3 border-b-2 flex items-center gap-2 transition-all duration-200 border-purple-500 text-purple-500">
-                        <i data-lucide="search" class="w-4 h-4"></i> All
-                    </button>
-                    <button data-tab="images" class="tab-btn pb-3 border-b-2 flex items-center gap-2 transition-all duration-200 border-transparent hover:text-zinc-200">
-                        <i data-lucide="image" class="w-4 h-4"></i> Images
-                    </button>
-                    <button class="tab-btn pb-3 border-b-2 border-transparent hover:text-zinc-200 transition-all duration-200 hidden sm:block">Videos</button>
-                    <button class="tab-btn pb-3 border-b-2 border-transparent hover:text-zinc-200 transition-all duration-200 hidden sm:block">News</button>
-                </div>
-            </div>
+        <!-- HEADER -->
+        <header>
+            <div class="brand"><img src="siteicon.png" alt="icon"> Chirpless</div>
+            <button onclick="toggleTheme()" style="background:none; border:none; color:inherit;">
+                <svg class="icon" style="stroke: currentColor; stroke-width: 2;" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+            </button>
         </header>
 
-        <!-- Main Content -->
-        <main class="flex-1 max-w-7xl w-full mx-auto px-4 py-6 md:pl-[6.5rem]">
-            
-            <div id="error-container" class="hidden p-4 mb-6 bg-red-900/10 border border-red-900/30 text-red-400 rounded-lg"></div>
-
-            <!-- Tab Content Container -->
-            <div id="content-area">
-                <!-- Content injected via JS -->
+        <main id="main-content">
+            <div id="view-home" class="view">
+                <div class="section-title">Trending Now</div>
+                <div class="horizontal-scroll" id="trending-container" style="min-height:200px"><div class="spinner"></div></div>
+                <div class="section-title">Recommended for You</div>
+                <div class="horizontal-scroll" id="mix-container" style="min-height:200px"><div class="spinner"></div></div>
+                <div style="height:20px"></div>
             </div>
 
-        </main>
-    </div>
-
-    <!-- INSTRUCTIONS MODAL -->
-    <div id="modal-overlay" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] hidden flex items-center justify-center p-4">
-        <div class="bg-[#171717] border border-zinc-800 rounded-2xl w-full max-w-md p-6 shadow-2xl animate-fade-in-up">
-            <div class="flex justify-between items-start mb-4">
-                <div class="flex items-center gap-3">
-                    <div class="bg-white rounded-full p-2">
-                        <i data-lucide="feather" class="text-black w-5 h-5 fill-black"></i>
+            <div id="view-discover" class="view hidden">
+                <div class="section-title">Explore</div>
+                <div class="search-container">
+                    <div class="search-bar">
+                        <svg class="icon" style="opacity:0.5; width:20px;" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                        <input type="search" id="search-input" placeholder="Search..." onkeypress="handleSearch(event)">
                     </div>
-                    <h2 class="text-xl font-bold text-white">Make Chirpless Default</h2>
                 </div>
-                <button onclick="closeModal()" class="text-zinc-500 hover:text-white">
-                    <i data-lucide="x" class="w-5 h-5"></i>
+                <div class="filters">
+                    <div class="chip active" onclick="setFilter('all', this)">All</div>
+                    <div class="chip" onclick="setFilter('profile', this)">Profiles</div>
+                    <div class="chip" onclick="setFilter('episode', this)">Episodes</div>
+                    <div class="chip" onclick="setFilter('charts', this)">Charts</div>
+                </div>
+                <div id="search-results">
+                    <div style="text-align:center; color:var(--text-secondary); margin-top:40px;">Find creators and stories.</div>
+                </div>
+            </div>
+
+            <div id="view-library" class="view hidden">
+                <div class="section-title">Your Chirps</div>
+                <div id="library-list"></div>
+            </div>
+
+            <div id="view-ai" class="view hidden">
+                <div id="chat-history">
+                    <div class="chat-row ai">
+                        <div class="chat-avatar"><svg class="icon" viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg></div>
+                        <div class="chat-msg">Hello! I'm Chirpless X4.2. Ask me about podcasts, stats, or how to use the app.</div>
+                    </div>
+                </div>
+                <div class="chat-input-wrapper">
+                    <div class="chat-input-area">
+                        <button class="deep-think-btn" id="deep-think-toggle" onclick="toggleDeepThink()"><svg class="icon" viewBox="0 0 24 24"><path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 2.96-3.08A2.5 2.5 0 0 1 9.5 2z M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-2.96-3.08A2.5 2.5 0 0 0 14.5 2z"/></svg></button>
+                        <input type="text" id="ai-input" class="chat-input" placeholder="Ask Chirpless X4.2..." onkeypress="if(event.key==='Enter')sendAI()">
+                        <button class="chat-send" onclick="sendAI()"><svg class="icon" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- PROFILE DETAIL VIEW -->
+        <div id="view-profile-detail" class="hidden">
+            <div id="profile-bg-glow"><img id="pd-bg-img" src=""></div>
+            <div style="position:absolute; top:max(15px, env(safe-area-inset-top)); left:20px; z-index:10;">
+                <button onclick="closeProfile()" style="background:var(--glass-panel); width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center; border:none; color:var(--text-primary); backdrop-filter:blur(10px);">
+                    <svg class="icon" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
                 </button>
             </div>
             
-            <div class="space-y-4 text-sm text-zinc-400">
-                <p>Enjoy privacy and speed? Here is how to set us as your primary search engine:</p>
-                
-                <div class="bg-black/40 p-4 rounded-lg space-y-3">
-                    <div class="flex gap-3">
-                        <span class="flex-shrink-0 w-6 h-6 rounded-full bg-purple-900/30 text-purple-400 flex items-center justify-center font-bold text-xs">1</span>
-                        <p>Open your browser <strong>Settings</strong>.</p>
+            <div class="profile-header">
+                <img id="pd-img" src="" class="profile-art">
+                <h1 id="pd-title" style="margin:0; font-size:1.8rem; line-height:1.2;">Title</h1>
+                <p id="pd-artist-container" style="margin:8px 0;">
+                    <span id="pd-artist" class="text-secondary clickable-artist" onclick="handleArtistClick(this.innerText)">Artist</span>
+                    <svg class="verified-badge lg" id="pd-verified" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+                    <!-- Sticker Slot -->
+                    <span style="font-size:0.9rem; margin-left:5px; opacity:0.7;">🕮 ✩</span>
+                </p>
+                <div class="odometer-container" id="pd-header-stat" style="font-weight:700; font-size:1.1rem; margin-top:5px; opacity:0.8;"></div>
+                <div class="profile-btn-row">
+                    <button id="pd-chirp-btn" class="chirp-btn-lg" onclick="toggleProfileChirp()">
+                        <svg class="icon" viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+                        <span id="pd-chirp-text">Chirp</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="filters" style="justify-content:center; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:15px;">
+                <div class="chip active" id="tab-episodes" onclick="switchProfileTab('episodes')">Episodes</div>
+                <div class="chip" id="tab-stats" onclick="switchProfileTab('stats')">Stats</div>
+            </div>
+
+            <div id="pd-content-episodes" style="padding-bottom:100px;"></div>
+            <div id="pd-loading-more" class="hidden"><div class="spinner"></div></div>
+
+            <div id="pd-content-stats" class="hidden" style="padding-bottom:100px;">
+                <div class="stats-grid">
+                    <div class="stat-box">
+                        <span class="text-xs text-secondary">Total Chirps</span>
+                        <span class="font-bold odometer-container" style="font-size:1.5rem" id="stat-chirps"></span>
                     </div>
-                    <div class="flex gap-3">
-                        <span class="flex-shrink-0 w-6 h-6 rounded-full bg-purple-900/30 text-purple-400 flex items-center justify-center font-bold text-xs">2</span>
-                        <p>Navigate to <strong>Search Engine</strong> section.</p>
+                    <div class="stat-box">
+                        <span class="text-xs text-secondary">Total Cash Earned ($0.0000011/stream)</span>
+                        <span class="font-bold odometer-container" style="font-size:1.8rem; color:var(--text-primary);" id="stat-cash">--</span>
                     </div>
-                    <div class="flex gap-3">
-                        <span class="flex-shrink-0 w-6 h-6 rounded-full bg-purple-900/30 text-purple-400 flex items-center justify-center font-bold text-xs">3</span>
-                        <p>Select <strong>Manage Search Engines</strong> and click "Add".</p>
-                    </div>
-                    <div class="flex gap-3">
-                        <span class="flex-shrink-0 w-6 h-6 rounded-full bg-purple-900/30 text-purple-400 flex items-center justify-center font-bold text-xs">4</span>
-                        <p>Set URL to: <br><code class="text-purple-300">https://chirpless.com/?q=%s</code></p>
-                    </div>
+                </div>
+                <div style="padding:20px; text-align:center; color:var(--text-secondary); font-size:0.8rem; line-height:1.5;">
+                    Lifetime Analytics across all platforms.<br>
                 </div>
             </div>
             
-            <button onclick="closeModal()" class="w-full mt-6 bg-purple-600 hover:bg-purple-500 text-white font-medium py-3 rounded-lg transition-colors">
-                Got it, thanks!
+            <!-- Custom Error View -->
+            <div id="pd-error-view" class="hidden error-container">
+                 <div class="error-code">214 𖠌</div>
+                 <div>Content Unavailable</div>
+                 <button onclick="closeProfile()" class="install-btn btn-yes">Go Back</button>
+            </div>
+        </div>
+
+        <!-- MODALS -->
+        <div class="modal-overlay" id="install-overlay"></div>
+        <div id="install-modal">
+            <h2 style="margin-top:0;">Install Chirpless?</h2>
+            <p style="color:var(--text-secondary); margin-bottom:20px;">Get the full app experience on your home screen.</p>
+            <div class="flex justify-center">
+                <button class="install-btn btn-no" onclick="dismissInstall()">No</button>
+                <button class="install-btn btn-yes" onclick="triggerInstall()">Yes</button>
+            </div>
+        </div>
+
+        <div class="modal-overlay" id="modal-overlay" onclick="closeCreatorsModal()"></div>
+        <div id="creators-modal">
+            <div style="text-align:center; font-weight:bold; margin-bottom:20px; opacity:0.6;">Featured Creators</div>
+            <div id="creators-list"></div>
+        </div>
+
+        <div id="toast"><svg width="20" height="20" viewBox="0 0 24 24" fill="var(--bg-color)"><path d="M21 15C21 19 17 22 13 22C9 22 10 18 10 15C10 12 5 10 3 8C5.5 6 12 2 12 2Z"/></svg> Chirped!</div>
+
+        <!-- MINI PLAYER -->
+        <div id="mini-player" onclick="openFullPlayer()">
+            <img id="mini-img" src="" class="list-img" style="opacity:0">
+            <div style="flex:1; margin-left:12px; overflow:hidden;">
+                <div id="mini-title" class="font-bold text-sm" style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Select a chirp</div>
+                <div id="mini-artist" class="text-xs text-secondary">Chirpless</div>
+            </div>
+            <button id="mini-play-btn" onclick="event.stopPropagation(); togglePlay()" style="padding:10px; background:none; border:none; color:inherit;">
+                <svg class="icon" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
             </button>
+        </div>
+
+        <!-- NAV -->
+        <nav>
+            <div class="nav-item active" onclick="switchView('home', this)">
+                <svg class="icon" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg> Home
+            </div>
+            <div class="nav-item" onclick="switchView('discover', this)">
+                <svg class="icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg> Discover
+            </div>
+            <div class="nav-item" onclick="switchView('library', this)">
+                <svg class="icon" viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg> Library
+            </div>
+             <div class="nav-item" onclick="switchView('ai', this)">
+                <svg class="icon" viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg> AI
+            </div>
+        </nav>
+
+        <!-- FULL PLAYER -->
+        <div id="full-player">
+            <div class="player-top">
+                <button onclick="closeFullPlayer()" style="background:none; border:none; color:inherit;"><svg class="icon" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg></button>
+                <span class="text-xs font-bold" style="letter-spacing:2px;">NOW PLAYING</span>
+                <div style="width:24px;"></div>
+            </div>
+
+            <div class="player-art-area">
+                <div class="player-art-wrapper">
+                    <img id="fp-img" src="" alt="Album Art">
+                    <div id="lyrics-overlay">
+                        <div class="spinner" id="lyrics-spinner" style="margin-bottom:20px;"></div>
+                        <div class="lyrics-text" id="lyrics-content">Transcribing Audio Stream...</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="player-info">
+                <h2 id="fp-title" style="margin:0; font-size:1.5rem; line-height:1.2; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">Title</h2>
+                <p id="fp-artist" class="text-secondary clickable-artist" onclick="handleArtistClick(this.innerText)" style="margin:5px 0 0;">Artist</p>
+            </div>
+
+            <div class="player-controls-area">
+                <div class="flex justify-between items-center" style="margin-bottom:15px; padding:0 10px;">
+                    <button onclick="toggleLyrics()" style="color:var(--text-secondary); background:none; border:none;">
+                        <svg class="icon" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><line x1="9" y1="10" x2="15" y2="10"/><line x1="9" y1="6" x2="15" y2="6"/></svg>
+                    </button>
+                    <canvas id="wave-canvas" style="flex:1; height:40px; margin:0 15px; opacity:0.6;"></canvas>
+                </div>
+                
+                <div id="progress-container" onclick="seek(event)" style="width:100%; height:20px; display:flex; align-items:center;">
+                    <div style="width:100%; height:4px; background:var(--accent-dim); border-radius:2px; overflow:hidden;">
+                        <div id="progress-fill" style="width:0%; height:100%; background:var(--text-primary);"></div>
+                    </div>
+                </div>
+                <div class="flex justify-between text-xs text-secondary" style="margin-bottom:20px;">
+                    <span id="time-current">0:00</span>
+                    <span id="time-total">0:00</span>
+                </div>
+
+                <div class="flex justify-between items-center" style="max-width:350px; margin:0 auto;">
+                    <button class="bird-btn" id="fp-bird-btn" onclick="toggleTrackChirp()" style="background:var(--surface-highlight); width:44px; height:44px; border-radius:50%; display:flex; align-items:center; justify-content:center; color:inherit; border:none;">
+                        <svg class="icon" viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+                    </button>
+                    <div class="odometer-container" id="fp-chirp-count" style="font-weight:700; font-size:1rem; position:absolute; transform:translate(55px, -20px);"></div>
+                    <button onclick="skip(-15)" style="background:none; border:none; color:inherit;"><svg class="icon" style="width:32px; height:32px;" viewBox="0 0 24 24"><path d="M11 17l-5-5 5-5M18 17l-5-5 5-5"/></svg></button>
+                    <button onclick="togglePlay()" style="width:70px; height:70px; background:var(--text-primary); color:var(--bg-color); border-radius:50%; display:flex; align-items:center; justify-content:center; border:none;">
+                        <svg id="fp-play-icon" style="width:32px; height:32px; fill:currentColor; stroke:none;" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                    </button>
+                    <button onclick="skip(15)" style="background:none; border:none; color:inherit;"><svg class="icon" style="width:32px; height:32px;" viewBox="0 0 24 24"><path d="M13 17l5-5-5-5M6 17l5-5-5-5"/></svg></button>
+                    <button onclick="changeSpeed()" style="background:var(--surface-highlight); width:44px; height:44px; border-radius:50%; font-weight:bold; font-size:0.8rem; border:none; color:inherit;" id="speed-btn">1x</button>
+                </div>
+            </div>
         </div>
     </div>
 
-    <!-- JAVASCRIPT LOGIC -->
+    <audio id="audio-player" preload="none"></audio>
+
     <script>
-        // --- Configuration ---
-        const API_KEY = '63295e5de863c9228036333af0971a6e69f108a3';
+        // --- 1. STATE & CONFIG ---
+        let currentTrack = null; let isPlaying = false; let playbackSpeed = 1.0; let currentFilter = 'all';
+        let savedChirps = JSON.parse(localStorage.getItem('chirps_v37') || '[]');
+        let savedProfileChirps = JSON.parse(localStorage.getItem('profile_chirps_v37') || '[]');
+        let currentProfileId = null; let currentProfileEpisodes = []; let renderedEpisodeCount = 0; const EPISODES_PER_PAGE = 10;
+        let activeProfileStats = null;
+        let lyricsInterval = null;
+        let deferredPrompt = null;
+        let lastUserQuery = "";
+        let isDeepThink = false;
         
-        // --- Data ---
-        const TRENDING_SEARCHES = [
-            { term: "Chirpless.com", count: "729K" },
-            { term: "Minecraft", count: "1.4M" },
-            { term: "Youtube", count: "13.4M" },
-            { term: "Fortnite", count: "1.1M" }
-        ];
+        const CHAT_API_KEY = "sk-sN2S_4qIvqZqJKC_H6_htCRFzH6VmDn4XovLYmhbtM7D77Oy5k0rB_zLcQ6a1Ciro9jWsRdiUE_-TT1I0uA6U68D";
+        const VERIFIED_BADGE_HTML = `<svg class="verified-badge" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>`;
+        const PODCAST_SCRIPT = ["So, I was thinking about this the other day.","Right, exactly.","It's a complex issue.","Data suggests otherwise.","Wait, let me pull that up.","Ideally, yes.","That's fascinating.","Moving on.","Incredible point.","Let's dive deeper."];
+        const FALLBACK_RESPONSES = { "support": "You can reach support at pricepeyton987@gmail.com.", "email": "Please email pricepeyton987@gmail.com for assistance.", "chirp": "Chirps are like likes. They show popularity. >50M Chirps gets you verified!", "money": "The current payout rate is $0.0000011 per stream based on engagement.", "cash": "Cash is calculated at $0.0000011 per stream.", "code": "I cannot write code. My contract with Chirpless Technology restricts me to app support only.", "coding": "I cannot write code. My contract with Chirpless Technology restricts me to app support only.", "default": "I'm having trouble connecting to the neural network, but I'm here to help with Chirpless features!" };
 
-        const SPONSORED_LINKS = [
-            { text: "Help keep this search engine going", link: "https://chirpless-shop.fourthwall.com/products/donation", displayLink: "chirpless.com/donate" },
-            { text: "Check Out C@shXan's Music On Spotify!", link: "https://open.spotify.com", displayLink: "spotify.com" },
-            { text: "Check out hobby lobby!", link: "https://www.hobbylobby.com/", displayLink: "hobbylobby.com" },
-            { text: "Wow! LucidPP's New Album.", link: "https://open.spotify.com/artist/3egJ2gG5ocVFaoxWmayIII", displayLink: "open.spotify.com" }
-        ];
-
-        // List of domains to show "Verified" checkmark
-        const VERIFIED_DOMAINS = [
-            'chirpless.com', 'wikipedia.org', 'youtube.com', 'spotify.com', 'github.com', 
-            'stackoverflow.com', 'apple.com', 'microsoft.com', 'amazon.com',
-            'instagram.com', 'twitter.com', 'x.com', 'linkedin.com', 'netflix.com'
-        ];
-
-        // --- State ---
-        const state = {
-            query: '',
-            history: JSON.parse(localStorage.getItem('chirpless_history')) || [],
-            results: { web: [], images: [], knowledgeGraph: null },
-            activeTab: 'all',
-            isLoading: false,
-            hasSearched: false,
-            typingInterval: null
-        };
-
-        // --- Elements ---
-        const homeView = document.getElementById('home-view');
-        const resultsView = document.getElementById('results-view');
+        // --- 2. UTILITY FUNCTIONS ---
+        function formatTime(s) { if(!s) return "0:00"; const m = Math.floor(s/60); const sec = Math.floor(s%60); return `${m}:${sec<10?'0':''}${sec}`; }
+        function seededRandom(str) { let h=1779033703^str.length; for(let i=0;i<str.length;i++)h=Math.imul(h^str.charCodeAt(i),3432918353); return function(){h=Math.imul(h^(h>>>16),2246822507);h=Math.imul(h^(h>>>13),3266489909);return(h>>>0)/4294967296;} }
+        function formatNumber(n) { if(isNaN(n))return"0"; if(n>=1e9)return(n/1e9).toFixed(1)+'b'; if(n>=1e6)return(n/1e6).toFixed(1)+'m'; if(n>=1e3)return(n/1e3).toFixed(1)+'k'; return n.toLocaleString(); }
+        function formatCurrency(n) { if(isNaN(n))return"$0.00"; return new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(n); }
+        function isNewEpisode(d) { if(!d)return false; const date=new Date(d); if(isNaN(date.getTime()))return false; return(new Date()-date)<(7*24*60*60*1000); }
+        function timeAgo(d) { const s=Math.floor((new Date()-new Date(d))/1000); if(s<60)return'now'; if(s<3600)return Math.floor(s/60)+'m'; if(s<86400)return Math.floor(s/3600)+'h'; if(s<604800)return Math.floor(s/86400)+'d'; return Math.floor(s/604800)+'w'; }
         
-        const homeForm = document.getElementById('home-form');
-        const homeInput = document.getElementById('home-input');
-        const homeDropdown = document.getElementById('home-dropdown');
-        const homeShimmer = document.getElementById('home-shimmer-container');
+        function parseTitleAndArtist(title, originalArtist) {
+            // Safety check for null/undefined inputs
+            if (!title) title = "Untitled";
+            if (!originalArtist) originalArtist = "Unknown Artist";
 
-        const headerForm = document.getElementById('header-form');
-        const headerInput = document.getElementById('header-input');
-        const headerDropdown = document.getElementById('header-dropdown');
-        const headerShimmer = document.getElementById('header-shimmer-container');
+            const featRegex = /\s*[\(\[](?:feat\.|ft\.|featuring)\s+([^)\].]+)[\)\]]/i;
+            const match = title.match(featRegex);
+            let displayTitle = title;
+            let displayArtist = originalArtist;
 
-        const contentArea = document.getElementById('content-area');
-        const errorContainer = document.getElementById('error-container');
-        const tabBtns = document.querySelectorAll('.tab-btn');
-        const logoReset = document.getElementById('logo-reset');
-        const modalOverlay = document.getElementById('modal-overlay');
-
-        // --- Initialization ---
-        document.addEventListener('DOMContentLoaded', () => {
-            lucide.createIcons();
-            homeInput.focus();
-        });
-
-        // --- Modal Logic ---
-        function openModal() {
-            modalOverlay.classList.remove('hidden');
-        }
-        function closeModal() {
-            modalOverlay.classList.add('hidden');
-        }
-
-        // --- Input Event Listeners (Animation & Dropdown) ---
-        
-        function setupInput(input, dropdown, shimmer) {
-            input.addEventListener('focus', () => {
-                // Trigger shimmer animation
-                shimmer.classList.add('animate-shimmer-active');
-                setTimeout(() => {
-                    shimmer.classList.remove('animate-shimmer-active');
-                }, 1000);
-
-                renderDropdown(dropdown);
-                dropdown.classList.remove('hidden');
-            });
-
-            // Delay blur to allow clicking dropdown items
-            input.addEventListener('blur', () => {
-                setTimeout(() => {
-                    dropdown.classList.add('hidden');
-                }, 200);
-            });
-        }
-
-        setupInput(homeInput, homeDropdown, homeShimmer);
-        setupInput(headerInput, headerDropdown, headerShimmer);
-
-        // --- Search Logic ---
-
-        homeForm.addEventListener('submit', (e) => handleSearch(e, homeInput.value));
-        headerForm.addEventListener('submit', (e) => handleSearch(e, headerInput.value));
-        
-        logoReset.addEventListener('click', () => {
-            resetToHome();
-        });
-
-        tabBtns.forEach(btn => {
-            btn.addEventListener('click', () => {
-                const tab = btn.dataset.tab;
-                switchTab(tab);
-            });
-        });
-
-        function addToHistory(query) {
-            state.history = state.history.filter(q => q !== query);
-            state.history.unshift(query);
-            if (state.history.length > 5) state.history.pop();
-            localStorage.setItem('chirpless_history', JSON.stringify(state.history));
-        }
-
-        async function handleSearch(e, query) {
-            if(e) e.preventDefault();
-            if (!query.trim()) return;
-
-            state.query = query;
-            state.hasSearched = true;
-            state.isLoading = true;
-            addToHistory(query);
-            
-            // Sync inputs
-            homeInput.value = query;
-            headerInput.value = query;
-
-            // Hide dropdowns
-            homeDropdown.classList.add('hidden');
-            headerDropdown.classList.add('hidden');
-
-            // UI Transitions
-            homeView.classList.add('hidden');
-            resultsView.classList.remove('hidden');
-            resultsView.classList.add('flex');
-            
-            renderSkeleton();
-            errorContainer.classList.add('hidden');
-
-            try {
-                // Parallel fetch
-                const [webRes, imgRes] = await Promise.all([
-                    fetch('https://google.serper.dev/search', {
-                        method: 'POST',
-                        headers: { 'X-API-KEY': API_KEY, 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ q: query, num: 15 })
-                    }),
-                    fetch('https://google.serper.dev/images', {
-                        method: 'POST',
-                        headers: { 'X-API-KEY': API_KEY, 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ q: query, num: 20 })
-                    })
-                ]);
-
-                const webData = await webRes.json();
-                const imgData = await imgRes.json();
-
-                let organicResults = webData.organic || [];
-
-                // Custom Injection for "Chirpless" query
-                if (query.toLowerCase().includes('chirpless')) {
-                    const officialSite = {
-                        title: "Chirpless.com - Privacy Simplified",
-                        link: "https://chirpless.com",
-                        snippet: "The official search engine. Search the web without being tracked. Fast, secure, and lightweight."
-                    };
-                    // Ensure it's at the top
-                    organicResults = [officialSite, ...organicResults];
-                }
-
-                // Explicitly check for knowledge graph
-                state.results = {
-                    web: organicResults,
-                    knowledgeGraph: webData.knowledgeGraph || null,
-                    images: imgData.images || []
-                };
-
-                state.isLoading = false;
-                renderContent();
-
-            } catch (err) {
-                console.error(err);
-                state.isLoading = false;
-                errorContainer.textContent = "Failed to fetch results. Please check your connection.";
-                errorContainer.classList.remove('hidden');
-                contentArea.innerHTML = '';
-            }
-        }
-
-        function switchTab(tabName) {
-            state.activeTab = tabName;
-            tabBtns.forEach(btn => {
-                if (btn.dataset.tab === tabName) {
-                    btn.classList.add('border-purple-500', 'text-purple-500');
-                    btn.classList.remove('border-transparent', 'hover:text-zinc-200');
-                } else {
-                    btn.classList.remove('border-purple-500', 'text-purple-500');
-                    btn.classList.add('border-transparent', 'hover:text-zinc-200');
-                }
-            });
-            if (!state.isLoading && state.results.web.length > 0) renderContent();
-        }
-
-        function resetToHome() {
-            state.hasSearched = false;
-            state.query = '';
-            homeInput.value = '';
-            headerInput.value = '';
-            homeView.classList.remove('hidden');
-            resultsView.classList.add('hidden');
-            resultsView.classList.remove('flex');
-            homeInput.focus();
-        }
-
-        // --- Rendering Logic ---
-
-        function renderDropdown(container) {
-            container.innerHTML = '';
-            
-            // History Section
-            if (state.history.length > 0) {
-                const historyHeader = document.createElement('div');
-                historyHeader.className = 'px-4 py-2 text-xs font-semibold text-zinc-500 bg-zinc-900/50';
-                historyHeader.textContent = 'RECENT SEARCHES';
-                container.appendChild(historyHeader);
-
-                state.history.forEach(term => {
-                    const item = document.createElement('div');
-                    item.className = 'px-4 py-2 hover:bg-zinc-800/50 cursor-pointer flex items-center gap-3 text-sm text-zinc-300 transition-colors';
-                    item.innerHTML = `<i data-lucide="clock" class="w-4 h-4 text-zinc-500"></i> ${term}`;
-                    item.onclick = () => handleSearch(null, term);
-                    container.appendChild(item);
+            if (match) {
+                displayTitle = title.replace(match[0], '').trim();
+                const featuredPart = match[1];
+                const feats = featuredPart.split(/,|&|\band\b/i).map(s => s.trim()).filter(s => s);
+                feats.forEach(f => {
+                    if (!displayArtist.toLowerCase().includes(f.toLowerCase())) {
+                        displayArtist += `, ${f}`;
+                    }
                 });
             }
+            return { title: displayTitle, artist: displayArtist };
+        }
 
-            // Trending Section
-            const trendingHeader = document.createElement('div');
-            trendingHeader.className = 'px-4 py-2 text-xs font-semibold text-zinc-500 bg-zinc-900/50 mt-1';
-            trendingHeader.textContent = 'TRENDING ON CHIRPLESS';
-            container.appendChild(trendingHeader);
+        // --- STATS ---
+        function getDeterministicStats(id, isProfile=false, dateStr=null) {
+            const rng=seededRandom(id); const t=rng(), v=rng();
+            let minC=3000, maxC=281000;
+            if(t<0.4){minC=3000;maxC=281000} else if(t<0.7){minC=1200;maxC=14200000} else if(t<0.9){minC=827000;maxC=28000000} else {minC=5000000;maxC=5000000000}
+            
+            if(isProfile) {
+                 const c=Math.floor(minC+Math.pow(v,2)*(maxC-minC));
+                 return {chirps:c, listens:0, cash:0};
+            }
+            let epMin=Math.floor(minC/50), epMax=Math.floor(maxC/20); if(epMin<100)epMin=100;
+            if(dateStr){ const d=new Date(dateStr); if(!isNaN(d.getTime())) { const h=(new Date()-d)/(1000*60*60); if(h<24)epMax=Math.min(epMax,15000); else if(h<168)epMax=Math.min(epMax,500000); else if(h<720)epMax=Math.min(epMax,5000000); } }
+            const c=Math.floor(epMin+Math.pow(v,3)*(epMax-epMin));
+            const l=c*20; const cash=l*0.0000011;
+            return {listens:l, chirps:c, cash:cash};
+        }
+        function getChartRank(id) { const rng=seededRandom(id+"_chart"); return rng()>0.8?Math.floor(rng()*45)+1:null; }
+        function getTopNewRank(id,d) { if(!isNewEpisode(d))return null; const rng=seededRandom(id+"_newchart"); return rng()>0.7?Math.floor(rng()*45)+1:null; }
+        function getExtraBadge(id) {
+             const rng = seededRandom(id+"_badg");
+             const r = rng();
+             if(r > 0.95) return `<span class="trending-badge">#${Math.floor(rng()*50)+1} On Top Trending ⚠︎</span>`;
+             if(r < 0.05) return `<span class="new-badge">Recommended ᯓ★</span>`;
+             return '';
+        }
 
-            TRENDING_SEARCHES.forEach(trend => {
-                const item = document.createElement('div');
-                item.className = 'px-4 py-3 hover:bg-zinc-800/50 cursor-pointer flex items-center justify-between text-sm text-zinc-300 transition-colors group';
-                item.innerHTML = `
-                    <div class="flex items-center gap-3">
-                        <i data-lucide="trending-up" class="w-4 h-4 text-purple-500 group-hover:scale-110 transition-transform"></i> 
-                        ${trend.term}
-                    </div>
-                    <span class="text-xs text-zinc-500">${trend.count} searches</span>
-                `;
-                item.onclick = () => handleSearch(null, trend.term);
-                container.appendChild(item);
+        function updateOdometer(c, val) {
+            if(!c)return; const fmt=typeof val==='number'?formatNumber(val):val;
+            if(!c.hasChildNodes()){
+                c.innerHTML='';c.classList.add('odometer-wrapper');
+                fmt.split('').forEach(ch=>{
+                    if(/[0-9]/.test(ch)){
+                        const w=document.createElement('span');w.className='odometer-digit';
+                        const r=document.createElement('div');r.className='odometer-ribbon';
+                        for(let i=0;i<=9;i++){const d=document.createElement('div');d.innerText=i;r.appendChild(d)}
+                        w.appendChild(r);c.appendChild(w);
+                    }else{const s=document.createElement('span');s.className='odometer-static';s.innerText=ch;c.appendChild(s)}
+                });
+            }
+            requestAnimationFrame(()=>{requestAnimationFrame(()=>{
+                c.classList.add('active');c.classList.add('pop-effect');
+                const chs=fmt.split(''); let idx=0;
+                Array.from(c.children).forEach(child=>{
+                    if(child.classList.contains('odometer-digit')){
+                        const t=parseInt(chs[idx]); const r=child.querySelector('.odometer-ribbon');
+                        if(r&&!isNaN(t))r.style.transform=`translateY(${t*-1.2}em)`;
+                    } idx++;
+                });
+                setTimeout(()=>c.classList.remove('pop-effect'),500);
+            })});
+        }
+        function simLive(){if(activeProfileStats&&!document.getElementById('pd-content-stats').classList.contains('hidden')){activeProfileStats.chirps+=Math.floor(Math.random()*5)+1;activeProfileStats.cash=activeProfileStats.chirps*20*0.0000011;updateOdometer(document.getElementById('stat-chirps'),activeProfileStats.chirps);updateOdometer(document.getElementById('stat-cash'),formatCurrency(activeProfileStats.cash));}}
+
+        /* --- API --- */
+        async function search(q, entOverride=null){
+            let ent = entOverride || (currentFilter==='profile'?'podcast':'podcastEpisode');
+            try{
+                const r=await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(q)}&media=podcast&entity=${ent}&limit=45&_t=${Date.now()}`);
+                const d=await r.json(); return (d.results||[]).map(i=>({
+                    id:i.trackId||i.collectionId, 
+                    type:i.kind==='podcast'?'profile':'episode',
+                    title:i.trackName||i.collectionName||'Untitled', 
+                    collectionName:i.collectionName||i.trackName,
+                    artist:i.artistName||i.collectionName||'Unknown', 
+                    image:i.artworkUrl600,
+                    src:i.episodeUrl, collectionId:i.collectionId, date:i.releaseDate
+                }));
+            }catch(e){return[]}
+        }
+
+        async function fetchProfileEpisodes(id, fallback, original){
+            try{
+                const r=await fetch(`https://itunes.apple.com/lookup?id=${id}&media=podcast&entity=podcastEpisode&limit=60&_t=${Date.now()}`);
+                const d=await r.json(); if(!d.results||d.results.length===0)throw new Error();
+                const art=d.results[0].artistName||d.results[0].collectionName||"Unknown";
+                return d.results.slice(1).map(i=>({id:i.trackId, title:i.trackName||"Untitled", src:i.episodeUrl, image:i.artworkUrl600, artist:art, date:i.releaseDate}));
+            }catch(e){
+                if(fallback){const r=await search(fallback); if(r.length>0)return r.filter(x=>x.type==='episode');}
+                if(original)return[{id:original.id, title:original.title, src:original.src, image:original.image, artist:original.artist, date:original.date}];
+                return [];
+            }
+        }
+
+        function init(){
+            renderLibrary(); loadHomeContent(); setInterval(simLive,1400); 
+            document.getElementById('view-profile-detail').addEventListener('scroll',e=>{if(e.target.scrollTop+e.target.clientHeight>=e.target.scrollHeight-50)renderMore();});
+            switchView('home', document.querySelectorAll('.nav-item')[0]);
+        }
+
+        async function loadHomeContent(){
+            const t=document.getElementById('trending-container'); t.innerHTML='';
+            const res=await search('Popular','podcast'); 
+            if(res.length===0)t.innerHTML='<div style="padding:20px;opacity:0.5">Offline</div>';
+            else res.slice(0,10).forEach(i=>createCard(i,t));
+            
+            const m=document.getElementById('mix-container'); m.innerHTML='';
+            const mix=await search('Culture','podcast'); 
+            if(mix.length>0)mix.slice(0,10).forEach(i=>createCard(i,m));
+        }
+
+        function createCard(i,c){
+            const s=getDeterministicStats(i.id.toString(),true);
+            const v=s.chirps>5e7?VERIFIED_BADGE_HTML:'';
+            const parsed = parseTitleAndArtist(i.title, i.artist);
+            const d=document.createElement('div'); d.className='podcast-card premium-hover';
+            d.onclick=()=>i.type==='profile'?openProfile(i):playTrack(i);
+            d.innerHTML=`<div class="cover-art"><img src="${i.image}"></div><div style="font-weight:700;font-size:0.9rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${parsed.title}</div><div style="font-size:0.8rem;opacity:0.6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${parsed.artist} ${v}</div>`;
+            c.appendChild(d);
+        }
+
+        function setFilter(f,b){
+            currentFilter=f; document.querySelectorAll('.filters .chip').forEach(c=>c.classList.remove('active')); b.classList.add('active'); 
+            if(f==='charts') renderCharts(); 
+            else{
+                const v=document.getElementById('search-input').value; 
+                if(v)doSearch(v); 
+                else document.getElementById('search-results').innerHTML='<div style="text-align:center;padding:40px;opacity:0.5">Find content</div>';
+            }
+        }
+        
+        async function renderCharts(){
+            const c=document.getElementById('search-results'); c.innerHTML='<div class="spinner"></div>';
+            const r=await search('Podcast Hits','podcast'); c.innerHTML='';
+            const tDiv = document.createElement('div'); tDiv.className='section-title'; tDiv.innerText='Top 45 Global'; c.appendChild(tDiv);
+            r.slice(0,45).forEach((i,x)=>{
+                const parsed = parseTitleAndArtist(i.title, i.artist);
+                const el=document.createElement('div');el.className='list-item premium-hover';
+                el.onclick=()=>i.type==='profile'?openProfile(i):playTrack(i);
+                el.innerHTML=`<div class="list-rank">${x+1}</div><img src="${i.image}" class="list-img"><div style="flex:1"><div style="font-weight:700;font-size:0.95rem">${parsed.title}</div><div style="font-size:0.8rem;opacity:0.6">${parsed.artist}</div></div>`;
+                c.appendChild(el);
             });
-            
-            lucide.createIcons();
+            const nDiv = document.createElement('div'); nDiv.className='section-title'; nDiv.innerText='Top New'; c.appendChild(nDiv);
+            const n=r.filter(x=>isNewEpisode(x.date)).slice(0,45);
+            if(!n.length) {const empty = document.createElement('div'); empty.style.cssText='padding:20px;opacity:0.5;text-align:center'; empty.innerText='No new entries'; c.appendChild(empty);}
+            else n.forEach((i,x)=>{
+                const parsed = parseTitleAndArtist(i.title, i.artist);
+                const el=document.createElement('div');el.className='list-item premium-hover';
+                el.onclick=()=>playTrack(i);
+                el.innerHTML=`<div class="list-rank" style="color:var(--text-primary)">${x+1}</div><img src="${i.image}" class="list-img"><div style="flex:1"><div style="font-weight:700;font-size:0.95rem">${parsed.title} <span class="new-badge">NEW</span></div><div style="font-size:0.8rem;opacity:0.6">${parsed.artist}</div></div>`;
+                c.appendChild(el);
+            });
         }
 
-        function renderContent() {
-            contentArea.innerHTML = ''; 
-
-            if (state.activeTab === 'all') {
-                renderAllTab();
-            } else if (state.activeTab === 'images') {
-                renderImagesTab();
+        function handleSearch(e){
+            if(e.key==='Enter'){
+                document.getElementById('search-input').blur();
+                if(currentFilter==='charts') setFilter('all',document.querySelector('.filters .chip'));
+                doSearch(e.target.value);
             }
-            lucide.createIcons();
         }
 
-        function renderAllTab() {
-            const gridContainer = document.createElement('div');
-            // Ensure Sidebar (350px) is utilized
-            gridContainer.className = 'grid grid-cols-1 lg:grid-cols-[1fr_350px] gap-8';
+        async function doSearch(q){
+            const c=document.getElementById('search-results'); c.innerHTML='<div class="spinner"></div>';
+            const r=await search(q); c.innerHTML=''; 
+            if(r.length===0){c.innerHTML='<div style="text-align:center;opacity:0.5;padding:20px">No results</div>';return;}
+            r.forEach(i=>{
+                const s=getDeterministicStats(i.id.toString(), i.type==='profile', i.date);
+                const parsed = parseTitleAndArtist(i.title, i.artist);
+                const el=document.createElement('div'); el.className='list-item premium-hover';
+                
+                // Add Bookmark Button
+                const viewProfileBtn = `<button class="search-action-btn" onclick="event.stopPropagation(); openProfile({id:'${i.collectionId}', collectionId:'${i.collectionId}', title:'${i.collectionName?.replace(/'/g, "\\'") || ''}', artist:'${i.artist?.replace(/'/g, "\\'") || ''}', image:'${i.image}'})"><svg class="icon" style="width:16px" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></button>`;
+                
+                const isSaved = savedChirps.some(x=>x.id===i.id);
+                const birdColor = isSaved ? 'var(--text-primary)' : 'var(--text-secondary)';
+                const birdBtn = `<button class="search-action-btn" onclick="event.stopPropagation(); toggleTrackChirpSearch('${i.id}')"><svg class="icon" style="width:16px; color:${birdColor}" viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg></button>`;
 
-            // --- LEFT COLUMN ---
-            const leftCol = document.createElement('div');
-            leftCol.className = 'flex flex-col gap-6';
-
-            // 1. AI Summary
-            const summaryHTML = generateAISummaryHTML();
-            if (summaryHTML) leftCol.appendChild(summaryHTML);
-
-            // 2. Knowledge Graph (Mobile Injection Only)
-            if (state.results.knowledgeGraph) {
-                 const mobileKG = document.createElement('div');
-                 mobileKG.className = 'lg:hidden mb-4 glass-card rounded-xl p-4 flex gap-4 animate-fade-in-up';
-                 mobileKG.innerHTML = `
-                    ${state.results.knowledgeGraph.imageUrl ? `<img src="${state.results.knowledgeGraph.imageUrl}" class="w-20 h-20 object-cover rounded-lg border border-zinc-800">` : ''}
-                    <div>
-                        <h2 class="text-lg text-white font-bold flex items-center gap-2">
-                            ${state.results.knowledgeGraph.title}
-                            <i data-lucide="badge-check" class="w-4 h-4 text-blue-400 fill-blue-400/20"></i>
-                        </h2>
-                         <p class="text-xs text-zinc-400 line-clamp-2 mt-1">${state.results.knowledgeGraph.description || state.results.knowledgeGraph.type}</p>
-                    </div>
-                 `;
-                 leftCol.appendChild(mobileKG);
-            }
-
-            // 3. Results List
-            const list = document.createElement('div');
-            list.className = 'space-y-6';
-            
-            const showAd = Math.random() < 0.2;
-            const adIndex = Math.floor(Math.random() * 5); 
-
-            state.results.web.forEach((res, index) => {
-                // Ad Logic
-                if (showAd && index === adIndex) {
-                    const ad = SPONSORED_LINKS[Math.floor(Math.random() * SPONSORED_LINKS.length)];
-                    const adItem = document.createElement('div');
-                    adItem.className = 'glass-card border-l-4 border-l-purple-500 p-4 rounded-lg mb-8 animate-fade-in-up';
-                    adItem.innerHTML = `
-                        <div class="flex items-center gap-2 mb-1 text-xs font-bold text-zinc-500">
-                            <span class="bg-purple-500/10 text-purple-400 px-1.5 py-0.5 rounded border border-purple-500/20">Sponsored</span>
-                            <span>${ad.displayLink}</span>
-                        </div>
-                        <a href="${ad.link}" target="_blank" class="block hover:underline decoration-purple-500/50 underline-offset-4">
-                            <h2 class="text-lg text-zinc-200 font-medium mb-1">${ad.text}</h2>
-                        </a>
-                    `;
-                    list.appendChild(adItem);
+                if(i.type==='profile'){
+                    el.onclick=()=>openProfile(i);
+                    const v=s.chirps>5e7?VERIFIED_BADGE_HTML:'';
+                    el.innerHTML=`<img src="${i.image}" class="list-img" style="border-radius:50%"><div style="flex:1" class="info-col"><div style="font-weight:700">${parsed.title} ${v}</div><div style="opacity:0.6;font-size:0.85rem">Podcast • ${parsed.artist}</div></div>${viewProfileBtn}`;
+                }else{
+                    el.onclick=()=>playTrack(i);
+                    const n=isNewEpisode(i.date)?'<span class="new-badge">NEW</span>':'';
+                    el.innerHTML=`<img src="${i.image}" class="list-img"><div style="flex:1"><div style="font-weight:700;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden;">${parsed.title} ${n}</div><div style="display:flex;align-items:center;gap:6px;font-size:0.8rem;opacity:0.6;margin-top:2px;"><span>${timeAgo(i.date)}</span> • <span class="odo-c"></span> Chirps</div></div>${birdBtn}`;
+                    setTimeout(()=>updateOdometer(el.querySelector('.odo-c'),s.chirps),300);
                 }
-
-                const item = document.createElement('div');
-                item.className = 'group relative overflow-hidden glass-card p-5 rounded-xl animate-fade-in-up hover:border-white/20 transition-all';
-                item.style.animationDelay = `${index * 50}ms`;
-                
-                // Verification Badge Logic
-                const domain = getDomain(res.link);
-                const isVerified = VERIFIED_DOMAINS.some(d => domain.includes(d));
-
-                // Sitelinks
-                let sitelinksHTML = '';
-                if(res.sitelinks && res.sitelinks.length > 0) {
-                    sitelinksHTML = `<div class="mt-3 flex flex-wrap gap-x-4 gap-y-1">
-                        ${res.sitelinks.slice(0, 4).map(link => `
-                            <a href="${link.link}" class="text-xs text-zinc-500 hover:text-purple-400 flex items-center gap-1 transition-colors">
-                                <i data-lucide="arrow-right" class="w-3 h-3"></i> ${link.title}
-                            </a>
-                        `).join('')}
-                    </div>`;
-                }
-
-                item.innerHTML = `
-                    <div class="shimmer-effect"></div>
-                    <div class="relative z-10">
-                        <div class="flex items-center gap-2 mb-1 text-sm text-zinc-500 truncate">
-                            ${res.favicon ? `<img src="${res.favicon}" class="w-4 h-4 rounded-sm opacity-70 grayscale group-hover:grayscale-0 transition-all" onerror="this.style.display='none'">` : ''}
-                            <span class="text-zinc-400">${formatUrl(res.link)}</span>
-                            ${isVerified ? `<i data-lucide="badge-check" class="w-3.5 h-3.5 text-white fill-white/20 ml-0.5" title="Verified Website"></i>` : ''}
-                        </div>
-                        <a href="${res.link}" target="_blank" rel="noopener noreferrer" class="block group-hover:text-purple-300 transition-colors">
-                            <h2 class="text-xl text-purple-400 font-medium leading-tight mb-2">${res.title}</h2>
-                        </a>
-                        <p class="text-zinc-400 text-sm leading-relaxed">${res.snippet}</p>
-                        ${sitelinksHTML}
-                    </div>
-                `;
-                list.appendChild(item);
+                c.appendChild(el);
             });
-            leftCol.appendChild(list);
-            gridContainer.appendChild(leftCol);
-
-            // --- RIGHT COLUMN (Sidebar) ---
-            const rightCol = document.createElement('div');
-            rightCol.className = 'hidden lg:block space-y-6';
-
-            // 1. Knowledge Graph (Primary)
-            if (state.results.knowledgeGraph) {
-                const kg = state.results.knowledgeGraph;
-                const popularity = Math.floor(Math.random() * (100 - 85) + 85); // Fake popularity
-                
-                const kgDiv = document.createElement('div');
-                kgDiv.className = 'glass-card rounded-xl overflow-hidden shadow-2xl animate-fade-in-up';
-                kgDiv.innerHTML = `
-                    ${kg.imageUrl ? `
-                        <div class="w-full h-48 bg-zinc-900 overflow-hidden relative">
-                             <img src="${kg.imageUrl}" alt="${kg.title}" class="w-full h-full object-cover">
-                        </div>` 
-                    : ''}
-                    <div class="p-5">
-                        <div class="flex items-center gap-2 mb-1">
-                            <h2 class="text-2xl text-white font-serif">${kg.title}</h2>
-                            <i data-lucide="badge-check" class="w-5 h-5 text-blue-500 fill-blue-500/10"></i>
-                        </div>
-                        <p class="text-sm text-purple-400 font-medium mb-3 uppercase tracking-wide">${kg.type || 'Profile'}</p>
-                        
-                        <!-- Popularity Bar -->
-                        <div class="mb-4">
-                            <div class="flex justify-between text-xs text-zinc-500 mb-1">
-                                <span>Popularity Score</span>
-                                <span class="text-white">${popularity}% 🔥</span>
-                            </div>
-                            <div class="w-full h-1.5 bg-zinc-800 rounded-full overflow-hidden">
-                                <div class="h-full bg-gradient-to-r from-purple-600 to-blue-500" style="width: ${popularity}%"></div>
-                            </div>
-                        </div>
-
-                        ${kg.description ? `<p class="text-sm text-zinc-400 leading-relaxed mb-4">${kg.description}</p>` : ''}
-                        
-                        ${kg.attributes ? `
-                            <div class="space-y-2 mb-4 border-t border-white/10 pt-3">
-                                ${Object.entries(kg.attributes).slice(0,4).map(([key, val]) => `
-                                    <div class="flex justify-between text-sm">
-                                        <span class="text-zinc-500">${key}:</span>
-                                        <span class="text-zinc-300 text-right max-w-[60%] truncate">${val}</span>
-                                    </div>
-                                `).join('')}
-                            </div>
-                        ` : ''}
-
-                        ${kg.website ? `
-                            <a href="${kg.website}" target="_blank" class="block w-full text-center py-2 bg-white/5 hover:bg-white/10 text-white rounded-lg text-sm transition-colors border border-white/10">
-                                Visit Official Site
-                            </a>` 
-                        : ''}
-                    </div>
-                `;
-                rightCol.appendChild(kgDiv);
-            } else {
-                // 2. Fallback: Related Trends (If no KG)
-                const trendsDiv = document.createElement('div');
-                trendsDiv.className = 'glass-card rounded-xl p-5 animate-fade-in-up';
-                trendsDiv.innerHTML = `
-                    <h3 class="text-sm font-bold text-zinc-500 uppercase tracking-wider mb-4">People Also Search For</h3>
-                    <div class="space-y-3">
-                        ${TRENDING_SEARCHES.map(t => `
-                            <div class="flex items-center justify-between group cursor-pointer" onclick="handleSearch(null, '${t.term}')">
-                                <span class="text-zinc-300 group-hover:text-purple-400 transition-colors">${t.term}</span>
-                                <i data-lucide="arrow-up-right" class="w-4 h-4 text-zinc-600 group-hover:text-purple-400"></i>
-                            </div>
-                        `).join('')}
-                    </div>
-                `;
-                rightCol.appendChild(trendsDiv);
-            }
-            
-            gridContainer.appendChild(rightCol);
-
-            contentArea.appendChild(gridContainer);
-            
-            const typeEl = document.getElementById('typing-text');
-            if (typeEl) startTypingEffect(typeEl, typeEl.dataset.fullText);
         }
 
-        function renderImagesTab() {
-            const grid = document.createElement('div');
-            grid.className = 'w-full columns-2 md:columns-4 lg:columns-5 gap-4 space-y-4';
-
-            state.results.images.forEach((img, index) => {
-                const a = document.createElement('a');
-                a.href = img.link;
-                a.target = '_blank';
-                a.rel = 'noopener noreferrer';
-                a.className = 'block break-inside-avoid relative group rounded-lg overflow-hidden glass-card animate-fade-in-up';
-                a.style.animationDelay = `${index * 30}ms`;
-                
-                a.innerHTML = `
-                    <img src="${img.imageUrl}" alt="${img.title}" class="w-full h-auto object-cover transition-transform duration-500 group-hover:scale-110" loading="lazy">
-                    <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-3">
-                        <p class="text-white text-xs font-medium truncate">${img.title}</p>
-                        <p class="text-zinc-400 text-[10px] truncate">${img.source}</p>
-                    </div>
-                `;
-                grid.appendChild(a);
-            });
-            contentArea.appendChild(grid);
-        }
-
-        function renderSkeleton() {
-            contentArea.innerHTML = '';
+        async function openProfile(i){
+            currentProfileId=(i.collectionId||i.id).toString();
+            try { history.pushState({view: 'profile', id: currentProfileId, prevView: 'discover'}, '', `/podcast/${currentProfileId}`); } catch(e){}
             
-            if (state.activeTab === 'all') {
-                const skel = document.createElement('div');
-                skel.className = 'animate-pulse space-y-6 max-w-3xl';
-                skel.innerHTML = [1,2,3].map(() => `
-                    <div class="space-y-3 p-4 border border-white/5 rounded-xl">
-                        <div class="h-4 bg-zinc-800 rounded w-3/4"></div>
-                        <div class="h-3 bg-zinc-900 rounded w-1/2"></div>
-                        <div class="h-16 bg-zinc-800 rounded w-full"></div>
-                    </div>
-                `).join('');
-                contentArea.appendChild(skel);
-            } else {
-                const skel = document.createElement('div');
-                skel.className = 'grid grid-cols-2 md:grid-cols-4 gap-4';
-                skel.innerHTML = [1,2,3,4,5,6,7,8].map(() => `
-                    <div class="aspect-square bg-zinc-800 rounded-lg animate-pulse"></div>
-                `).join('');
-                contentArea.appendChild(skel);
+            const v=document.getElementById('view-profile-detail');
+            document.getElementById('pd-img').src=i.image; document.getElementById('pd-title').innerText=i.title||i.collectionName;
+            document.getElementById('pd-artist').innerText=i.artist;
+            if(i.artist.includes(',')||i.artist.includes('&')||i.artist.includes(' and '))document.getElementById('pd-artist').classList.add('has-multi'); else document.getElementById('pd-artist').classList.remove('has-multi');
+            
+            document.getElementById('pd-bg-img').src = i.image;
+
+            updateProfBtn(); v.classList.remove('hidden'); 
+            switchProfileTab('episodes');
+            
+            activeProfileStats=null; document.getElementById('stat-chirps').innerHTML=''; document.getElementById('stat-cash').innerHTML='';
+            document.getElementById('pd-verified').classList.remove('visible');
+            document.getElementById('pd-content-episodes').innerHTML='<div class="spinner"></div>';
+            
+            currentProfileEpisodes=await fetchProfileEpisodes(i.collectionId||i.id, i.artist, i);
+            let ac=0, am=0;
+            if(currentProfileEpisodes.length>0){
+                currentProfileEpisodes.forEach(e=>{const s=getDeterministicStats(e.id.toString(),false,e.date);ac+=s.chirps;am+=s.cash;});
+                activeProfileStats={chirps:ac, cash:am};
+                setTimeout(()=>{updateOdometer(document.getElementById('stat-chirps'),ac);updateOdometer(document.getElementById('stat-cash'),formatCurrency(am));},100);
+                if(ac>=5e7)document.getElementById('pd-verified').classList.add('visible');
+                document.getElementById('pd-header-stat').innerHTML = ''; updateOdometer(document.getElementById('pd-header-stat'), ac);
+                document.getElementById('pd-content-episodes').innerHTML=''; renderedEpisodeCount=0; renderMore();
+                document.getElementById('pd-error-view').classList.add('hidden');
+                document.getElementById('pd-content-stats').classList.remove('hidden');
+            } else { 
+                document.getElementById('pd-content-episodes').innerHTML='';
+                document.getElementById('pd-error-view').classList.remove('hidden');
+                document.getElementById('pd-content-stats').classList.add('hidden');
             }
         }
 
-        // --- Helpers ---
+        function renderMore(){
+            if(renderedEpisodeCount>=currentProfileEpisodes.length)return;
+            const c=document.getElementById('pd-content-episodes');
+            const end=Math.min(renderedEpisodeCount+EPISODES_PER_PAGE, currentProfileEpisodes.length);
+            for(let i=renderedEpisodeCount;i<end;i++){
+                const e=currentProfileEpisodes[i]; const s=getDeterministicStats(e.id.toString(),false,e.date);
+                const parsed = parseTitleAndArtist(e.title, e.artist);
+                const d=document.createElement('div'); d.className='list-item premium-hover';
+                if(!e.artist)e.artist=document.getElementById('pd-artist').innerText;
+                const n=isNewEpisode(e.date)?'<span class="new-badge">NEW</span>': getExtraBadge(e.id.toString());
+                d.onclick=()=>playTrack(e);
+                d.innerHTML=`<div style="width:44px;height:44px;background:rgba(255,255,255,0.1);border-radius:50%;display:flex;align-items:center;justify-content:center"><svg class="icon" style="width:18px" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg></div><div style="flex:1"><div style="font-weight:700;font-size:0.95rem;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden">${parsed.title} ${n}</div><div style="font-size:0.8rem;opacity:0.6;margin-top:4px;display:flex;gap:8px"><span>${timeAgo(e.date)}</span> • <span class="odo-sub"></span></div></div>`;
+                c.appendChild(d); setTimeout(()=>updateOdometer(d.querySelector('.odo-sub'),s.chirps),50+(i-renderedEpisodeCount)*30);
+            }
+            renderedEpisodeCount=end;
+        }
 
-        function generateAISummaryHTML() {
-            if (!state.results.web || state.results.web.length === 0) return null;
+        // --- UI HANDLERS ---
+        function renderLibrary(){const l=document.getElementById('library-list'); l.innerHTML=''; if(!savedChirps.length){l.innerHTML='<div style="padding:20px;opacity:0.5;text-align:center">No saved chirps</div>';return;} savedChirps.forEach(i=>{const d=document.createElement('div');d.className='list-item premium-hover';d.onclick=()=>playTrack(i);d.innerHTML=`<img src="${i.image}" class="list-img"><div style="flex:1"><div style="font-weight:700;font-size:0.95rem">${i.title}</div><div style="font-size:0.8rem;opacity:0.6">Saved</div></div>`;l.appendChild(d);});}
+        
+        function switchView(n,el){
+            document.getElementById('view-home').classList.add('hidden');
+            document.getElementById('view-discover').classList.add('hidden');
+            document.getElementById('view-library').classList.add('hidden');
+            document.getElementById('view-ai').classList.add('hidden');
+            document.getElementById('view-'+n).classList.remove('hidden'); 
+            try{history.pushState({view: n}, '', `/${n}`);}catch(e){} 
+            if(el) {
+                const targetText = el.innerText.trim();
+                document.querySelectorAll('.nav-item, .sidebar-item').forEach(i=>{
+                    i.classList.remove('active');
+                    if(i.innerText.trim()===targetText) i.classList.add('active');
+                });
+            }
+        }
+        
+        function closeProfile(){document.getElementById('view-profile-detail').classList.add('hidden'); activeProfileStats=null; document.getElementById('pd-error-view').classList.add('hidden'); document.getElementById('pd-content-stats').classList.remove('hidden'); }
+        function switchProfileTab(t){document.getElementById('tab-episodes').classList.toggle('active',t==='episodes'); document.getElementById('tab-stats').classList.toggle('active',t==='stats'); const s=document.getElementById('pd-content-stats'); const e=document.getElementById('pd-content-episodes'); if(t==='stats'){e.classList.add('hidden');s.classList.remove('hidden');if(activeProfileStats){const c=document.getElementById('stat-chirps'),m=document.getElementById('stat-cash');c.innerHTML='';m.innerHTML='';setTimeout(()=>{updateOdometer(c,activeProfileStats.chirps);updateOdometer(m,formatCurrency(activeProfileStats.cash));},50);}}else{s.classList.add('hidden');e.classList.remove('hidden');}}
+        function toggleTrackChirp(){if(!currentTrack)return; const i=savedChirps.findIndex(x=>x.id===currentTrack.id); if(i>-1)savedChirps.splice(i,1); else{savedChirps.unshift(currentTrack);showToast();} localStorage.setItem('chirps_v36',JSON.stringify(savedChirps)); renderLibrary(); const b=document.getElementById('fp-bird-btn'); const is=savedChirps.some(x=>x.id===currentTrack.id); b.style.background=is?'var(--text-primary)':'rgba(255,255,255,0.1)'; b.style.color=is?'var(--bg-color)':'inherit';}
+        function toggleProfileChirp(){const i=savedProfileChirps.indexOf(currentProfileId); if(i>-1)savedProfileChirps.splice(i,1); else{savedProfileChirps.push(currentProfileId);showToast();} localStorage.setItem('profile_chirps_v36',JSON.stringify(savedProfileChirps)); updateProfBtn();}
+        function updateProfBtn(){const a=savedProfileChirps.includes(currentProfileId); const b=document.getElementById('pd-chirp-btn'), t=document.getElementById('pd-chirp-text'); if(a){b.classList.add('active');t.innerText="Chirped!";}else{b.classList.remove('active');t.innerText="Chirp";}}
+        function updPlay(){const p=isPlaying?'<rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect>':'<polygon points="5 3 19 12 5 21 5 3"></polygon>'; document.querySelectorAll('#mini-play-btn svg,#fp-play-icon').forEach(s=>s.innerHTML=p);}
+        function togglePlay(){const a=document.getElementById('audio-player'); if(a.paused&&a.src){a.play();isPlaying=true;startWaveform();}else{a.pause();isPlaying=false;}updPlay();}
+        function openFullPlayer(){document.getElementById('full-player').classList.add('active');document.getElementById('mini-player').classList.add('expanded');}
+        function closeFullPlayer(){document.getElementById('full-player').classList.remove('active');document.getElementById('mini-player').classList.remove('expanded');}
+        function showToast(){const t=document.getElementById('toast');t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2000);}
+        function handleArtistClick(str){if(!str)return; const c=str.split(/,|&|\band\b/i).filter(x=>x.trim()); if(c.length>1){const l=document.getElementById('creators-list');l.innerHTML='';c.forEach(x=>{const d=document.createElement('div');d.className='creator-item';d.innerHTML=`${x.trim()} <svg class="icon" style="width:16px;opacity:0.5" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>`;d.onclick=()=>{closeCreatorsModal();closeFullPlayer();closeProfile();switchView('discover',document.querySelectorAll('.nav-item')[1]);document.getElementById('search-input').value=x.trim();doSearch(x.trim());};l.appendChild(d);});document.getElementById('modal-overlay').classList.add('active');document.getElementById('creators-modal').classList.add('active');}else{closeFullPlayer();closeProfile();switchView('discover',document.querySelectorAll('.nav-item')[1]);document.getElementById('search-input').value=str;doSearch(str);}}
+        function closeCreatorsModal(){document.getElementById('modal-overlay').classList.remove('active');document.getElementById('creators-modal').classList.remove('active');}
+        function toggleTheme(){document.body.setAttribute('data-theme',document.body.getAttribute('data-theme')==='dark'?'light':'dark');}
+        function toggleTrackChirpSearch(id) { alert("Saved to Library!"); }
+        
+        /* --- AI LOGIC --- */
+        async function sendAI() {
+            const i=document.getElementById('ai-input'), t=i.value.trim(); if(!t)return;
+            lastUserQuery=t;
+            const h=document.getElementById('chat-history');
+            const u=document.createElement('div'); u.className='chat-row user'; u.innerHTML=`<div class="chat-msg">${t}</div>`; h.appendChild(u);
+            i.value='';
             
-            const topSnippets = state.results.web.slice(0, 3).map(r => r.snippet).filter(Boolean);
-            if (topSnippets.length === 0) return null;
+            const emojis = t.match(/[\p{Emoji_Presentation}\u2600-\u27BF]/gu);
+            if(emojis) emojis.forEach(e => triggerEmojiExplosion(e));
+            
+            const l=document.createElement('div'); l.className='chat-row ai'; 
+            l.innerHTML=`<div class="chat-avatar"><svg class="icon" viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg></div><div class="chat-msg"><div class="typing-dots"><span></span><span></span><span></span></div></div>`;
+            h.appendChild(l); h.scrollTop=h.scrollHeight;
+            
+            try {
+                let sysPrompt = "You are Chirpless X4.2, a helpful AI owned by Chirpless Technology. You assist users with the Chirpless podcast app. Features: Search podcasts, Chirps (likes), Cash Value ($0.0000011/stream), Top Charts. Support: pricepeyton987@gmail.com. If asked to code or do unrelated tasks, refuse politiely as per your contract.";
+                if(isDeepThink) sysPrompt += " Provide a deep, analytical, detailed response.";
+                else sysPrompt += " Keep responses concise and helpful.";
 
-            const summaryText = `Based on the top search results: ${topSnippets[0]} ${topSnippets[1] ? `Additionally, ${topSnippets[1]}` : ''}`;
+                const r = await fetch('https://api.routeway.co/v1/chat/completions', {
+                    method: 'POST', headers: {'Content-Type':'application/json','Authorization':`Bearer ${CHAT_API_KEY}`},
+                    body: JSON.stringify({model:"llama-3.3-70b-instruct", messages:[{role:"system",content:sysPrompt},{role:"user",content:t}]})
+                });
+                
+                if(!r.ok) throw new Error("API Error");
+                
+                const d=await r.json();
+                const aiTxt = d.choices?.[0]?.message?.content || "Connection error.";
+                renderAIResponse(l, aiTxt);
 
-            const div = document.createElement('div');
-            div.className = 'mb-2 glass-card rounded-xl overflow-hidden animate-fade-in-up';
-            div.innerHTML = `
-                <div class="bg-white/5 px-4 py-3 border-b border-white/5 flex items-center gap-2">
-                    <i data-lucide="sparkles" class="w-4 h-4 text-purple-500"></i>
-                    <span class="text-xs font-bold text-zinc-300 uppercase tracking-wider">ChirpAssist (AI)</span>
-                </div>
-                <div class="p-5 text-zinc-300 leading-relaxed text-sm md:text-base">
-                    <span id="typing-text" data-full-text="${summaryText.replace(/"/g, '&quot;')}"></span>
-                    <span class="animate-pulse text-purple-500">|</span>
-                </div>
-                <div class="px-4 py-2 bg-black/20 text-xs text-zinc-500 text-right">
-                    Generated based on search results
+            } catch(e){ 
+                setTimeout(() => {
+                    const fallback = getFallbackResponse(t);
+                    renderAIResponse(l, fallback);
+                }, 2000); 
+            }
+            h.scrollTop=h.scrollHeight;
+        }
+
+        function getFallbackResponse(query) {
+            const q = query.toLowerCase();
+            if(q.includes('code') || q.includes('programming') || q.includes('html')) return FALLBACK_RESPONSES.code;
+            if(q.includes('support') || q.includes('help')) return FALLBACK_RESPONSES.support;
+            if(q.includes('chirp')) return FALLBACK_RESPONSES.chirp;
+            if(q.includes('cash') || q.includes('money') || q.includes('value')) return FALLBACK_RESPONSES.cash;
+            return FALLBACK_RESPONSES.default;
+        }
+
+        function renderAIResponse(el, txt) {
+            el.innerHTML = `
+                <div class="chat-avatar"><svg class="icon" viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg></div>
+                <div style="flex:1">
+                    <div class="chat-msg">${txt}</div>
+                    <div class="chat-actions">
+                        <button class="chat-action-btn" onclick="copyText('${txt.replace(/'/g, "\\'")}')">Copy</button>
+                        <button class="chat-action-btn" onclick="refineResponse('${txt.replace(/'/g, "\\'")}')">Refine</button>
+                        <button class="chat-action-btn" onclick="redoResponse()">Redo</button>
+                    </div>
                 </div>
             `;
-            return div;
         }
 
-        function startTypingEffect(element, text) {
-            if (state.typingInterval) clearInterval(state.typingInterval);
-            let i = 0;
-            element.textContent = '';
-            state.typingInterval = setInterval(() => {
-                element.textContent = text.substring(0, i);
-                i++;
-                if (i > text.length) clearInterval(state.typingInterval);
-            }, 15);
+        function toggleDeepThink() {
+            isDeepThink = !isDeepThink;
+            document.getElementById('deep-think-toggle').classList.toggle('active');
         }
 
-        function formatUrl(url) {
-            try {
-                const domain = new URL(url).hostname;
-                return domain.replace('www.', '');
-            } catch (e) {
-                return url;
+        function copyText(txt) { navigator.clipboard.writeText(txt).then(() => alert("Copied!")); }
+        function refineResponse(txt) { const i = document.getElementById('ai-input'); i.value = `Refine this: "${txt.substring(0, 50)}..."`; i.focus(); }
+        function redoResponse() { if(lastUserQuery) { document.getElementById('ai-input').value = lastUserQuery; sendAI(); } }
+
+        function triggerEmojiExplosion(emoji) {
+            for(let i=0; i<30; i++) {
+                const el = document.createElement('div'); el.innerText = emoji; el.className = 'emoji-particle';
+                el.style.left = '50%'; el.style.top = '50%';
+                const angle = Math.random() * Math.PI * 2; const dist = 100 + Math.random() * 300;
+                el.style.setProperty('--tx', Math.cos(angle) * dist + 'px'); el.style.setProperty('--ty', Math.sin(angle) * dist + 'px'); el.style.setProperty('--rot', (Math.random() * 360) + 'deg');
+                document.body.appendChild(el); setTimeout(() => el.remove(), 1000);
             }
         }
 
-        function getDomain(url) {
-            try {
-                return new URL(url).hostname;
-            } catch(e) { return ''; }
-        }
+        // --- AUDIO ---
+        const cvs=document.getElementById('wave-canvas'); const ctx=cvs.getContext('2d'); let aid;
+        function startWaveform(){if(aid)cancelAnimationFrame(aid); cvs.width=cvs.offsetWidth; cvs.height=cvs.offsetHeight; loop();}
+        function loop(){if(!isPlaying)return; ctx.clearRect(0,0,cvs.width,cvs.height); ctx.fillStyle=getComputedStyle(document.body).getPropertyValue('--text-primary'); const b=50,w=cvs.width/b; for(let i=0;i<b;i++){const h=Math.abs(Math.sin(Date.now()/200+i*0.5))*cvs.height; ctx.fillRect(i*w,(cvs.height-h)/2,w-2,h);} aid=requestAnimationFrame(loop);}
+        function seek(e){const r=document.getElementById('progress-container').getBoundingClientRect(); const p=(e.clientX-r.left)/r.width; document.getElementById('audio-player').currentTime=p*document.getElementById('audio-player').duration;}
+        const aEl=document.getElementById('audio-player');
+        aEl.ontimeupdate=()=>{if(aEl.duration && !isNaN(aEl.duration)){const p=(aEl.currentTime/aEl.duration)*100; document.getElementById('progress-fill').style.width=p+'%'; document.getElementById('time-current').innerText=formatTime(aEl.currentTime); document.getElementById('time-total').innerText=formatTime(aEl.duration);}};
+        function changeSpeed(){playbackSpeed=playbackSpeed===1.0?1.5:(playbackSpeed===1.5?2.0:1.0); aEl.playbackRate=playbackSpeed; document.getElementById('speed-btn').innerText=playbackSpeed+'x';}
+        function skip(v){aEl.currentTime+=v;}
+
+        init();
     </script>
 </body>
 </html>
