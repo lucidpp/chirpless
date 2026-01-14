@@ -1,824 +1,697 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Chirpless - Chirp Less, Learn More</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chirpless - Infinite & Festive</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
+        body { margin: 0; overflow: hidden; background-color: #000; font-family: 'VT323', monospace; user-select: none; }
+        
+        #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: flex; flex-direction: column; justify-content: space-between; }
+        #hud-top { padding: 20px; display: flex; justify-content: space-between; align-items: flex-start; }
+        .stat-row { display: flex; gap: 5px; margin-bottom: 5px; }
+        .heart, .shield { width: 24px; height: 24px; image-rendering: pixelated; filter: drop-shadow(2px 2px 0 #000); }
+        
+        #time-display { color: white; font-size: 24px; text-shadow: 2px 2px 0 #000; background: rgba(0,0,0,0.3); padding: 5px 10px; border-radius: 4px; }
+        
+        #crosshair {
+            position: absolute; top: 50%; left: 50%; width: 24px; height: 24px;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path d="M11 0h2v24h-2zM0 11h24v2h-24z" fill="white" fill-opacity="0.8"/></svg>');
+            transform: translate(-50%, -50%); mix-blend-mode: difference; z-index: 10;
+        }
+
+        #hotbar-container { display: flex; flex-direction: column; align-items: center; padding-bottom: 10px; width: 100%; }
+        #hotbar { display: flex; gap: 6px; background: rgba(0,0,0,0.5); padding: 8px; border-radius: 8px; overflow-x: auto; max-width: 90%; pointer-events: auto; }
+        /* Hide scrollbar */
+        #hotbar::-webkit-scrollbar { height: 8px; }
+        #hotbar::-webkit-scrollbar-thumb { background: #555; border-radius: 4px; }
+        
+        .slot {
+            min-width: 48px; min-height: 48px; background: #8b8b8b; border: 3px solid #373737;
+            display: flex; justify-content: center; align-items: center; position: relative; cursor: pointer;
+        }
+        .slot.active { border-color: white; background: #a0a0a0; transform: scale(1.05); box-shadow: 0 0 10px rgba(255,255,255,0.5); z-index: 2; }
+        .slot-count { position: absolute; bottom: 2px; right: 4px; color: white; font-size: 18px; text-shadow: 2px 2px 0 #000; }
+        .item-icon { width: 32px; height: 32px; image-rendering: pixelated; box-shadow: 2px 2px 0 rgba(0,0,0,0.3); }
+
+        /* PROCEDURAL ICONS - CSS GENERATED */
+        .icon-grass { background: linear-gradient(#5d9e44 50%, #5c4033 50%); }
+        .icon-dirt { background: #5c4033; }
+        .icon-stone { background: #757575; }
+        .icon-wood { background: repeating-linear-gradient(90deg, #4e342e, #4e342e 5px, #3e2723 5px, #3e2723 10px); }
+        .icon-leaves { background: radial-gradient(#4caf50, #2e7d32); }
+        .icon-sand { background: #f4a460; }
+        .icon-gravel { background: #9e9e9e; background-image: radial-gradient(#555 1px, transparent 1px); background-size: 5px 5px; }
+        .icon-water { background: #2196f3; opacity: 0.8; }
+        .icon-gold_ore { background: #757575; border: 4px dotted #ffd700; }
+        .icon-diamond_ore { background: #757575; border: 4px dotted #00bfff; }
+        .icon-pumpkin { background: #ff9800; border-top: 4px solid #4caf50; }
+        .icon-jack_o_lantern { background: #ff9800; box-shadow: 0 0 10px #ff9800; }
+        .icon-tnt { background: repeating-linear-gradient(45deg, #f44336, #f44336 10px, #fff 10px, #fff 12px); }
+        .icon-present { background: #f44336; border: 4px solid #4caf50; }
+        .icon-ice { background: #b3e5fc; opacity: 0.7; }
+        .icon-glowstone { background: #ffeb3b; box-shadow: 0 0 10px #ffeb3b; }
+        .icon-cactus { background: #4caf50; border-left: 2px dashed #2e7d32; }
+
+        #main-menu, #pause-menu {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            z-index: 100; pointer-events: auto; background: rgba(0,0,0,0.8);
+        }
+        #pause-menu { display: none; }
+        .logo { font-size: 80px; color: white; text-shadow: 4px 4px 0 #333; margin-bottom: 20px; }
+        .menu-btn {
+            width: 300px; padding: 15px; margin: 10px; background: #666; border: 3px solid #fff;
+            color: white; font-size: 24px; cursor: pointer; font-family: inherit;
+        }
+        .menu-btn:hover { background: #888; transform: scale(1.05); }
+
+        #pet-msg {
+            position: absolute; bottom: 120px; width: 100%; text-align: center;
+            color: yellow; font-size: 24px; text-shadow: 2px 2px 0 #000; opacity: 0; transition: opacity 0.3s;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="ui-layer">
+        <div id="hud-top">
+            <div id="hud-stats">
+                <div class="stat-row" id="health-bar"></div>
+                <div class="stat-row" id="armor-bar"></div>
+            </div>
+            <div id="time-display">Day 1 - 12:00 PM</div>
+        </div>
+        <div id="pet-msg">Press 'E' to Pet Chirp</div>
+        <div id="hotbar-container">
+            <div id="hotbar"></div>
+        </div>
+    </div>
+
+    <div id="crosshair"></div>
+
+    <div id="main-menu">
+        <div class="logo">CHIRPLESS</div>
+        <div style="color:#aaa; margin-bottom:20px;">Infinite World • Day/Night • Pets</div>
+        <button class="menu-btn" onclick="startGame()">Start Game</button>
+        <button class="menu-btn">Settings</button>
+    </div>
+
+    <!-- THREE.JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
     <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        googleBg: '#202124',
-                        googleCard: '#303134', 
-                        googleText: '#e8eaed',
-                        googleGray: '#9aa0a6',
-                        googleBlue: '#8ab4f8',
-                        googleDivider: '#3c4043',
-                        incognitoBg: '#151515',
-                    },
-                    fontFamily: {
-                        sans: ['Roboto', 'Arial', 'sans-serif'],
-                    },
-                    animation: {
-                        'fade-in': 'fadeIn 0.3s ease-out forwards',
-                        'slide-up': 'slideUp 0.4s ease-out forwards',
-                    },
-                    keyframes: {
-                        fadeIn: { '0%': { opacity: '0' }, '100%': { opacity: '1' } },
-                        slideUp: { '0%': { transform: 'translateY(10px)', opacity: '0' }, '100%': { transform: 'translateY(0)', opacity: '1' } }
+        // --- AUDIO SYSTEM (Web Audio API) ---
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        
+        function playSound(type) {
+            if(audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            if (type === 'step') {
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(100, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(50, audioCtx.currentTime + 0.05);
+                gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.05);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.05);
+            } else if (type === 'break') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(150, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(40, audioCtx.currentTime + 0.1);
+                gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+                gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.1);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.1);
+            } else if (type === 'place') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(400, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(600, audioCtx.currentTime + 0.05);
+                gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.05);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.05);
+            } else if (type === 'chirp') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(800, audioCtx.currentTime);
+                osc.frequency.linearRampToValueAtTime(1200, audioCtx.currentTime + 0.1);
+                gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.2);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.2);
+            }
+        }
+
+        // --- ASSETS & TEXTURES ---
+        function genTex(color, type='noise') {
+            const cvs = document.createElement('canvas');
+            cvs.width = 64; cvs.height = 64;
+            const ctx = cvs.getContext('2d');
+            ctx.fillStyle = color; ctx.fillRect(0,0,64,64);
+            
+            if (type==='noise') {
+                for(let i=0; i<400; i++) {
+                    ctx.fillStyle = `rgba(0,0,0,${Math.random()*0.15})`;
+                    ctx.fillRect(Math.random()*64, Math.random()*64, 2, 2);
+                }
+            } else if (type==='brick') {
+                ctx.fillStyle = 'rgba(0,0,0,0.2)';
+                for(let y=0; y<64; y+=16) {
+                    ctx.fillRect(0,y,64,2);
+                    let o = (y/16)%2===0?0:32;
+                    for(let x=o; x<64; x+=32) ctx.fillRect(x,y,2,16);
+                }
+            } else if (type==='ore') {
+                for(let i=0; i<10; i++) {
+                    ctx.fillStyle = `rgba(0,0,0,0.3)`;
+                    let s = Math.random()*10+5;
+                    let x = Math.random()*50; let y = Math.random()*50;
+                    ctx.fillRect(x,y,s,s);
+                    ctx.fillStyle = color; // Ore color
+                    ctx.fillRect(x+2,y+2,s-4,s-4);
+                }
+                ctx.globalCompositeOperation = 'destination-over';
+                ctx.fillStyle = '#757575'; // Stone bg
+                ctx.fillRect(0,0,64,64);
+            } else if (type==='face') {
+                 // Pumpkin face
+                 ctx.fillStyle = '#3e2723';
+                 ctx.beginPath();
+                 ctx.moveTo(10,20); ctx.lineTo(20,10); ctx.lineTo(30,20); ctx.fill(); // Eye
+                 ctx.moveTo(34,20); ctx.lineTo(44,10); ctx.lineTo(54,20); ctx.fill(); // Eye
+                 ctx.moveTo(10,40); ctx.lineTo(15,50); ctx.lineTo(25,45); ctx.lineTo(35,50); ctx.lineTo(45,45); ctx.lineTo(54,50); ctx.lineTo(54,40); ctx.fill();
+            }
+            
+            const tex = new THREE.CanvasTexture(cvs);
+            tex.magFilter = THREE.NearestFilter;
+            return tex;
+        }
+
+        const TEX = {
+            grass_top: genTex('#5d9e44'), grass_side: genTex('#5d9e44'), dirt: genTex('#5c4033'),
+            stone: genTex('#757575'), sand: genTex('#f4a460'), gravel: genTex('#9e9e9e'),
+            wood: genTex('#4e342e', 'brick'), leaves: genTex('#2e7d32'),
+            water: genTex('#2196f3', 'flat'), ice: genTex('#b3e5fc', 'noise'),
+            snow: genTex('#fffafa', 'flat'), cactus: genTex('#43a047', 'brick'),
+            brick: genTex('#8d6e63', 'brick'), glass: genTex('#e0f7fa', 'flat'),
+            gold: genTex('#ffd700', 'ore'), iron: genTex('#d7ccc8', 'ore'), 
+            diamond: genTex('#00bfff', 'ore'), coal: genTex('#212121', 'ore'),
+            obsidian: genTex('#1a237e'), tnt: genTex('#f44336', 'brick'),
+            pumpkin_side: genTex('#fb8c00', 'brick'), pumpkin_face: genTex('#fb8c00', 'face'),
+            jack: genTex('#ffeb3b', 'face'), glowstone: genTex('#ffeb3b'),
+            present_red: genTex('#d32f2f'), present_green: genTex('#388e3c'),
+            candy: genTex('#ffcdd2', 'brick'), clay: genTex('#90a4ae'),
+            wool_r: genTex('#e53935'), wool_g: genTex('#43a047'), wool_b: genTex('#1e88e5')
+        };
+
+        // Fix grass side
+        const gsc = document.createElement('canvas'); gsc.width=64; gsc.height=64;
+        const gcx = gsc.getContext('2d');
+        gcx.fillStyle='#5c4033'; gcx.fillRect(0,0,64,64);
+        gcx.fillStyle='#5d9e44'; gcx.fillRect(0,0,64,20);
+        for(let i=0;i<12;i++) gcx.fillRect(Math.random()*60, 20, 4, Math.random()*8);
+        TEX.grass_side = new THREE.CanvasTexture(gsc); TEX.grass_side.magFilter=THREE.NearestFilter;
+
+        const BLOCKS = [
+            { id: 0, name: 'Air' },
+            { id: 1, name: 'Grass', tex: [TEX.grass_side, TEX.grass_side, TEX.grass_top, TEX.dirt, TEX.grass_side, TEX.grass_side], icon:'icon-grass' },
+            { id: 2, name: 'Dirt', tex: TEX.dirt, icon:'icon-dirt' },
+            { id: 3, name: 'Stone', tex: TEX.stone, icon:'icon-stone' },
+            { id: 4, name: 'Wood', tex: TEX.wood, icon:'icon-wood' },
+            { id: 5, name: 'Leaves', tex: TEX.leaves, icon:'icon-leaves' },
+            { id: 6, name: 'Sand', tex: TEX.sand, icon:'icon-sand' },
+            { id: 7, name: 'Gravel', tex: TEX.gravel, icon:'icon-gravel' },
+            { id: 8, name: 'Water', tex: TEX.water, trans: true, icon:'icon-water' },
+            { id: 9, name: 'Gold Ore', tex: TEX.gold, icon:'icon-gold_ore' },
+            { id: 10, name: 'Iron Ore', tex: TEX.iron, icon:'icon-iron_ore' },
+            { id: 11, name: 'Coal Ore', tex: TEX.coal, icon:'icon-coal_ore' },
+            { id: 12, name: 'Diamond Ore', tex: TEX.diamond, icon:'icon-diamond_ore' },
+            { id: 13, name: 'Obsidian', tex: TEX.obsidian, icon:'icon-obsidian' },
+            { id: 14, name: 'TNT', tex: TEX.tnt, icon:'icon-tnt' },
+            { id: 15, name: 'Pumpkin', tex: [TEX.pumpkin_side, TEX.pumpkin_side, TEX.pumpkin_side, TEX.pumpkin_side, TEX.pumpkin_face, TEX.pumpkin_side], icon:'icon-pumpkin' },
+            { id: 16, name: 'Jack-o-Lantern', tex: [TEX.pumpkin_side, TEX.pumpkin_side, TEX.pumpkin_side, TEX.pumpkin_side, TEX.jack, TEX.pumpkin_side], light: 0xffff00, icon:'icon-jack_o_lantern' },
+            { id: 17, name: 'Glowstone', tex: TEX.glowstone, light: 0xffaa00, icon:'icon-glowstone' },
+            { id: 18, name: 'Red Wool', tex: TEX.wool_r, icon:'icon-present' },
+            { id: 19, name: 'Green Wool', tex: TEX.wool_g, icon:'icon-present' },
+            { id: 20, name: 'Blue Wool', tex: TEX.wool_b, icon:'icon-present' },
+            { id: 21, name: 'Snow', tex: TEX.snow, icon:'icon-ice' },
+            { id: 22, name: 'Ice', tex: TEX.ice, trans: true, icon:'icon-ice' },
+            { id: 23, name: 'Cactus', tex: TEX.cactus, icon:'icon-cactus' },
+            { id: 24, name: 'Clay', tex: TEX.clay, icon:'icon-clay' },
+            { id: 25, name: 'Present (Red)', tex: TEX.present_red, icon:'icon-present' },
+            { id: 26, name: 'Present (Green)', tex: TEX.present_green, icon:'icon-present' },
+            { id: 27, name: 'Candy Cane', tex: TEX.candy, icon:'icon-present' },
+            { id: 28, name: 'Glass', tex: TEX.glass, trans: true, icon:'icon-glass' },
+            { id: 29, name: 'Bricks', tex: TEX.brick, icon:'icon-brick' }
+        ];
+
+        // --- THREE JS INIT ---
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x87CEEB);
+        scene.fog = new THREE.Fog(0x87CEEB, 30, 90); // Initialize Fog
+        const camera = new THREE.PerspectiveCamera(70, window.innerWidth/window.innerHeight, 0.1, 100);
+        const renderer = new THREE.WebGLRenderer({ antialias: false });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        document.body.appendChild(renderer.domElement);
+
+        // Lighting
+        const ambLight = new THREE.AmbientLight(0x404040, 0.5);
+        scene.add(ambLight);
+        const sunLight = new THREE.DirectionalLight(0xffffff, 1.0);
+        sunLight.position.set(50, 100, 50);
+        sunLight.castShadow = true;
+        scene.add(sunLight);
+        
+        // Stars
+        const starGeo = new THREE.BufferGeometry();
+        const starPos = [];
+        for(let i=0; i<1000; i++) starPos.push((Math.random()-0.5)*200, (Math.random()-0.5)*200 + 50, (Math.random()-0.5)*200);
+        starGeo.setAttribute('position', new THREE.Float32BufferAttribute(starPos, 3));
+        const stars = new THREE.Points(starGeo, new THREE.PointsMaterial({color: 0xffffff, size: 0.5, transparent: true, opacity: 0}));
+        scene.add(stars);
+
+        // Player
+        const player = new THREE.Group();
+        scene.add(player);
+        const head = new THREE.Group();
+        head.position.y = 1.7;
+        player.add(head);
+        head.add(camera);
+        
+        // Hand
+        const hand = new THREE.Mesh(new THREE.BoxGeometry(0.2,0.2,0.6), new THREE.MeshLambertMaterial({color:0xeebb99}));
+        hand.position.set(0.3,-0.3,-0.5); head.add(hand);
+
+        // Pet "Chirp"
+        const chirp = new THREE.Group();
+        const cBody = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.6, 0.6), new THREE.MeshLambertMaterial({color: 0x2196f3}));
+        cBody.position.y = 0.3;
+        const cBeak = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.1, 0.2), new THREE.MeshLambertMaterial({color: 0xff9800}));
+        cBeak.position.set(0, 0.4, 0.3);
+        const cEye1 = new THREE.Mesh(new THREE.BoxGeometry(0.1,0.1,0.05), new THREE.MeshBasicMaterial({color:0x000000}));
+        cEye1.position.set(-0.15, 0.5, 0.3);
+        const cEye2 = cEye1.clone(); cEye2.position.set(0.15, 0.5, 0.3);
+        chirp.add(cBody, cBeak, cEye1, cEye2);
+        chirp.position.set(2, 10, 2);
+        scene.add(chirp);
+
+        // --- WORLD GENERATION (CHUNKS) ---
+        const CHUNK_SIZE = 16;
+        const RENDER_DIST = 2; // Chunks radius
+        const chunks = new Map(); // "x,z" -> [meshes]
+        const blockData = new Map(); // "x,y,z" -> typeId
+        const activeLights = [];
+
+        function getChunkKey(x, z) {
+            return `${Math.floor(x/CHUNK_SIZE)},${Math.floor(z/CHUNK_SIZE)}`;
+        }
+
+        const boxGeo = new THREE.BoxGeometry(1,1,1);
+        const matCache = [];
+
+        function getMat(id) {
+            if (matCache[id]) return matCache[id];
+            const b = BLOCKS[id];
+            let m;
+            if (Array.isArray(b.tex)) m = b.tex.map(t => new THREE.MeshLambertMaterial({map:t}));
+            else m = new THREE.MeshLambertMaterial({map:b.tex, transparent:!!b.trans, opacity:b.trans?0.6:1});
+            
+            // Emissive for lights
+            if(b.light) {
+                if(Array.isArray(m)) m.forEach(mt => { mt.emissive = new THREE.Color(b.light); mt.emissiveIntensity = 0.5; });
+                else { m.emissive = new THREE.Color(b.light); m.emissiveIntensity = 0.5; }
+            }
+            matCache[id] = m;
+            return m;
+        }
+
+        function createBlock(x,y,z,id) {
+            const k = `${x},${y},${z}`;
+            if(blockData.has(k)) return;
+            
+            const mesh = new THREE.Mesh(boxGeo, getMat(id));
+            mesh.position.set(x,y,z);
+            mesh.userData = { id: id, key: k };
+            
+            // Chunk mgmt
+            const ck = getChunkKey(x,z);
+            if(!chunks.has(ck)) chunks.set(ck, []);
+            chunks.get(ck).push(mesh);
+            
+            scene.add(mesh);
+            blockData.set(k, mesh);
+
+            // Light logic
+            if(BLOCKS[id].light) {
+                const l = new THREE.PointLight(BLOCKS[id].light, 1, 8);
+                l.position.set(x,y,z);
+                scene.add(l);
+                mesh.userData.light = l;
+            }
+        }
+
+        function genChunk(cx, cz) {
+            for(let x = cx*CHUNK_SIZE; x < (cx+1)*CHUNK_SIZE; x++) {
+                for(let z = cz*CHUNK_SIZE; z < (cz+1)*CHUNK_SIZE; z++) {
+                    // Height noise
+                    let h = Math.floor(Math.sin(x/10)*4 + Math.cos(z/12)*4 + (Math.sin(x/30)*10));
+                    
+                    // Biome?
+                    let biome = 'plains';
+                    if (h > 6) biome = 'mountain';
+                    if (h < -2) biome = 'desert';
+
+                    createBlock(x, -5, z, 3); // Bedrock/Base
+
+                    for(let y=-4; y<=h; y++) {
+                        let id = 3; // Stone default
+                        if (y===h) {
+                            if(biome==='desert') id=6; // Sand
+                            else if(biome==='mountain') id=21; // Snow
+                            else id=1; // Grass
+                        } else if (y>h-3) {
+                            if(biome==='desert') id=6; 
+                            else id=2; // Dirt
+                        } else {
+                            // Ores
+                            if(Math.random()<0.01) id=11; // Coal
+                            else if(Math.random()<0.005) id=10; // Iron
+                        }
+                        createBlock(x,y,z,id);
+                    }
+
+                    // Decor
+                    if(h===Math.floor(h) && Math.random()<0.02) {
+                        if(biome==='plains') {
+                            // Tree
+                            for(let i=1;i<5;i++) createBlock(x,h+i,z,4);
+                            for(let lx=x-2;lx<=x+2;lx++) for(let lz=z-2;lz<=z+2;lz++) for(let ly=h+3;ly<=h+5;ly++) if(Math.abs(lx-x)+Math.abs(lz-z)+Math.abs(ly-(h+4))<=2) createBlock(lx,ly,lz,5);
+                        } else if(biome==='desert') {
+                            // Cactus
+                            for(let i=1;i<4;i++) createBlock(x,h+i,z,23);
+                        } else if(biome==='mountain' && Math.random()<0.3) {
+                            createBlock(x,h+1,z,27); // Candy Cane
+                        }
+                    }
+                    if(Math.random()<0.005 && biome==='plains') createBlock(x,h+1,z,15); // Pumpkin
+                }
+            }
+        }
+
+        function updateChunks() {
+            const pcx = Math.floor(player.position.x / CHUNK_SIZE);
+            const pcz = Math.floor(player.position.z / CHUNK_SIZE);
+            
+            // Load
+            for(let x = pcx - RENDER_DIST; x <= pcx + RENDER_DIST; x++) {
+                for(let z = pcz - RENDER_DIST; z <= pcz + RENDER_DIST; z++) {
+                    const k = `${x},${z}`;
+                    if(!chunks.has(k)) {
+                        genChunk(x, z);
                     }
                 }
             }
-        }
-    </script>
-    <style>
-        /* Chrome-like Scrollbar */
-        ::-webkit-scrollbar { width: 12px; }
-        ::-webkit-scrollbar-track { background: #202124; }
-        ::-webkit-scrollbar-thumb { background: #5f6368; border: 3px solid #202124; border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: #75797e; }
 
-        body {
-            background-color: #202124;
-            color: #e8eaed;
-            font-family: 'Roboto', -apple-system, BlinkMacSystemFont, sans-serif;
-            -webkit-font-smoothing: antialiased;
-            overflow-x: hidden;
-            transition: background-color 0.3s ease;
+            // Unload (aggressive for perf)
+            for(let [k, meshes] of chunks) {
+                const [cx, cz] = k.split(',').map(Number);
+                if (Math.abs(cx - pcx) > RENDER_DIST + 1 || Math.abs(cz - pcz) > RENDER_DIST + 1) {
+                    meshes.forEach(m => {
+                        scene.remove(m);
+                        if(m.userData.light) scene.remove(m.userData.light);
+                        blockData.delete(m.userData.key);
+                    });
+                    chunks.delete(k);
+                }
+            }
         }
 
-        /* Incognito Overrides */
-        body.incognito-mode { background-color: #151515; }
-        body.incognito-mode .sticky { background-color: #151515; }
-        body.incognito-mode ::-webkit-scrollbar-track { background: #151515; }
-
-        /* Seasonal Layer */
-        .seasonal-layer {
-            position: fixed;
-            inset: 0;
-            pointer-events: none;
-            z-index: 0;
-            overflow: hidden;
-        }
-        .snowflake {
-            position: absolute;
-            color: #fff;
-            opacity: 0.1;
-            animation: fall linear infinite;
-        }
-        @keyframes fall {
-            to { transform: translateY(105vh); }
-        }
-
-        /* Input Styles */
-        input::placeholder { color: #9aa0a6; }
+        // --- GAME LOOP & LOGIC ---
+        let timeOfDay = 0; // 0..1
+        const CYCLE_LEN = 240; // seconds total
         
-        .search-wrapper {
-            transition: background 0.2s, box-shadow 0.2s;
-            position: relative;
-        }
-        .search-wrapper:hover {
-            background-color: #3c4043;
-            box-shadow: 0 1px 6px rgba(0,0,0,0.3);
-            border-color: rgba(223, 225, 229, 0);
-        }
-        .search-wrapper:focus-within {
-            background-color: #303134;
-            box-shadow: 0 1px 6px rgba(0,0,0,0.3);
-            border-bottom-left-radius: 0;
-            border-bottom-right-radius: 0;
-        }
+        function updateSky(dt) {
+            timeOfDay += dt / CYCLE_LEN;
+            if(timeOfDay > 1) timeOfDay = 0;
 
-        /* History Dropdown */
-        .history-dropdown {
-            position: absolute;
-            top: 100%;
-            left: 0;
-            right: 0;
-            background: #303134;
-            border-bottom-left-radius: 24px;
-            border-bottom-right-radius: 24px;
-            padding-bottom: 8px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-            z-index: 50;
-            display: none;
-            border-top: 1px solid #3c4043;
-        }
-        .search-wrapper:focus-within .history-dropdown { display: block; }
-        
-        /* View Management */
-        .view-section { display: none; }
-        .view-section.active { display: block; }
-        
-        /* Typography */
-        h1, h2, h3 { font-weight: 400; }
-        .result-title:hover { text-decoration: underline; }
-    </style>
-</head>
-<body class="h-screen flex flex-col justify-between">
-
-    <!-- Seasonal Background -->
-    <div id="seasonal-layer" class="seasonal-layer"></div>
-
-    <!-- Help / Settings Modal -->
-    <div id="help-modal" class="fixed inset-0 z-[110] bg-black/80 flex items-center justify-center backdrop-blur-sm hidden animate-fade-in p-4">
-        <div class="bg-googleCard p-6 rounded-2xl max-w-md w-full shadow-2xl border border-googleDivider relative">
-            <button onclick="toggleHelp()" class="absolute top-4 right-4 text-googleGray hover:text-white"><i class="fas fa-times text-xl"></i></button>
+            const sunH = Math.sin((timeOfDay - 0.25) * Math.PI * 2);
+            const isNight = sunH < -0.2;
             
-            <div class="text-center mb-6">
-                <div class="w-12 h-12 bg-googleBlue/20 rounded-full flex items-center justify-center mx-auto mb-3 text-googleBlue text-xl">
-                    <i class="fas fa-wrench"></i>
-                </div>
-                <h2 class="text-xl text-white mb-1">Make Chirpless Default</h2>
-                <p class="text-googleGray text-sm">Use Chirpless directly from your browser's address bar.</p>
-            </div>
-
-            <div class="bg-[#202124] p-4 rounded-lg border border-googleDivider mb-4">
-                <label class="text-xs text-googleGray uppercase font-bold tracking-wider mb-2 block">1. Search Engine URL</label>
-                <div class="flex items-center gap-2 bg-[#303134] p-2 rounded border border-googleDivider">
-                    <code id="engine-url" class="text-xs text-googleBlue truncate flex-1">...</code>
-                    <button onclick="copyEngineUrl()" class="text-googleGray hover:text-white p-1"><i class="fas fa-copy"></i></button>
-                </div>
-            </div>
-
-            <div class="space-y-3 text-sm text-googleText">
-                <p><span class="font-bold text-white">Chrome/Edge:</span> Go to Settings > Search Engine > Manage Search Engines > Site Search > Add.</p>
-                <ul class="list-disc pl-5 text-googleGray space-y-1">
-                    <li>Name: <span class="text-white">Chirpless</span></li>
-                    <li>Shortcut: <span class="text-white">c</span></li>
-                    <li>URL: <span class="text-white">Paste the link above</span></li>
-                </ul>
-                <p class="text-xs text-googleGray mt-2">Now type 'c' + Tab in your address bar to search!</p>
-            </div>
-        </div>
-    </div>
-
-    <!-- Limit Modal -->
-    <div id="limit-modal" class="fixed inset-0 z-[100] bg-black/70 flex items-center justify-center backdrop-blur-sm hidden animate-fade-in">
-        <div class="bg-googleCard p-6 rounded-xl max-w-sm text-center shadow-2xl border border-googleDivider mx-4">
-            <i class="fas fa-hand-paper text-googleGray text-4xl mb-4"></i>
-            <h2 class="text-xl text-white mb-2">Search Limit Reached</h2>
-            <p class="text-googleGray text-sm mb-4">You've used your searches for this week.</p>
-            <button onclick="localStorage.removeItem('chirpless_v6'); location.reload();" class="text-xs text-googleBlue hover:underline cursor-pointer">
-                (Dev: Reset Limit)
-            </button>
-        </div>
-    </div>
-
-    <!-- Top Right Nav -->
-    <div class="fixed top-4 right-4 z-50 flex items-center gap-3">
-        <button onclick="toggleIncognito()" id="incognito-btn" class="w-10 h-10 rounded-full bg-googleCard hover:bg-[#3c4043] flex items-center justify-center text-googleGray hover:text-white transition-colors border border-transparent" title="Incognito Mode">
-            <i class="fas fa-user-secret"></i>
-        </button>
-        <button onclick="toggleHelp()" class="w-10 h-10 rounded-full bg-googleCard hover:bg-[#3c4043] flex items-center justify-center text-googleGray hover:text-white transition-colors" title="Settings">
-            <i class="fas fa-cog"></i>
-        </button>
-        <div class="w-8 h-8 rounded-full bg-purple-600 flex items-center justify-center text-sm font-bold text-white cursor-pointer select-none">
-            U
-        </div>
-    </div>
-
-    <!-- Main App Area -->
-    <main class="flex-grow w-full relative z-10" id="main-scroll">
-        
-        <!-- ================= LANDING PAGE ================= -->
-        <section id="landing-view" class="view-section active min-h-screen flex flex-col items-center justify-center px-4">
+            // Color interpolation (Simplified)
+            let skyCol = new THREE.Color(0x87CEEB);
+            if (sunH < 0.1 && sunH > -0.1) skyCol.setHex(0xffaa00); // Sunset/Rise
+            else if (isNight) skyCol.setHex(0x000011); // Night
             
-            <div class="w-full max-w-[584px] flex flex-col items-center -mt-16">
-                <!-- Welcome -->
-                <div id="welcome-text" class="mb-4 text-googleGray text-sm font-medium opacity-80 uppercase tracking-widest"></div>
+            scene.background.lerp(skyCol, dt);
+            if(scene.fog) scene.fog.color.copy(scene.background); // Safety check
+            
+            // Sun pos
+            sunLight.position.x = Math.cos((timeOfDay-0.25)*Math.PI*2) * 100;
+            sunLight.position.y = sunH * 100;
+            sunLight.intensity = Math.max(0, sunH);
+            ambLight.intensity = Math.max(0.1, sunH * 0.6);
+            
+            stars.material.opacity = isNight ? 1 : 0;
 
-                <!-- Logo -->
-                <div class="mb-8 flex flex-col items-center select-none">
-                    <h1 class="text-6xl md:text-8xl font-bold tracking-tighter text-white mb-2 relative">
-                        Chirpless
-                        <span id="incognito-badge" class="hidden absolute -right-4 -top-2 text-xs bg-[#202124] border border-white/20 px-2 py-0.5 rounded text-gray-400 font-normal tracking-normal">Private</span>
-                    </h1>
-                    <p class="text-googleGray text-lg relative -top-1 font-light">"Chirp Less, Learn More."</p>
-                </div>
+            // UI Text
+            const hours = Math.floor(timeOfDay * 24);
+            const mins = Math.floor((timeOfDay * 24 * 60) % 60);
+            document.getElementById('time-display').innerText = `${hours}:${mins.toString().padStart(2,'0')}`;
+        }
 
-                <!-- Search Input Form -->
-                <div class="w-full relative search-wrapper bg-googleCard border border-googleDivider rounded-[24px] shadow-md z-20">
-                    <form id="landing-form" class="flex items-center px-4 py-3 w-full" onsubmit="event.preventDefault(); handleSearch('landing');">
-                        <i class="fas fa-search text-googleGray mr-3 text-lg cursor-pointer hover:text-white" onclick="handleSearch('landing')"></i>
-                        <input type="text" id="landing-input" 
-                            class="bg-transparent border-none outline-none text-white w-full text-base h-full"
-                            placeholder="Search Google or type a URL" autocomplete="off">
-                        
-                        <!-- Voice Search -->
-                        <button type="button" class="p-2 rounded-full hover:bg-white/10 transition-colors text-googleBlue mr-1" onclick="startVoiceSearch('landing')">
-                            <i class="fas fa-microphone"></i>
-                        </button>
-
-                        <!-- AI Toggle -->
-                        <button type="button" id="ai-toggle-landing" class="p-2 rounded-full hover:bg-white/10 transition-colors flex items-center gap-2 group relative" onclick="toggleAI()">
-                            <i class="fas fa-brain text-googleGray group-[.active]:text-googleBlue"></i>
-                        </button>
-                    </form>
-
-                    <!-- History Dropdown -->
-                    <div id="landing-history" class="history-dropdown hidden">
-                        <!-- Injected via JS -->
-                    </div>
-                </div>
-
-                <!-- Quick Links -->
-                <div class="mt-8 grid grid-cols-4 gap-4 md:gap-8 w-full max-w-md">
-                    <div class="flex flex-col items-center gap-3 group cursor-pointer" onclick="window.open('https://youtube.com', '_blank')">
-                        <div class="w-12 h-12 rounded-full bg-googleCard flex items-center justify-center group-hover:bg-[#3c4043] transition-colors border border-transparent group-hover:border-googleDivider">
-                            <i class="fab fa-youtube text-white text-xl"></i>
-                        </div>
-                        <span class="text-xs text-googleGray">YouTube</span>
-                    </div>
-                    <div class="flex flex-col items-center gap-3 group cursor-pointer">
-                        <div class="w-12 h-12 rounded-full bg-googleCard flex items-center justify-center group-hover:bg-[#3c4043] transition-colors border border-transparent group-hover:border-googleDivider">
-                            <i class="fas fa-envelope text-white text-xl"></i>
-                        </div>
-                        <span class="text-xs text-googleGray">Gmail</span>
-                    </div>
-                    <div class="flex flex-col items-center gap-3 group cursor-pointer">
-                        <div class="w-12 h-12 rounded-full bg-googleCard flex items-center justify-center group-hover:bg-[#3c4043] transition-colors border border-transparent group-hover:border-googleDivider">
-                            <i class="fab fa-reddit text-white text-xl"></i>
-                        </div>
-                        <span class="text-xs text-googleGray">Reddit</span>
-                    </div>
-                    <div class="flex flex-col items-center gap-3 group cursor-pointer" onclick="toggleHelp()">
-                        <div class="w-12 h-12 rounded-full bg-googleCard flex items-center justify-center group-hover:bg-[#3c4043] transition-colors border border-transparent group-hover:border-googleDivider">
-                            <i class="fas fa-question text-white text-xl"></i>
-                        </div>
-                        <span class="text-xs text-googleGray">Help</span>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- ================= RESULTS PAGE ================= -->
-        <section id="results-view" class="view-section min-h-screen bg-googleBg pb-10">
-            <!-- Header -->
-            <header class="sticky top-0 z-40 bg-googleBg border-b border-googleDivider pt-3 px-4 md:px-8 transition-colors">
-                <div class="flex items-center gap-4 mb-3 max-w-[1200px]">
-                    <!-- Logo -->
-                    <div class="text-xl font-bold text-white cursor-pointer hidden md:block select-none tracking-tight" onclick="goHome()">Chirpless</div>
-                    <div class="text-xl font-bold text-white cursor-pointer md:hidden select-none" onclick="goHome()">C</div>
+        // Mob Logic
+        let chirpState = 'follow';
+        function updateChirp(dt) {
+            const dist = player.position.distanceTo(chirp.position);
+            
+            if (chirpState === 'follow') {
+                if (dist > 3) {
+                    const dir = new THREE.Vector3().subVectors(player.position, chirp.position).normalize();
+                    chirp.position.addScaledVector(dir, dt * 3);
+                    chirp.lookAt(player.position);
                     
-                    <!-- Search Bar Form -->
-                    <form class="flex-1 max-w-[690px]" onsubmit="event.preventDefault(); handleSearch('results');">
-                        <div class="bg-googleCard rounded-full flex items-center px-4 py-2 shadow-sm border border-transparent focus-within:bg-[#3c4043] focus-within:shadow-md transition-all">
-                            <input type="text" id="results-input" 
-                                class="bg-transparent border-none outline-none text-white w-full text-base"
-                                value="">
-                            <i class="fas fa-times text-googleGray ml-3 cursor-pointer hover:text-white px-2 border-r border-googleDivider mr-2" onclick="clearSearch()"></i>
-                            <i class="fas fa-microphone text-googleBlue cursor-pointer px-2" onclick="startVoiceSearch('results')"></i>
-                            <i class="fas fa-search text-googleBlue cursor-pointer px-1" onclick="handleSearch('results')"></i>
-                        </div>
-                    </form>
-
-                    <!-- Header Icons (Restored) -->
-                    <div class="flex items-center gap-3 pl-2">
-                        <button id="ai-toggle-header" class="w-10 h-10 rounded-full flex items-center justify-center hover:bg-white/10 group transition-colors" onclick="toggleAI()">
-                            <i class="fas fa-brain text-googleGray group-[.active]:text-googleBlue"></i>
-                        </button>
-                        <div class="w-8 h-8 rounded-full bg-purple-600 flex items-center justify-center text-sm font-bold text-white cursor-pointer select-none">
-                            U
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Tabs -->
-                <div class="flex gap-1 max-w-[1200px] text-sm text-googleGray overflow-x-auto no-scrollbar ml-0 md:ml-[100px]">
-                    <button class="tab-btn active px-3 py-3 border-b-[3px] border-googleBlue text-googleBlue font-medium" onclick="setFilter('all', this)">All</button>
-                    <button class="tab-btn px-3 py-3 border-b-[3px] border-transparent hover:text-googleText transition-colors" onclick="setFilter('images', this)">Images</button>
-                    <button class="tab-btn px-3 py-3 border-b-[3px] border-transparent hover:text-googleText transition-colors" onclick="setFilter('news', this)">News</button>
-                    <button class="tab-btn px-3 py-3 border-b-[3px] border-transparent hover:text-googleText transition-colors" onclick="setFilter('videos', this)">Videos</button>
-                </div>
-            </header>
-
-            <!-- Main Content Area -->
-            <div class="px-4 md:px-8 py-6 max-w-[1200px] mx-auto md:ml-[100px]">
-                
-                <!-- Loading State -->
-                <div id="loader" class="hidden max-w-[652px] space-y-8 pt-2">
-                    <div class="space-y-3">
-                        <div class="h-4 w-32 bg-[#303134] rounded animate-pulse"></div>
-                        <div class="h-5 w-3/4 bg-[#303134] rounded animate-pulse"></div>
-                        <div class="h-12 w-full bg-[#303134] rounded animate-pulse"></div>
-                    </div>
-                </div>
-
-                <!-- Dumb AI Panel -->
-                <div id="dumb-ai-panel" class="hidden mb-8 max-w-[652px] animate-slide-up">
-                    <div class="bg-[#2a2b2e] rounded-xl p-5 border border-googleDivider/50 shadow-sm relative overflow-hidden">
-                        <div class="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-googleBlue to-purple-500"></div>
-                        <div class="flex items-center gap-2 mb-3">
-                            <i class="fas fa-sparkles text-googleBlue text-sm animate-pulse"></i>
-                            <span class="text-sm font-bold text-googleText">Generative AI Overview (Experimental)</span>
-                        </div>
-                        <div class="text-googleText text-base leading-7" id="dumb-ai-text">
-                            Thinking...
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Layout Container -->
-                <div class="flex flex-col lg:flex-row gap-12">
-                    <!-- Left Column (Main Results) -->
-                    <div class="flex-1 max-w-[652px] min-w-0">
-                        <!-- Mobile/Inline Knowledge Graph -->
-                        <div id="inline-kg-container" class="lg:hidden mb-6"></div>
-                        <!-- Organic Results -->
-                        <div id="main-feed" class="space-y-8"></div>
-                    </div>
-
-                    <!-- Right Column (Desktop Sidebar) -->
-                    <div id="sidebar-container" class="hidden lg:block w-[368px] shrink-0"></div>
-                </div>
-            </div>
-        </section>
-    </main>
-
-    <script>
-        // --- CONFIG ---
-        const API_KEY = "63295e5de863c9228036333af0971a6e69f108a3";
-        const WEEKLY_LIMIT = 100;
-        const STORAGE_KEY = 'chirpless_v6';
-        
-        // --- DATA ---
-        const dumbJokes = [
-            "My sophisticated algorithm has determined that the answer is likely '42'. Or maybe 'tacos'.",
-            "I searched the entire internet and all I found was this cat video. 🐱",
-            "I'm a language model, not a miracle worker.",
-            "Loading... Loading... Just kidding, I forgot what you asked.",
-            "Have you tried turning the internet off and on again?",
-            "404: Motivation not found.",
-            "I could tell you the answer, but then I'd have to delete my cache."
-        ];
-
-        let state = {
-            count: 0,
-            weekStart: 0,
-            aiMode: false,
-            filter: 'all',
-            query: '',
-            incognito: false,
-            history: []
-        };
-
-        const els = {
-            landingView: document.getElementById('landing-view'),
-            resultsView: document.getElementById('results-view'),
-            landingInput: document.getElementById('landing-input'),
-            resultsInput: document.getElementById('results-input'),
-            landingHistory: document.getElementById('landing-history'),
-            mainFeed: document.getElementById('main-feed'),
-            sidebarContainer: document.getElementById('sidebar-container'),
-            inlineKgContainer: document.getElementById('inline-kg-container'),
-            dumbAiPanel: document.getElementById('dumb-ai-panel'),
-            dumbAiText: document.getElementById('dumb-ai-text'),
-            loader: document.getElementById('loader'),
-            limitModal: document.getElementById('limit-modal'),
-            helpModal: document.getElementById('help-modal'),
-            engineUrl: document.getElementById('engine-url'),
-            incognitoBtn: document.getElementById('incognito-btn'),
-            incognitoBadge: document.getElementById('incognito-badge'),
-            seasonalLayer: document.getElementById('seasonal-layer'),
-            // Note: toggleHeader is fetched in init() after it's guaranteed to be in DOM or checked via optional chaining
-            toggleLanding: document.getElementById('ai-toggle-landing'),
-        };
-
-        // --- INIT ---
-        function init() {
-            // Late binding for toggleHeader to ensure it exists if moved/restored
-            els.toggleHeader = document.getElementById('ai-toggle-header');
-
-            loadState();
-            checkReset();
-            checkUrlParams(); 
-            updateUI();
-            setSeasonalTheme();
-            setWelcomeText();
-            renderHistory();
-            
-            // Set URL for help modal
-            const currentUrl = window.location.href.split('?')[0];
-            els.engineUrl.innerText = `${currentUrl}?q=%s`;
-            
-            // Input focus listeners for history
-            els.landingInput.addEventListener('focus', () => {
-                if(!state.incognito && state.history.length > 0) els.landingHistory.style.display = 'block';
-            });
-            // Hide delay to allow clicking
-            els.landingInput.addEventListener('blur', () => {
-                setTimeout(() => els.landingHistory.style.display = 'none', 200);
-            });
-        }
-
-        function checkUrlParams() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const q = urlParams.get('q');
-            if(q) {
-                performSearch(q);
-            }
-        }
-
-        // --- CORE FEATURES ---
-        function toggleIncognito() {
-            state.incognito = !state.incognito;
-            document.body.classList.toggle('incognito-mode');
-            
-            if(state.incognito) {
-                els.incognitoBtn.classList.add('text-white', 'bg-blue-600');
-                els.incognitoBtn.classList.remove('bg-googleCard');
-                els.incognitoBadge.classList.remove('hidden');
-            } else {
-                els.incognitoBtn.classList.remove('text-white', 'bg-blue-600');
-                els.incognitoBtn.classList.add('bg-googleCard');
-                els.incognitoBadge.classList.add('hidden');
-            }
-        }
-
-        function toggleHelp() {
-            els.helpModal.classList.toggle('hidden');
-        }
-
-        function copyEngineUrl() {
-            const text = els.engineUrl.innerText;
-            const textArea = document.createElement("textarea");
-            textArea.value = text;
-            
-            // Ensure textarea is not visible but part of DOM to allow selection
-            textArea.style.position = "fixed";
-            textArea.style.left = "-9999px";
-            textArea.style.top = "0";
-            document.body.appendChild(textArea);
-            
-            textArea.focus();
-            textArea.select();
-            
-            try {
-                const successful = document.execCommand('copy');
-                if(successful) {
-                    alert("URL copied! Paste this into your browser's search engine settings.");
+                    // Simple hop
+                    chirp.position.y = Math.abs(Math.sin(Date.now()/200)) * 0.5 + getGroundY(chirp.position.x, chirp.position.z);
                 } else {
-                    throw new Error("Copy command failed");
+                    chirp.position.y = getGroundY(chirp.position.x, chirp.position.z);
                 }
-            } catch (err) {
-                console.error('Fallback: Oops, unable to copy', err);
-                alert("Could not copy automatically. Please select and copy the URL manually.");
             }
-            
-            document.body.removeChild(textArea);
         }
 
-        function startVoiceSearch(source) {
-            if (!('webkitSpeechRecognition' in window)) {
-                alert("Voice search is not supported in this browser.");
-                return;
+        function getGroundY(x, z) {
+            // Very hacky ground check: raycast down?
+            // Since we have blockData, we can probe
+            const ix = Math.round(x), iz = Math.round(z);
+            for(let y=10; y>-10; y--) {
+                if(blockData.has(`${ix},${y},${iz}`)) return y + 1.3;
             }
-            const recognition = new webkitSpeechRecognition();
-            recognition.continuous = false;
-            recognition.interimResults = false;
-            
-            recognition.onstart = function() {
-                const input = source === 'landing' ? els.landingInput : els.resultsInput;
-                input.placeholder = "Listening...";
-            };
-            
-            recognition.onresult = function(event) {
-                const text = event.results[0][0].transcript;
-                const input = source === 'landing' ? els.landingInput : els.resultsInput;
-                input.value = text;
-                performSearch(text);
-            };
-            
-            recognition.onend = function() {
-                const input = source === 'landing' ? els.landingInput : els.resultsInput;
-                input.placeholder = "Search Google or type a URL";
-            };
-
-            recognition.start();
+            return 0;
         }
 
-        // --- HISTORY LOGIC ---
-        function addToHistory(query) {
-            if(state.incognito) return;
-            
-            // Remove if exists then add to top
-            state.history = state.history.filter(h => h !== query);
-            state.history.unshift(query);
-            if(state.history.length > 5) state.history.pop();
-            
-            saveState();
-            renderHistory();
-        }
-
-        function renderHistory() {
-            if(state.history.length === 0) {
-                els.landingHistory.innerHTML = '';
-                return;
+        // Petting
+        document.addEventListener('keydown', e => {
+            if(e.code === 'KeyE') {
+                const ray = new THREE.Raycaster();
+                ray.setFromCamera(new THREE.Vector2(0,0), camera);
+                const hits = ray.intersectObject(chirp, true);
+                if(hits.length > 0 && hits[0].distance < 4) {
+                    playSound('chirp');
+                    // Particles
+                    for(let i=0; i<5; i++) spawnParticles(chirp.position, 0xff0000);
+                }
             }
+        });
+
+        // Raycasting for blocks
+        let selBlock = null;
+        const raycaster = new THREE.Raycaster();
+        raycaster.far = 6;
+        
+        function updateSelect() {
+            raycaster.setFromCamera(new THREE.Vector2(0,0), camera);
+            // Convert map values to array for raycast (slow, but works for demo)
+            // Opt: raycast nearby chunks only
+            const nearby = [];
+            const pcx = Math.floor(player.position.x/CHUNK_SIZE), pcz = Math.floor(player.position.z/CHUNK_SIZE);
+            const k = `${pcx},${pcz}`;
+            if(chunks.has(k)) nearby.push(...chunks.get(k));
             
-            els.landingHistory.innerHTML = state.history.map(h => `
-                <div class="px-4 py-2 hover:bg-[#3c4043] cursor-pointer flex items-center gap-3 text-white" onclick="handleSearchHistory('${h}')">
-                    <i class="fas fa-history text-googleGray text-sm"></i>
-                    <span>${h}</span>
-                </div>
-            `).join('');
+            const hits = raycaster.intersectObjects(nearby);
+            if(hits.length > 0) selBlock = hits[0];
+            else selBlock = null;
+            
+            const msg = document.getElementById('pet-msg');
+            const chirpHit = raycaster.intersectObject(chirp, true);
+            msg.style.opacity = (chirpHit.length > 0 && chirpHit[0].distance < 4) ? 1 : 0;
         }
 
-        function handleSearchHistory(q) {
-            performSearch(q);
-        }
+        // Controls
+        const keys = {};
+        document.onkeydown = e => keys[e.code] = true;
+        document.onkeyup = e => keys[e.code] = false;
+        
+        let vy = 0;
+        let isGrounded = false;
+        
+        function updatePhysics(dt) {
+            const speed = 6;
+            const dir = new THREE.Vector3();
+            const fwd = new THREE.Vector3(0,0,-1).applyQuaternion(player.quaternion);
+            const right = new THREE.Vector3(1,0,0).applyQuaternion(player.quaternion);
+            
+            if(keys['KeyW']) dir.add(fwd);
+            if(keys['KeyS']) dir.sub(fwd);
+            if(keys['KeyA']) dir.sub(right);
+            if(keys['KeyD']) dir.add(right);
+            
+            if(dir.lengthSq() > 0) {
+                dir.normalize();
+                player.position.addScaledVector(dir, speed * dt);
+                // Step sound
+                if(Math.sin(Date.now()/150) > 0.9 && isGrounded) playSound('step');
+            }
 
-        // --- STORAGE ---
-        function loadState() {
-            const saved = localStorage.getItem(STORAGE_KEY);
-            if (saved) {
-                const parsed = JSON.parse(saved);
-                state.count = parsed.count || 0;
-                state.weekStart = parsed.weekStart || Date.now();
-                state.history = parsed.history || [];
+            // Simple gravity
+            vy -= 25 * dt;
+            player.position.y += vy * dt;
+            
+            // Floor check
+            const ground = getGroundY(player.position.x, player.position.z);
+            if (player.position.y < ground) {
+                player.position.y = ground;
+                vy = 0;
+                isGrounded = true;
             } else {
-                state.weekStart = Date.now();
-                saveState();
+                isGrounded = false;
             }
+
+            if(keys['Space'] && isGrounded) { vy = 9; isGrounded = false; }
+            if(player.position.y < -20) player.position.set(0, 20, 0); // Void reset
         }
 
-        function saveState() {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify({
-                count: state.count,
-                weekStart: state.weekStart,
-                history: state.history
-            }));
-        }
-
-        function checkReset() {
-            if (Date.now() - state.weekStart > 604800000) {
-                state.count = 0;
-                state.weekStart = Date.now();
-                saveState();
-            }
-        }
-
-        // --- UI UTILS ---
-        function updateUI() {
-            const activeClass = 'active';
+        document.onmousedown = e => {
+            if(!document.pointerLockElement) return;
+            hand.rotation.x = -0.5; setTimeout(()=>hand.rotation.x=0, 100);
             
-            // Check for elements before accessing properties to prevent crashes
-            if(els.toggleLanding) {
-                if(state.aiMode) els.toggleLanding.classList.add(activeClass);
-                else els.toggleLanding.classList.remove(activeClass);
-            }
-            
-            if(els.toggleHeader) {
-                if(state.aiMode) els.toggleHeader.classList.add(activeClass);
-                else els.toggleHeader.classList.remove(activeClass);
-            }
-        }
-
-        function toggleAI() {
-            state.aiMode = !state.aiMode;
-            updateUI();
-        }
-
-        function goHome() {
-            els.resultsView.classList.remove('active');
-            els.landingView.classList.add('active');
-            els.landingInput.value = '';
-            els.landingInput.focus();
-            window.scrollTo(0,0);
-            
-            // Clear Query Param
-            const url = new URL(window.location);
-            url.searchParams.delete('q');
-            window.history.pushState({}, '', url);
-        }
-
-        function clearSearch() {
-            els.resultsInput.value = '';
-            els.resultsInput.focus();
-        }
-
-        function setWelcomeText() {
-            const h = new Date().getHours();
-            let msg = "Welcome";
-            if(h < 12) msg = "Good morning";
-            else if(h < 18) msg = "Good afternoon";
-            else msg = "Good evening";
-            document.getElementById('welcome-text').innerText = msg;
-        }
-
-        function setSeasonalTheme() {
-            const month = new Date().getMonth(); 
-            const layer = els.seasonalLayer;
-            if (month === 11 || month === 0 || month === 1) {
-                for(let i=0; i<30; i++) {
-                    const flake = document.createElement('div');
-                    flake.className = 'snowflake fas fa-snowflake';
-                    flake.style.left = Math.random() * 100 + 'vw';
-                    flake.style.fontSize = (Math.random() * 10 + 8) + 'px';
-                    flake.style.animationDuration = (Math.random() * 5 + 10) + 's';
-                    flake.style.animationDelay = (Math.random() * 5) + 's';
-                    layer.appendChild(flake);
+            if(selBlock) {
+                if(e.button === 0) {
+                    // Break
+                    const mesh = selBlock.object;
+                    scene.remove(mesh);
+                    if(mesh.userData.light) scene.remove(mesh.userData.light);
+                    blockData.delete(mesh.userData.key);
+                    // Remove from chunk array? Lazy cleanup or find index
+                    spawnParticles(mesh.position, 0x888888);
+                    playSound('break');
+                } else if(e.button === 2) {
+                    // Place
+                    const p = selBlock.point.add(selBlock.face.normal.multiplyScalar(0.5)).floor().addScalar(0.5);
+                    const selId = hotbar[selIdx];
+                    createBlock(p.x, p.y, p.z, selId);
+                    playSound('place');
                 }
             }
+        };
+        
+        document.onmousemove = e => {
+            if(document.pointerLockElement) {
+                player.rotation.y -= e.movementX * 0.002;
+                head.rotation.x -= e.movementY * 0.002;
+                head.rotation.x = Math.max(-1.5, Math.min(1.5, head.rotation.x));
+            }
+        };
+
+        // Inventory
+        const hotbar = [1, 2, 3, 4, 15, 16, 17, 25, 27, 12, 14, 28]; // Block IDs
+        let selIdx = 0;
+        const hbEl = document.getElementById('hotbar');
+        
+        hotbar.forEach((id, i) => {
+            const d = document.createElement('div');
+            d.className = `slot ${i===0?'active':''}`;
+            d.innerHTML = `<div class="item-icon ${BLOCKS[id].icon}"></div>`;
+            d.onclick = () => { selIdx = i; updateHB(); };
+            hbEl.appendChild(d);
+        });
+        
+        function updateHB() {
+            Array.from(hbEl.children).forEach((c,i) => c.classList.toggle('active', i===selIdx));
+        }
+        document.addEventListener('wheel', e => {
+            selIdx = (selIdx + Math.sign(e.deltaY) + hotbar.length) % hotbar.length;
+            updateHB();
+        });
+
+        // Particles
+        const parts = [];
+        function spawnParticles(pos, col) {
+            const geo = new THREE.BoxGeometry(0.1,0.1,0.1);
+            const mat = new THREE.MeshBasicMaterial({color:col});
+            for(let i=0; i<5; i++) {
+                const p = new THREE.Mesh(geo, mat);
+                p.position.copy(pos).addScalar((Math.random()-0.5));
+                p.userData = { vy: Math.random()*5, life: 1 };
+                scene.add(p);
+                parts.push(p);
+            }
         }
 
-        // --- SEARCH LOGIC ---
-        function handleSearch(source) {
-            const input = source === 'landing' ? els.landingInput : els.resultsInput;
-            performSearch(input.value);
+        // Loop
+        let lastT = performance.now();
+        function animate() {
+            requestAnimationFrame(animate);
+            const now = performance.now();
+            const dt = Math.min((now - lastT)/1000, 0.1);
+            lastT = now;
+
+            if(document.pointerLockElement) {
+                updatePhysics(dt);
+                updateChunks();
+                updateSelect();
+                updateChirp(dt);
+            }
+            updateSky(dt);
+
+            // Part
+            for(let i=parts.length-1; i>=0; i--) {
+                const p = parts[i];
+                p.position.y += p.userData.vy * dt;
+                p.userData.vy -= 10 * dt;
+                p.userData.life -= dt;
+                if(p.userData.life <= 0) { scene.remove(p); parts.splice(i,1); }
+            }
+
+            renderer.render(scene, camera);
         }
 
-        async function performSearch(query, increment = true) {
-            if(!query || !query.trim()) return;
-            state.query = query;
+        // Init
+        document.getElementById('health-bar').innerHTML = new Array(5).fill('<img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMCAxMCI+PHBhdGggZD0iTTIgMWgydjFoMlYxaDJ2M2wtMSAxdjFsLTEgMXYxbC0xIDF2MWgtMnYtMWwtMS0xdi0xbC0xLTF2LTFsLTEtMVYxeiIgZmlsbD0icmVkIiBzdHJva2U9ImJsYWNrIiBzdHJva2Utd2lkdGg9IjAuNSIvPjwvc3ZnPg==" class="heart">').join('');
+        document.getElementById('armor-bar').innerHTML = new Array(4).fill('<img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMCAxMCI+PHBhdGggZD0iTTIgMWg2djFoMXYxaC0xdjFoMXYxaC0xdjFsLTEgMXYxbC0xIDFoLTJsLTEtMXYtMWwtMS0xdi0xaC0xdi0xaDF2LTFoLTFWMWgxeiIgZmlsbD0iZ3JheSIgc3Ryb2tlPSJibGFjayIgc3Ryb2tlLXdpZHRoPSIwLjUiLz48L3N2Zz4=" class="shield">').join('');
 
-            if(increment && state.count >= WEEKLY_LIMIT) {
-                els.limitModal.classList.remove('hidden');
-                return;
-            }
-
-            addToHistory(query);
-
-            // Prep UI
-            els.landingView.classList.remove('active');
-            els.resultsView.classList.add('active');
-            els.resultsInput.value = query;
-            window.scrollTo({ top: 0, behavior: 'instant' });
-            
-            // Clear previous
-            els.mainFeed.innerHTML = '';
-            els.sidebarContainer.innerHTML = '';
-            els.inlineKgContainer.innerHTML = '';
-            els.dumbAiPanel.classList.add('hidden');
-            els.loader.classList.remove('hidden');
-
-            if(increment) {
-                state.count++;
-                saveState();
-            }
-
-            // Dumb AI
-            if(state.aiMode) {
-                els.dumbAiPanel.classList.remove('hidden');
-                els.dumbAiText.innerText = "Generating nonsense...";
-                setTimeout(() => {
-                    els.dumbAiText.innerText = dumbJokes[Math.floor(Math.random() * dumbJokes.length)];
-                }, 1500);
-            }
-
+        // Safe Pointer Lock
+        function requestSafePointerLock() {
             try {
-                let endpoint = 'search';
-                if(state.filter === 'images') endpoint = 'images';
-                if(state.filter === 'news') endpoint = 'news';
-                if(state.filter === 'videos') endpoint = 'videos';
-
-                const res = await fetch(`https://google.serper.dev/${endpoint}`, {
-                    method: 'POST',
-                    headers: {'X-API-KEY': API_KEY, 'Content-Type': 'application/json'},
-                    body: JSON.stringify({ q: query, gl: 'us', hl: 'en' })
-                });
-                
-                if (!res.ok) throw new Error("API Error");
-                const data = await res.json();
-                renderResults(data, endpoint);
-
-            } catch(e) {
-                console.error(e);
-                els.mainFeed.innerHTML = '<div class="text-googleGray mt-4 p-4 text-center">Sorry, the search service is currently unavailable.</div>';
-            } finally {
-                els.loader.classList.add('hidden');
+                const promise = document.body.requestPointerLock();
+                if (promise) {
+                    promise.catch(err => console.warn("Pointer lock rejected:", err));
+                }
+            } catch (e) {
+                console.warn("Pointer lock failed:", e);
             }
         }
 
-        function setFilter(filter, btn) {
-            state.filter = filter;
-            document.querySelectorAll('.tab-btn').forEach(b => {
-                b.className = 'tab-btn px-3 py-3 border-b-[3px] border-transparent hover:text-googleText transition-colors';
-            });
-            btn.className = 'tab-btn active px-3 py-3 border-b-[3px] border-googleBlue text-googleBlue font-medium';
-            if(state.query) performSearch(state.query, false);
+        function startGame() {
+            document.getElementById('main-menu').style.display = 'none';
+            requestSafePointerLock();
+            genChunk(0,0);
+            player.position.set(0, 10, 0);
+            animate();
         }
+        
+        window.onresize = () => { camera.aspect = window.innerWidth/window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); };
 
-        // --- RENDER LOGIC ---
-        function renderResults(data, type) {
-            
-            // 1. Sponsored Ad
-            const adCard = `
-                <div class="mb-6 animate-fade-in cursor-pointer group" onclick="window.open('https://youtube.com/@lucidpp?si=eSAhrMTDPPWko8xA', '_blank')">
-                   <div class="flex items-center gap-2 mb-1">
-                        <span class="text-white font-bold text-sm">Sponsored</span>
-                    </div>
-                    <div class="bg-googleCard p-4 rounded-xl border border-googleDivider hover:border-googleGray transition-colors">
-                        <div class="flex items-center gap-3">
-                            <div class="bg-red-600 w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0">
-                                <i class="fab fa-youtube text-white text-xl"></i>
-                            </div>
-                            <div>
-                                <h3 class="text-googleBlue text-lg group-hover:underline">Support Lucid++ on YouTube</h3>
-                                <p class="text-sm text-googleGray">Tech tutorials, reviews, and more. Keep Chirpless free!</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
-            
-            let contentHTML = '';
-
-            // 2. Knowledge Graph Generation (Verified)
-            if(data.knowledgeGraph) {
-                const kg = data.knowledgeGraph;
-                const kgHTML = `
-                    <div class="bg-googleBg border border-googleDivider rounded-2xl overflow-hidden mb-8 animate-fade-in shadow-lg">
-                        ${kg.imageUrl ? `<div class="w-full h-48 bg-[#202124]"><img src="${kg.imageUrl}" class="w-full h-full object-cover opacity-90"></div>` : ''}
-                        <div class="p-4">
-                            <h2 class="text-3xl font-normal text-white mb-2 font-sans flex items-center gap-2">
-                                ${kg.title}
-                                <i class="fas fa-check-circle text-blue-400 text-xl" title="Verified"></i>
-                            </h2>
-                            <div class="text-sm text-googleGray mb-4">${kg.type || 'Result'}</div>
-                            <p class="text-sm text-googleText mb-4 leading-relaxed">${kg.description || ''}</p>
-                            ${kg.attributes ? Object.entries(kg.attributes).slice(0, 4).map(([k,v]) => `
-                                <div class="py-2 border-t border-googleDivider flex justify-between text-sm">
-                                    <span class="font-bold text-googleGray">${k}</span>
-                                    <span class="text-googleText text-right max-w-[60%]">${v}</span>
-                                </div>
-                            `).join('') : ''}
-                            ${kg.website ? `<a href="${kg.website}" target="_blank" class="block mt-4 py-2 bg-[#3c4043] text-center rounded-full text-googleBlue text-sm hover:bg-[#45484c] border border-googleDivider">Visit Website</a>` : ''}
-                        </div>
-                    </div>
-                `;
-                els.sidebarContainer.innerHTML = kgHTML;
-                els.inlineKgContainer.innerHTML = kgHTML;
-            }
-
-            // 3. Main Results
-            if(type === 'search' && data.organic) {
-                data.organic.forEach((res, idx) => {
-                    if(idx === 1) contentHTML += adCard;
-                    contentHTML += `
-                        <div class="mb-8 animate-fade-in" style="animation-delay: ${idx * 0.05}s">
-                            <div class="flex items-center gap-3 mb-1.5 group cursor-pointer">
-                                <div class="bg-[#3c4043] p-1 rounded-full w-7 h-7 flex items-center justify-center">
-                                    <img src="${res.favicon || 'https://via.placeholder.com/16'}" class="w-4 h-4 object-contain" onerror="this.style.display='none'">
-                                </div>
-                                <div class="flex flex-col">
-                                    <span class="text-sm text-googleText group-hover:text-white">${res.title.substring(0, 30)}...</span>
-                                    <span class="text-xs text-googleGray truncate max-w-[250px]">${res.link}</span>
-                                </div>
-                            </div>
-                            <a href="${res.link}" target="_blank" class="block group">
-                                <h3 class="text-xl text-googleBlue result-title mb-1 font-normal group-hover:underline">${res.title}</h3>
-                            </a>
-                            <p class="text-sm text-googleGray leading-relaxed max-w-[600px]">${res.snippet}</p>
-                            ${res.sitelinks ? `
-                                <div class="mt-3 flex flex-wrap gap-2">
-                                    ${res.sitelinks.map(sl => `<a href="${sl.link}" class="px-3 py-1 rounded-full bg-[#303134] text-xs text-googleText hover:bg-[#3c4043] transition-colors">${sl.title}</a>`).join('')}
-                                </div>
-                            ` : ''}
-                        </div>
-                    `;
-                });
-            } else if (type === 'images' && data.images) {
-                contentHTML = `<div class="grid grid-cols-2 md:grid-cols-3 gap-2">`;
-                data.images.forEach(img => {
-                    contentHTML += `
-                        <a href="${img.link}" target="_blank" class="block aspect-square bg-[#202124] rounded-xl overflow-hidden relative group">
-                            <img src="${img.imageUrl}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105">
-                            <div class="absolute bottom-0 left-0 w-full p-2 bg-gradient-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
-                                <p class="text-xs text-white truncate">${img.title}</p>
-                            </div>
-                        </a>
-                    `;
-                });
-                contentHTML += `</div>`;
-            } else if (type === 'news' && data.news) {
-                data.news.forEach(item => {
-                    contentHTML += `
-                        <a href="${item.link}" target="_blank" class="block bg-googleBg border border-googleDivider p-4 rounded-xl mb-4 hover:bg-[#303134] transition-colors">
-                            <div class="flex gap-4">
-                                <div class="flex-1">
-                                    <div class="flex items-center gap-2 mb-2 text-xs text-googleGray">
-                                        <img src="${item.source.icon || ''}" class="w-4 h-4 rounded-full" onerror="this.style.display='none'">
-                                        <span class="text-white">${item.source}</span>
-                                        <span>• ${item.date}</span>
-                                    </div>
-                                    <h3 class="text-lg text-googleBlue mb-2 leading-snug hover:underline">${item.title}</h3>
-                                </div>
-                                ${item.imageUrl ? `<img src="${item.imageUrl}" class="w-20 h-20 object-cover rounded-lg bg-[#202124]">` : ''}
-                            </div>
-                        </a>
-                    `;
-                });
-            }
-            els.mainFeed.innerHTML = contentHTML;
-        }
-
-        init();
     </script>
 </body>
 </html>
