@@ -38,7 +38,9 @@
             0% { transform: translateX(-150%) skewX(-20deg); }
             100% { transform: translateX(150%) skewX(-20deg); }
         }
-        .animate-shimmer {
+        
+        /* Shimmer Class - Applied on Hover or Focus */
+        .shimmer-effect {
             position: absolute;
             top: 0;
             left: 0;
@@ -47,10 +49,21 @@
             background: linear-gradient(
                 90deg, 
                 transparent, 
-                rgba(255, 255, 255, 0.1), 
+                rgba(255, 255, 255, 0.08), 
                 transparent
             );
             pointer-events: none;
+            /* Hidden by default, animated via JS or hover classes */
+            display: none; 
+        }
+
+        .group:hover .shimmer-effect {
+            display: block;
+            animation: shimmer 0.8s ease-out forwards;
+        }
+        
+        .animate-shimmer-active {
+            display: block;
             animation: shimmer 1s ease-out forwards;
         }
 
@@ -75,13 +88,22 @@
 
         .search-dropdown {
             z-index: 60;
-            backdrop-filter: blur(12px);
-            background-color: rgba(23, 23, 23, 0.95); /* darker dropdown */
+            backdrop-filter: blur(16px);
+            background-color: rgba(23, 23, 23, 0.8);
+            border: 1px solid rgba(255,255,255,0.05);
         }
 
         /* Filter Click Animation */
         .tab-btn:active {
             transform: scale(0.95);
+        }
+
+        /* Glassmorphism Card Style */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
         }
     </style>
 </head>
@@ -111,7 +133,7 @@
             <!-- Home Search Form -->
             <div class="w-full relative group">
                 <form id="home-form" class="w-full relative z-20 overflow-hidden rounded-full">
-                    <div id="home-shimmer-container" class="absolute inset-0 pointer-events-none hidden"></div>
+                    <div id="home-shimmer-container" class="shimmer-effect"></div>
                     <input
                         type="text"
                         id="home-input"
@@ -128,7 +150,7 @@
                 </form>
                 
                 <!-- Home Dropdown -->
-                <div id="home-dropdown" class="search-dropdown absolute top-full mt-2 left-0 w-full rounded-xl border border-zinc-800 shadow-2xl hidden overflow-hidden">
+                <div id="home-dropdown" class="search-dropdown absolute top-full mt-2 left-0 w-full rounded-xl shadow-2xl hidden overflow-hidden">
                     <!-- Injected via JS -->
                 </div>
             </div>
@@ -156,7 +178,7 @@
     <div id="results-view" class="min-h-screen flex-col animate-fade-in hidden bg-[#0a0a0a]">
         
         <!-- Header -->
-        <header class="sticky top-0 z-50 bg-[#0a0a0a]/95 backdrop-blur-md border-b border-zinc-900 shadow-sm">
+        <header class="sticky top-0 z-50 bg-[#0a0a0a]/80 backdrop-blur-xl border-b border-white/5 shadow-sm">
             <div class="max-w-7xl mx-auto px-4 py-3 flex items-center gap-4 md:gap-8">
                 <!-- Logo Small (Black/White) -->
                 <div id="logo-reset" class="cursor-pointer hover:opacity-80 transition-opacity flex-shrink-0 flex items-center">
@@ -168,7 +190,7 @@
                 <!-- Header Search Form -->
                 <div class="flex-1 max-w-2xl relative">
                     <form id="header-form" class="w-full relative overflow-hidden rounded-md">
-                         <div id="header-shimmer-container" class="absolute inset-0 pointer-events-none hidden"></div>
+                         <div id="header-shimmer-container" class="shimmer-effect"></div>
                         <input
                             type="text"
                             id="header-input"
@@ -180,13 +202,9 @@
                         </button>
                     </form>
                     <!-- Header Dropdown -->
-                    <div id="header-dropdown" class="search-dropdown absolute top-full mt-1 left-0 w-full rounded-lg border border-zinc-800 shadow-xl hidden overflow-hidden">
+                    <div id="header-dropdown" class="search-dropdown absolute top-full mt-1 left-0 w-full rounded-lg shadow-xl hidden overflow-hidden">
                         <!-- Injected via JS -->
                     </div>
-                </div>
-
-                <div class="hidden md:flex items-center gap-4 text-zinc-400">
-                    <i data-lucide="menu" class="w-6 h-6 hover:text-white cursor-pointer"></i>
                 </div>
             </div>
 
@@ -338,11 +356,9 @@
         function setupInput(input, dropdown, shimmer) {
             input.addEventListener('focus', () => {
                 // Trigger shimmer animation
-                shimmer.classList.remove('hidden');
-                shimmer.classList.add('animate-shimmer');
+                shimmer.classList.add('animate-shimmer-active');
                 setTimeout(() => {
-                    shimmer.classList.remove('animate-shimmer');
-                    shimmer.classList.add('hidden');
+                    shimmer.classList.remove('animate-shimmer-active');
                 }, 1000);
 
                 renderDropdown(dropdown);
@@ -429,7 +445,7 @@
                 // Explicitly check for knowledge graph
                 state.results = {
                     web: webData.organic || [],
-                    knowledgeGraph: webData.knowledgeGraph || null, // Ensure explicit null if missing
+                    knowledgeGraph: webData.knowledgeGraph || null,
                     images: imgData.images || []
                 };
 
@@ -527,6 +543,7 @@
 
         function renderAllTab() {
             const gridContainer = document.createElement('div');
+            // Ensure Sidebar (350px) is utilized
             gridContainer.className = 'grid grid-cols-1 lg:grid-cols-[1fr_350px] gap-8';
 
             // --- LEFT COLUMN ---
@@ -537,10 +554,10 @@
             const summaryHTML = generateAISummaryHTML();
             if (summaryHTML) leftCol.appendChild(summaryHTML);
 
-            // 2. Knowledge Graph (Mobile/Top Injection if exists)
+            // 2. Knowledge Graph (Mobile Injection Only)
             if (state.results.knowledgeGraph) {
                  const mobileKG = document.createElement('div');
-                 mobileKG.className = 'lg:hidden mb-4 bg-[#171717] border border-zinc-800 rounded-xl p-4 flex gap-4 animate-fade-in-up';
+                 mobileKG.className = 'lg:hidden mb-4 glass-card rounded-xl p-4 flex gap-4 animate-fade-in-up';
                  mobileKG.innerHTML = `
                     ${state.results.knowledgeGraph.imageUrl ? `<img src="${state.results.knowledgeGraph.imageUrl}" class="w-20 h-20 object-cover rounded-lg border border-zinc-800">` : ''}
                     <div>
@@ -556,7 +573,7 @@
 
             // 3. Results List
             const list = document.createElement('div');
-            list.className = 'space-y-8';
+            list.className = 'space-y-6';
             
             const showAd = Math.random() < 0.2;
             const adIndex = Math.floor(Math.random() * 5); 
@@ -566,7 +583,7 @@
                 if (showAd && index === adIndex) {
                     const ad = SPONSORED_LINKS[Math.floor(Math.random() * SPONSORED_LINKS.length)];
                     const adItem = document.createElement('div');
-                    adItem.className = 'bg-[#171717] border border-zinc-800 p-4 rounded-lg mb-8 animate-fade-in-up';
+                    adItem.className = 'glass-card border-l-4 border-l-purple-500 p-4 rounded-lg mb-8 animate-fade-in-up';
                     adItem.innerHTML = `
                         <div class="flex items-center gap-2 mb-1 text-xs font-bold text-zinc-500">
                             <span class="bg-purple-500/10 text-purple-400 px-1.5 py-0.5 rounded border border-purple-500/20">Sponsored</span>
@@ -580,7 +597,7 @@
                 }
 
                 const item = document.createElement('div');
-                item.className = 'group animate-fade-in-up';
+                item.className = 'group relative overflow-hidden glass-card p-5 rounded-xl animate-fade-in-up hover:border-white/20 transition-all';
                 item.style.animationDelay = `${index * 50}ms`;
                 
                 // Verification Badge Logic
@@ -590,7 +607,7 @@
                 // Sitelinks
                 let sitelinksHTML = '';
                 if(res.sitelinks && res.sitelinks.length > 0) {
-                    sitelinksHTML = `<div class="mt-2 flex flex-wrap gap-x-4 gap-y-1">
+                    sitelinksHTML = `<div class="mt-3 flex flex-wrap gap-x-4 gap-y-1">
                         ${res.sitelinks.slice(0, 4).map(link => `
                             <a href="${link.link}" class="text-xs text-zinc-500 hover:text-purple-400 flex items-center gap-1 transition-colors">
                                 <i data-lucide="arrow-right" class="w-3 h-3"></i> ${link.title}
@@ -600,30 +617,36 @@
                 }
 
                 item.innerHTML = `
-                    <div class="flex items-center gap-2 mb-1 text-sm text-zinc-500 truncate">
-                        ${res.favicon ? `<img src="${res.favicon}" class="w-4 h-4 rounded-sm opacity-70 grayscale group-hover:grayscale-0 transition-all" onerror="this.style.display='none'">` : ''}
-                        <span class="text-zinc-400">${formatUrl(res.link)}</span>
-                        ${isVerified ? `<i data-lucide="badge-check" class="w-3.5 h-3.5 text-white fill-white/20 ml-0.5" title="Verified Website"></i>` : ''}
+                    <div class="shimmer-effect"></div>
+                    <div class="relative z-10">
+                        <div class="flex items-center gap-2 mb-1 text-sm text-zinc-500 truncate">
+                            ${res.favicon ? `<img src="${res.favicon}" class="w-4 h-4 rounded-sm opacity-70 grayscale group-hover:grayscale-0 transition-all" onerror="this.style.display='none'">` : ''}
+                            <span class="text-zinc-400">${formatUrl(res.link)}</span>
+                            ${isVerified ? `<i data-lucide="badge-check" class="w-3.5 h-3.5 text-white fill-white/20 ml-0.5" title="Verified Website"></i>` : ''}
+                        </div>
+                        <a href="${res.link}" target="_blank" rel="noopener noreferrer" class="block group-hover:text-purple-300 transition-colors">
+                            <h2 class="text-xl text-purple-400 font-medium leading-tight mb-2">${res.title}</h2>
+                        </a>
+                        <p class="text-zinc-400 text-sm leading-relaxed">${res.snippet}</p>
+                        ${sitelinksHTML}
                     </div>
-                    <a href="${res.link}" target="_blank" rel="noopener noreferrer" class="block group-hover:underline decoration-purple-500/50 underline-offset-4">
-                        <h2 class="text-xl text-purple-400 group-hover:text-purple-300 font-medium leading-tight mb-1">${res.title}</h2>
-                    </a>
-                    <p class="text-zinc-400 text-sm leading-relaxed">${res.snippet}</p>
-                    ${sitelinksHTML}
                 `;
                 list.appendChild(item);
             });
             leftCol.appendChild(list);
             gridContainer.appendChild(leftCol);
 
-            // --- RIGHT COLUMN (Knowledge Graph) ---
+            // --- RIGHT COLUMN (Sidebar) ---
             const rightCol = document.createElement('div');
-            rightCol.className = 'hidden lg:block';
+            rightCol.className = 'hidden lg:block space-y-6';
 
+            // 1. Knowledge Graph (Primary)
             if (state.results.knowledgeGraph) {
                 const kg = state.results.knowledgeGraph;
+                const popularity = Math.floor(Math.random() * (100 - 85) + 85); // Fake popularity
+                
                 const kgDiv = document.createElement('div');
-                kgDiv.className = 'sticky top-24 bg-[#171717] border border-zinc-800 rounded-xl overflow-hidden shadow-2xl animate-fade-in-up';
+                kgDiv.className = 'glass-card rounded-xl overflow-hidden shadow-2xl animate-fade-in-up';
                 kgDiv.innerHTML = `
                     ${kg.imageUrl ? `
                         <div class="w-full h-48 bg-zinc-900 overflow-hidden relative">
@@ -636,28 +659,57 @@
                             <i data-lucide="badge-check" class="w-5 h-5 text-blue-500 fill-blue-500/10"></i>
                         </div>
                         <p class="text-sm text-purple-400 font-medium mb-3 uppercase tracking-wide">${kg.type || 'Profile'}</p>
+                        
+                        <!-- Popularity Bar -->
+                        <div class="mb-4">
+                            <div class="flex justify-between text-xs text-zinc-500 mb-1">
+                                <span>Popularity Score</span>
+                                <span class="text-white">${popularity}% 🔥</span>
+                            </div>
+                            <div class="w-full h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+                                <div class="h-full bg-gradient-to-r from-purple-600 to-blue-500" style="width: ${popularity}%"></div>
+                            </div>
+                        </div>
+
                         ${kg.description ? `<p class="text-sm text-zinc-400 leading-relaxed mb-4">${kg.description}</p>` : ''}
                         
                         ${kg.attributes ? `
-                            <div class="space-y-2 mb-4 border-t border-zinc-800 pt-3">
+                            <div class="space-y-2 mb-4 border-t border-white/10 pt-3">
                                 ${Object.entries(kg.attributes).slice(0,4).map(([key, val]) => `
                                     <div class="flex justify-between text-sm">
                                         <span class="text-zinc-500">${key}:</span>
-                                        <span class="text-zinc-300 text-right">${val}</span>
+                                        <span class="text-zinc-300 text-right max-w-[60%] truncate">${val}</span>
                                     </div>
                                 `).join('')}
                             </div>
                         ` : ''}
 
                         ${kg.website ? `
-                            <a href="${kg.website}" target="_blank" class="block w-full text-center py-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-lg text-sm transition-colors border border-zinc-700">
+                            <a href="${kg.website}" target="_blank" class="block w-full text-center py-2 bg-white/5 hover:bg-white/10 text-white rounded-lg text-sm transition-colors border border-white/10">
                                 Visit Official Site
                             </a>` 
                         : ''}
                     </div>
                 `;
                 rightCol.appendChild(kgDiv);
+            } else {
+                // 2. Fallback: Related Trends (If no KG)
+                const trendsDiv = document.createElement('div');
+                trendsDiv.className = 'glass-card rounded-xl p-5 animate-fade-in-up';
+                trendsDiv.innerHTML = `
+                    <h3 class="text-sm font-bold text-zinc-500 uppercase tracking-wider mb-4">People Also Search For</h3>
+                    <div class="space-y-3">
+                        ${TRENDING_SEARCHES.map(t => `
+                            <div class="flex items-center justify-between group cursor-pointer" onclick="handleSearch(null, '${t.term}')">
+                                <span class="text-zinc-300 group-hover:text-purple-400 transition-colors">${t.term}</span>
+                                <i data-lucide="arrow-up-right" class="w-4 h-4 text-zinc-600 group-hover:text-purple-400"></i>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+                rightCol.appendChild(trendsDiv);
             }
+            
             gridContainer.appendChild(rightCol);
 
             contentArea.appendChild(gridContainer);
@@ -675,7 +727,7 @@
                 a.href = img.link;
                 a.target = '_blank';
                 a.rel = 'noopener noreferrer';
-                a.className = 'block break-inside-avoid relative group rounded-lg overflow-hidden bg-[#171717] animate-fade-in-up border border-zinc-800';
+                a.className = 'block break-inside-avoid relative group rounded-lg overflow-hidden glass-card animate-fade-in-up';
                 a.style.animationDelay = `${index * 30}ms`;
                 
                 a.innerHTML = `
@@ -697,7 +749,7 @@
                 const skel = document.createElement('div');
                 skel.className = 'animate-pulse space-y-6 max-w-3xl';
                 skel.innerHTML = [1,2,3].map(() => `
-                    <div class="space-y-3">
+                    <div class="space-y-3 p-4 border border-white/5 rounded-xl">
                         <div class="h-4 bg-zinc-800 rounded w-3/4"></div>
                         <div class="h-3 bg-zinc-900 rounded w-1/2"></div>
                         <div class="h-16 bg-zinc-800 rounded w-full"></div>
@@ -725,9 +777,9 @@
             const summaryText = `Based on the top search results: ${topSnippets[0]} ${topSnippets[1] ? `Additionally, ${topSnippets[1]}` : ''}`;
 
             const div = document.createElement('div');
-            div.className = 'mb-2 bg-[#171717] border border-zinc-800 rounded-xl overflow-hidden shadow-lg animate-fade-in-up';
+            div.className = 'mb-2 glass-card rounded-xl overflow-hidden animate-fade-in-up';
             div.innerHTML = `
-                <div class="bg-zinc-900/50 px-4 py-3 border-b border-zinc-800 flex items-center gap-2">
+                <div class="bg-white/5 px-4 py-3 border-b border-white/5 flex items-center gap-2">
                     <i data-lucide="sparkles" class="w-4 h-4 text-purple-500"></i>
                     <span class="text-xs font-bold text-zinc-300 uppercase tracking-wider">ChirpAssist (AI)</span>
                 </div>
@@ -735,7 +787,7 @@
                     <span id="typing-text" data-full-text="${summaryText.replace(/"/g, '&quot;')}"></span>
                     <span class="animate-pulse text-purple-500">|</span>
                 </div>
-                <div class="px-4 py-2 bg-zinc-900/30 text-xs text-zinc-500 text-right">
+                <div class="px-4 py-2 bg-black/20 text-xs text-zinc-500 text-right">
                     Generated based on search results
                 </div>
             `;
