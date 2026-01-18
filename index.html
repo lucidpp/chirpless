@@ -1,1049 +1,1688 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <meta name="theme-color" content="#050505">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Chirpless">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chirpless</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&family=Oswald:wght@700&display=swap" rel="stylesheet">
     
-    <!-- PWA Links -->
-    <link rel="manifest" href="manifest.json">
-    <link rel="icon" type="image/png" href="siteicon.png">
-    <link rel="apple-touch-icon" href="siteicon.png">
-    
-    <title>Chirpless | Connected</title>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Roboto', 'sans-serif'],
+                        logo: ['Oswald', 'sans-serif'],
+                    },
+                    colors: {
+                        chirp: {
+                            bg: '#0f0f0f',
+                            sidebar: '#0f0f0f',
+                            hover: '#272727',
+                            border: '#303030',
+                            text: '#f1f1f1',
+                            secondary: '#aaaaaa',
+                            red: '#cc0000',
+                            blue: '#3ea6ff',
+                            green: '#2ba640'
+                        }
+                    },
+                    animation: {
+                        'pulse-fast': 'pulse 1s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                    }
+                }
+            }
+        }
+    </script>
     <style>
-        /* --- CSS VARIABLES & THEME --- */
-        :root {
-            --bg-color: #050505;
-            --surface-color: #121212;
-            --surface-highlight: #1e1e1e;
-            --text-primary: #ffffff;
-            --text-secondary: #999999;
-            --accent: #ffffff;
-            --accent-dim: #333333;
-            --glass-panel: rgba(20, 20, 20, 0.6);
-            --glass-border: rgba(255, 255, 255, 0.08);
-            --glass-blur: blur(20px) saturate(180%);
-            --shadow-soft: 0 10px 40px -10px rgba(0,0,0,0.5);
-            
-            --border-radius: 20px;
-            --padding: 20px;
-            --nav-height: 85px;
-            --mini-player-height: 70px;
-            --sidebar-width: 250px;
-            --font-main: 'SF Pro Display', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
-            --safe-top: env(safe-area-inset-top);
-            --safe-bottom: env(safe-area-inset-bottom);
-        }
-
-        [data-theme="light"] {
-            --bg-color: #F7F5F2; /* French White */
-            --surface-color: #FFFFFF;
-            --surface-highlight: #EBE8E4;
-            --text-primary: #1A1A1A;
-            --text-secondary: #6B6661;
-            --accent: #1A1A1A;
-            --accent-dim: #D1CDC7;
-            --glass-panel: rgba(247, 245, 242, 0.75);
-            --glass-border: rgba(0, 0, 0, 0.04);
-            --glass-blur: blur(25px) saturate(120%);
-            --shadow-soft: 0 10px 30px -10px rgba(80, 70, 60, 0.15);
-        }
-
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
+        body { background-color: #0f0f0f; color: #f1f1f1; overflow-x: hidden; }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #0f0f0f; }
+        ::-webkit-scrollbar-thumb { background: #717171; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #a0a0a0; }
         
-        body {
-            background-color: var(--bg-color); color: var(--text-primary);
-            font-family: var(--font-main); margin: 0; padding: 0;
-            height: 100dvh; width: 100vw;
+        .video-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 16px;
+        }
+        
+        .shorts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 10px;
+        }
+
+        /* Hide generic file inputs */
+        input[type="file"] {
+            display: none;
+        }
+
+        .tab-active {
+            border-bottom: 3px solid #f1f1f1;
+            color: #f1f1f1;
+        }
+        .tab-inactive {
+            color: #aaaaaa;
+            border-bottom: 3px solid transparent;
+        }
+        .tab-inactive:hover {
+            color: #f1f1f1;
+        }
+
+        /* Smooth fade */
+        .fade-enter { opacity: 0; transform: translateY(10px); }
+        .fade-enter-active { opacity: 1; transform: translateY(0); transition: opacity 300ms, transform 300ms; }
+        
+        .aspect-video-container {
+            position: relative;
+            padding-bottom: 56.25%; /* 16:9 */
+            height: 0;
             overflow: hidden;
-            transition: background-color 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
-            user-select: none;
+            background: #000;
+        }
+        .aspect-video-container video {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
         }
 
-        /* --- UTILITIES --- */
-        .hidden { display: none !important; }
-        .flex { display: flex; }
-        .flex-col { flex-direction: column; }
-        .items-center { align-items: center; }
-        .justify-between { justify-content: space-between; }
-        .w-full { width: 100%; }
-        .text-sm { font-size: 0.9rem; }
-        .text-xs { font-size: 0.75rem; }
-        .font-bold { font-weight: 700; }
-        .text-secondary { color: var(--text-secondary); }
-        .icon { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+        /* Odometer Wheel Styles */
+        .odometer-wrapper {
+            display: inline-flex;
+            overflow: hidden;
+            height: 1.2em; /* Adjust based on font size */
+            line-height: 1.2em;
+            vertical-align: bottom;
+        }
         
-        @keyframes navPop { 0% { transform: scale(1); } 50% { transform: scale(0.9); } 100% { transform: scale(1); } }
-        .nav-click { animation: navPop 0.2s ease-out; }
-
-        /* --- GLASS SHINE EFFECT (ENHANCED) --- */
-        @keyframes shinePass {
-            0% { left: -100%; opacity: 0; }
-            50% { opacity: 0.6; } /* Increased opacity for better visibility */
-            100% { left: 200%; opacity: 0; }
+        .odometer-digit {
+            display: inline-block;
+            position: relative;
+            transition: transform 1s cubic-bezier(0.16, 1, 0.3, 1);
+            text-align: center;
         }
 
-        .glass-shine-hover {
+        .odometer-digit-strip {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .odometer-digit-strip span {
+            display: block;
+            height: 1.2em;
+            line-height: 1.2em;
+        }
+
+        /* Search Bar Shine */
+        .search-container {
             position: relative;
             overflow: hidden;
         }
-        .glass-shine-hover::before {
+        .search-container::after {
             content: '';
             position: absolute;
-            top: 0; left: -100%;
-            width: 50%; height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent); /* Stronger gradient */
-            transform: skewX(-20deg);
+            top: 0;
+            left: -100%;
+            width: 50%;
+            height: 100%;
+            background: linear-gradient(to right, transparent, rgba(255,255,255,0.1), transparent);
+            transform: skewX(-25deg);
+            transition: 0.5s;
             pointer-events: none;
-            transition: none;
-            z-index: 5;
         }
-        .glass-shine-hover:hover::before {
-            animation: shinePass 0.75s ease-in-out;
+        .search-container:hover::after {
+            left: 150%;
+            transition: 0.7s ease-in-out;
         }
 
-        /* --- LAYOUT --- */
-        #app { height: 100%; display: flex; flex-direction: column; position: relative; }
-        
-        header {
-            padding: var(--padding); padding-top: max(15px, var(--safe-top));
-            display: flex; justify-content: space-between; align-items: center; z-index: 10;
+        /* Like Explosion Particles */
+        .particle {
+            position: absolute;
+            pointer-events: none;
+            border-radius: 50%;
+            animation: pop 0.6s ease-out forwards;
         }
-        .brand { font-size: 1.4rem; font-weight: 800; display: flex; align-items: center; gap: 8px; letter-spacing: -0.5px; }
-        .brand img { width: 28px; height: 28px; border-radius: 6px; }
+        @keyframes pop {
+            0% { transform: translate(0, 0) scale(1); opacity: 1; }
+            100% { transform: translate(var(--tw-translate-x), var(--tw-translate-y)) scale(0); opacity: 0; }
+        }
 
-        #desktop-sidebar {
-            display: none;
-            position: fixed; top: 0; left: 0; height: 100%; width: var(--sidebar-width);
-            background: var(--surface-color); border-right: 1px solid var(--surface-highlight);
-            padding: 30px 20px; z-index: 150;
-            flex-direction: column; justify-content: space-between;
-        }
-        .sidebar-menu { display: flex; flex-direction: column; gap: 10px; margin-top: 40px; }
+        /* Sidebar Styling Refinements */
         .sidebar-item {
-            display: flex; align-items: center; gap: 12px; padding: 12px 16px;
-            border-radius: 12px; color: var(--text-secondary); cursor: pointer; transition: 0.2s; font-weight: 600;
-        }
-        .sidebar-item:hover { background: var(--surface-highlight); color: var(--text-primary); }
-        .sidebar-item.active { background: var(--text-primary); color: var(--bg-color); }
-
-        main {
-            flex: 1; overflow-y: scroll; scroll-behavior: smooth;
-            padding-bottom: calc(var(--nav-height) + var(--mini-player-height) + 20px);
-            overscroll-behavior: contain; transition: margin-left 0.3s;
-        }
-        main::-webkit-scrollbar { display: none; }
-
-        .section-title { font-size: 1.3rem; margin: 24px var(--padding) 12px; font-weight: 700; }
-        
-        .search-container { padding: 0 var(--padding); margin-bottom: 15px; }
-        .search-bar {
-            width: 100%; background: var(--glass-panel);
-            backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
-            border: 1px solid var(--glass-border);
-            padding: 12px 16px; border-radius: 14px;
-            display: flex; align-items: center; font-size: 1rem;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-        }
-        .search-bar input { background: transparent; border: none; width: 100%; color: inherit; font-size: inherit; margin-left: 10px; }
-
-        .filters { display: flex; gap: 10px; padding: 0 var(--padding); margin-bottom: 20px; overflow-x: auto; }
-        .chip {
-            padding: 8px 16px; background: var(--surface-color); border-radius: 20px;
-            font-size: 0.85rem; font-weight: 600; color: var(--text-secondary);
-            border: 1px solid transparent; transition: all 0.2s; white-space: nowrap;
-        }
-        .chip.active { background: var(--text-primary); color: var(--bg-color); }
-
-        .horizontal-scroll { display: flex; gap: 16px; overflow-x: auto; padding: 0 var(--padding) 10px; }
-        .horizontal-scroll::-webkit-scrollbar { display: none; }
-        
-        .podcast-card { min-width: 140px; width: 140px; display: flex; flex-direction: column; gap: 8px; cursor: pointer; }
-        .cover-art {
-            width: 100%; aspect-ratio: 1; background: var(--surface-highlight);
-            border-radius: 16px; overflow: hidden; position: relative;
-        }
-        .cover-art img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s; }
-        .podcast-card:active .cover-art img { transform: scale(0.95); }
-
-        /* HOME PAGE SPECIFIC STYLES FOR SQUARES */
-        #view-home .podcast-card .cover-art {
-            border: 2px solid var(--text-primary); /* White in dark, Black in light */
-            box-sizing: border-box; /* Ensure border doesn't break layout */
-        }
-
-        .list-item {
-            display: flex; align-items: center; gap: 16px; padding: 12px var(--padding);
-            border-bottom: 1px solid rgba(255,255,255,0.03); transition: background 0.2s; cursor: pointer;
-        }
-        .list-item:active { background: var(--surface-highlight); }
-        .list-img { width: 56px; height: 56px; border-radius: 12px; background: var(--surface-highlight); object-fit: cover; flex-shrink: 0; }
-        .list-rank { font-size: 1.2rem; font-weight: 900; color: var(--text-secondary); width: 30px; text-align: center; font-variant-numeric: tabular-nums; }
-        
-        /* --- BADGES --- */
-        .verified-badge { width: 14px; height: 14px; margin-left: 4px; vertical-align: middle; display: inline-block; visibility: hidden; }
-        .verified-badge.visible { visibility: visible; }
-        .verified-badge.lg { width: 18px; height: 18px; margin-left: 6px; }
-        [data-theme="dark"] .verified-badge { fill: #ffffff; filter: drop-shadow(0 0 4px rgba(255,255,255,0.5)); }
-        [data-theme="light"] .verified-badge { fill: #000000; filter: none; }
-
-        .new-badge {
-            font-size: 0.6rem; font-weight: 900; letter-spacing: 0.5px;
-            background: var(--text-primary); color: var(--bg-color);
-            padding: 3px 6px; border-radius: 6px; margin-left: 8px;
-            vertical-align: middle; display: inline-block;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-        }
-        .trending-badge {
-            font-size: 0.6rem; font-weight: 800; letter-spacing: 0.3px;
-            background: linear-gradient(135deg, #FF9500, #FF3B30); color: white;
-            padding: 3px 8px; border-radius: 6px; margin-left: 8px;
-            vertical-align: middle; display: inline-block;
-            box-shadow: 0 2px 8px rgba(255, 59, 48, 0.3);
-        }
-
-        .odometer-wrapper { display: inline-flex; height: 1.2em; overflow: hidden; vertical-align: bottom; font-variant-numeric: tabular-nums; opacity: 0; transition: opacity 0.3s ease; }
-        .odometer-wrapper.active { opacity: 1; }
-        .odometer-ribbon { display: flex; flex-direction: column; transition: transform 1.2s cubic-bezier(0.16, 1, 0.3, 1); will-change: transform; }
-        .odometer-ribbon div { height: 1.2em; display: flex; justify-content: center; align-items: center; }
-        .odometer-static { display: inline-block; }
-        .pop-effect { animation: pop-bright 0.2s ease-out forwards; }
-        @keyframes pop-bright { 50% { transform: scale(1.1); filter: brightness(1.3); } }
-
-        /* PROFILE VIEW */
-        #view-profile-detail { 
-            background: var(--bg-color); 
-            z-index: 50; position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-            overflow-y: auto; padding-bottom: calc(100px + var(--safe-bottom) + 80px); 
-            overscroll-behavior: contain; transition: left 0.3s, width 0.3s;
-        }
-        #profile-bg-glow {
-            position: absolute; top: 0; left: 0; width: 100%; height: 60vh;
-            z-index: -1; pointer-events: none; overflow: hidden;
-        }
-        #profile-bg-glow img {
-            width: 100%; height: 100%; object-fit: cover;
-            filter: blur(80px) brightness(0.6); transform: scale(1.2);
-            mask-image: linear-gradient(to bottom, black 0%, transparent 100%);
-            -webkit-mask-image: linear-gradient(to bottom, black 0%, transparent 100%);
-        }
-        [data-theme="light"] #profile-bg-glow img { filter: blur(80px) brightness(1.2) saturate(1.5); }
-
-        .profile-header { padding: var(--padding); padding-top: 80px; display: flex; flex-direction: column; align-items: center; text-align: center; }
-        .profile-art { width: 160px; height: 160px; border-radius: 30px; margin-bottom: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); object-fit: cover; }
-        .profile-btn-row { display: flex; gap: 15px; margin-top: 15px; width: 100%; justify-content: center; }
-        
-        .chirp-btn-lg {
-            display: flex; align-items: center; gap: 8px; padding: 12px 30px;
-            border-radius: 30px; font-weight: 700; border: 1px solid var(--surface-highlight);
-            background: var(--surface-color); color: var(--text-primary); transition: all 0.2s;
-        }
-        .chirp-btn-lg.active { background: var(--text-primary); color: var(--bg-color); transform: scale(1.05); }
-        .chirp-btn-lg:active { transform: scale(0.95); }
-
-        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 0 var(--padding); margin-top: 20px; }
-        .stat-box {
-            background: var(--surface-color); padding: 15px; border-radius: 16px;
-            display: flex; flex-direction: column; gap: 4px;
-        }
-        
-        /* ERROR VIEW */
-        .error-container {
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            height: 60vh; text-align: center; opacity: 0.7; gap: 20px;
-        }
-        .error-code { font-size: 3rem; font-weight: 900; letter-spacing: -2px; }
-
-        /* --- CHAT UI --- */
-        #view-ai {
-            display: flex; flex-direction: column; height: 100%; 
-            position: relative; background: var(--bg-color);
-        }
-        #chat-history {
-            flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 20px;
-            padding-top: max(80px, var(--safe-top)); padding-bottom: 100px;
-        }
-        .chat-row { display: flex; gap: 12px; width: 100%; animation: fadeIn 0.3s ease; }
-        .chat-row.user { justify-content: flex-end; }
-        .chat-avatar {
-            width: 32px; height: 32px; border-radius: 50%; background: var(--surface-highlight);
-            display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: var(--text-primary);
-        }
-        .chat-msg {
-            max-width: 85%; padding: 14px 18px; border-radius: 18px; font-size: 0.95rem; line-height: 1.6;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05); word-wrap: break-word;
-        }
-        .chat-row.user .chat-msg { background: var(--text-primary); color: var(--bg-color); border-bottom-right-radius: 4px; }
-        .chat-row.ai .chat-msg { background: var(--glass-panel); border: 1px solid var(--glass-border); border-bottom-left-radius: 4px; color: var(--text-primary); }
-        .chat-actions { display: flex; gap: 8px; margin-top: 6px; margin-left: 44px; opacity: 0.7; }
-        .chat-action-btn { font-size: 0.75rem; background: none; border: none; color: var(--text-secondary); cursor: pointer; padding: 4px 8px; border-radius: 6px; }
-        .chat-action-btn:hover { background: var(--surface-highlight); color: var(--text-primary); }
-        .chat-input-wrapper {
-            position: absolute; bottom: 0; left: 0; width: 100%; 
-            padding: 15px 20px calc(20px + var(--nav-height) + var(--safe-bottom)); 
-            background: linear-gradient(to top, var(--bg-color) 20%, transparent); z-index: 120;
-        }
-        .chat-input-area {
-            background: var(--glass-panel); backdrop-filter: blur(25px);
-            border: 1px solid var(--glass-border); border-radius: 24px;
-            padding: 8px; display: flex; align-items: center; gap: 8px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
-        }
-        .chat-input { flex: 1; background: transparent; border: none; padding: 10px 14px; font-size: 1rem; color: var(--text-primary); }
-        .deep-think-btn {
-            width: 36px; height: 36px; border-radius: 50%; border: none;
-            background: var(--surface-highlight); color: var(--text-secondary);
-            display: flex; align-items: center; justify-content: center; transition: 0.3s;
-        }
-        .deep-think-btn.active { background: #8e44ad; color: white; box-shadow: 0 0 10px #8e44ad; }
-        .chat-send {
-            background: var(--text-primary); color: var(--bg-color); width: 40px; height: 40px;
-            border-radius: 50%; display: flex; align-items: center; justify-content: center; border: none;
-        }
-        .typing-dots { display: flex; align-items: center; gap: 4px; height: 24px; }
-        .typing-dots span { width: 6px; height: 6px; background: currentColor; border-radius: 50%; animation: blink 1.4s infinite both; }
-        .typing-dots span:nth-child(2) { animation-delay: 0.2s; } .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
-        @keyframes blink { 0% { opacity: 0.2; } 20% { opacity: 1; } 100% { opacity: 0.2; } }
-
-        .emoji-particle { position: fixed; pointer-events: none; font-size: 2rem; z-index: 1000; animation: flyOut 1s ease-out forwards; }
-        @keyframes flyOut { 0% { transform: translate(-50%, -50%) scale(0.5); opacity: 1; } 100% { transform: translate(var(--tx), var(--ty)) scale(1.5) rotate(var(--rot)); opacity: 0; } }
-
-        /* MODALS (Fixed) */
-        #install-modal, #withdraw-modal {
-            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.9);
-            width: 85%; max-width: 320px; background: var(--surface-color);
-            padding: 24px; border-radius: 24px; text-align: center;
-            z-index: 500; opacity: 0; pointer-events: none;
-            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            box-shadow: 0 20px 50px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1);
-        }
-        #install-modal.active, #withdraw-modal.active { opacity: 1; pointer-events: auto; transform: translate(-50%, -50%) scale(1); }
-        
-        .install-btn { padding: 12px 24px; border-radius: 12px; font-weight: 700; margin: 0 5px; cursor: pointer; }
-        .btn-yes { background: var(--text-primary); color: var(--bg-color); }
-        .btn-no { background: var(--surface-highlight); color: var(--text-secondary); }
-
-        #creators-modal {
-            position: fixed; bottom: 0; left: 0; width: 100%;
-            background: var(--surface-color); border-top-left-radius: 30px; border-top-right-radius: 30px;
-            z-index: 400; transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
-            padding: 20px; padding-bottom: max(40px, var(--safe-bottom));
-            box-shadow: 0 -10px 40px rgba(0,0,0,0.5);
-        }
-        #creators-modal.active { transform: translateY(0); }
-        
-        .modal-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.5); z-index: 350; opacity: 0; pointer-events: none; transition: opacity 0.3s;
-        }
-        .modal-overlay.active { opacity: 1; pointer-events: auto; }
-        
-        .creator-item {
-            padding: 16px; border-bottom: 1px solid rgba(255,255,255,0.05);
-            font-size: 1.1rem; font-weight: 500; display: flex; justify-content: space-between; align-items: center;
-        }
-        .creator-item:last-child { border-bottom: none; }
-        .creator-item:active { background: var(--surface-highlight); border-radius: 12px; }
-
-        /* --- MINI PLAYER & NAV --- */
-        #mini-player {
-            position: absolute; bottom: calc(var(--nav-height) + var(--safe-bottom)); left: 0; width: 100%;
-            height: var(--mini-player-height); background: var(--glass-panel);
-            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-            border-top: 1px solid rgba(255,255,255,0.05);
-            display: flex; align-items: center; padding: 0 var(--padding);
-            z-index: 90; transition: transform 0.3s ease, left 0.3s, width 0.3s;
-        }
-        #mini-player.expanded { transform: translateY(200%); }
-
-        nav {
-            position: absolute; bottom: 0; width: 100%; 
-            height: calc(var(--nav-height) + var(--safe-bottom));
-            background: var(--bg-color); display: flex; justify-content: space-around;
-            padding-top: 15px; padding-bottom: var(--safe-bottom);
-            border-top: 1px solid rgba(255,255,255,0.05); z-index: 100;
-            align-items: flex-start;
-        }
-        .nav-item { display: flex; flex-direction: column; align-items: center; gap: 6px; color: var(--text-secondary); opacity: 0.7; transition: 0.2s; }
-        .nav-item.active { color: var(--text-primary); opacity: 1; }
-
-        #full-player {
-            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-            background: rgba(10, 10, 10, 0.65);
-            backdrop-filter: blur(45px) saturate(180%); -webkit-backdrop-filter: blur(45px) saturate(180%);
-            z-index: 200; display: flex; flex-direction: column;
-            transform: translateY(100%); transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
-            overflow: hidden; 
-            padding: max(15px, var(--safe-top)) 24px max(20px, var(--safe-bottom));
-        }
-        #full-player.active { transform: translateY(0); }
-        [data-theme="light"] #full-player { background: rgba(255, 255, 255, 0.65); }
-
-        .player-top { flex: 0 0 auto; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        
-        .player-art-wrapper { 
-            width: 100%; height: auto; max-width: 340px; aspect-ratio: 1; max-height: 40vh; 
-            border-radius: 24px; overflow: hidden; box-shadow: 0 10px 40px rgba(0,0,0,0.3); margin: 0 auto 20px; position: relative;
-        }
-        .player-art-wrapper img { width: 100%; height: 100%; object-fit: cover; }
-        .player-info { flex: 0 0 auto; margin-bottom: 10px; text-align: left; }
-        .player-controls-area { flex: 0 0 auto; width: 100%; }
-
-        #lyrics-overlay {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.8); backdrop-filter: blur(15px);
-            z-index: 10; display: flex; flex-direction: column;
-            justify-content: center; align-items: center; text-align: center;
-            opacity: 0; pointer-events: none; transition: opacity 0.3s;
-            border-radius: 24px; padding: 30px;
-        }
-        #lyrics-overlay.active { opacity: 1; pointer-events: auto; }
-        .lyrics-text { font-size: 1.4rem; font-weight: 600; line-height: 1.6; color: #fff; min-height: 100px; transition: opacity 0.2s; }
-        
-        .clickable-artist { text-decoration: underline; text-decoration-color: transparent; transition: 0.2s; cursor: pointer; }
-        .clickable-artist.has-multi { text-decoration-color: var(--text-secondary); }
-        .clickable-artist.has-multi:active { color: var(--text-primary); }
-
-        .search-action-btn { 
-            width: 36px; height: 36px; border-radius: 50%; 
-            background: var(--surface-highlight); color: var(--text-primary);
-            display: flex; align-items: center; justify-content: center; border: none; z-index: 2; margin-left: auto;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            padding: 10px 12px;
+            border-radius: 10px;
             cursor: pointer;
+            color: #f1f1f1;
+            transition: background-color 0.2s;
+        }
+        .sidebar-item:hover {
+            background-color: #272727;
+        }
+        .sidebar-item i {
+            width: 24px;
+            text-align: center;
+            font-size: 1.2rem;
+        }
+        .sidebar-item span {
+            font-size: 0.9rem;
+            font-weight: 500;
         }
 
-        #toast {
-            position: fixed; top: -60px; left: 50%; transform: translateX(-50%);
-            background: var(--text-primary); color: var(--bg-color);
-            padding: 12px 24px; border-radius: 30px; font-weight: 700;
-            z-index: 300; transition: top 0.4s;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.2); display: flex; align-items: center; gap: 8px;
-        }
-        #toast.show { top: 20px; }
-
-        .spinner { width: 20px; height: 20px; border: 2px solid var(--text-secondary); border-top-color: var(--text-primary); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 10px auto; }
-        @keyframes spin { to { transform: rotate(360deg); } }
-
-        @media (min-width: 768px) {
-            header, nav { display: none !important; }
-            #desktop-sidebar { display: flex; }
-            main { margin-left: var(--sidebar-width); padding-bottom: calc(var(--mini-player-height) + 40px); height: 100vh; }
-            #view-profile-detail { left: var(--sidebar-width); width: calc(100% - var(--sidebar-width)); padding-bottom: 120px; }
-            #view-profile-detail > div:first-child { top: 20px; left: 30px; }
-            #mini-player { left: var(--sidebar-width); width: calc(100% - var(--sidebar-width)); bottom: 0; }
-            #full-player {
-                left: 50%; top: 50%; width: 450px; height: 85vh;
-                transform: translate(-50%, 150%); border-radius: 24px;
-                border: 1px solid var(--glass-border);
-                box-shadow: 0 40px 80px rgba(0,0,0,0.6);
-            }
-            #full-player.active { transform: translate(-50%, -50%); }
-            .player-top { margin-top: 10px; }
-            #full-player::before {
-                content: ''; position: fixed; top: -50vh; left: -50vw; width: 200vw; height: 200vh;
-                background: rgba(0,0,0,0.7); z-index: -1; pointer-events: none; opacity: 0; transition: opacity 0.4s;
-            }
-            #full-player.active::before { opacity: 1; pointer-events: auto; }
-            
-            #view-ai { margin-left: var(--sidebar-width); width: calc(100% - var(--sidebar-width)); padding-bottom: 20px; }
-            .chat-input-wrapper { left: var(--sidebar-width); width: calc(100% - var(--sidebar-width)); bottom: 20px; padding-bottom: 20px; }
+        .ambient-glow {
+            transition: background 1s ease;
         }
     </style>
 </head>
-<body data-theme="dark">
+<body class="font-sans antialiased min-h-screen flex flex-col">
 
-    <div id="app">
-        <!-- DESKTOP SIDEBAR -->
-        <aside id="desktop-sidebar">
-            <div class="brand"><img src="siteicon.png" alt="icon"> Chirpless</div>
-            <div class="sidebar-menu">
-                <div class="sidebar-item active glass-shine-hover" onclick="switchView('home', this)">
-                    <svg class="icon" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg> Home
-                </div>
-                <div class="sidebar-item glass-shine-hover" onclick="switchView('discover', this)">
-                    <svg class="icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg> Discover
-                </div>
-                <div class="sidebar-item glass-shine-hover" onclick="switchView('library', this)">
-                    <svg class="icon" viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg> Library
-                </div>
-                <div class="sidebar-item glass-shine-hover" onclick="switchView('ai', this)">
-                    <svg class="icon" viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg> AI
-                </div>
-                <div class="sidebar-item glass-shine-hover" onclick="openWithdraw()">
-                    <svg class="icon" viewBox="0 0 24 24"><path d="M21 12V7H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h16v4h2v10a2 2 0 0 1-2 2h-2v-5a2 2 0 0 0-2-2H3v2h14v7H5a2 2 0 0 1-2-2v-5"/></svg> Withdraw
-                </div>
-            </div>
-            <div style="cursor:pointer; display:flex; align-items:center; gap:12px; color:var(--text-secondary); font-weight:600; padding:12px 16px;" onclick="toggleTheme()">
-                <svg class="icon" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg> Theme
-            </div>
-        </aside>
-
-        <!-- HEADER -->
-        <header>
-            <div class="brand"><img src="siteicon.png" alt="icon"> Chirpless</div>
-            <button onclick="toggleTheme()" style="background:none; border:none; color:inherit;">
-                <svg class="icon" style="stroke: currentColor; stroke-width: 2;" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
-            </button>
-        </header>
-
-        <main id="main-content">
-            <div id="view-home" class="view">
-                <div class="section-title">Trending Now</div>
-                <div class="horizontal-scroll" id="trending-container" style="min-height:200px"><div class="spinner"></div></div>
-                <div class="section-title">Recommended for You</div>
-                <div class="horizontal-scroll" id="mix-container" style="min-height:200px"><div class="spinner"></div></div>
-                <div style="height:20px"></div>
-            </div>
-
-            <div id="view-discover" class="view hidden">
-                <div class="section-title">Explore</div>
-                <div class="search-container">
-                    <div class="search-bar glass-shine-hover">
-                        <svg class="icon" style="opacity:0.5; width:20px;" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                        <input type="search" id="search-input" placeholder="Search..." onkeypress="handleSearch(event)">
-                    </div>
-                </div>
-                <div class="filters">
-                    <div class="chip active" onclick="setFilter('all', this)">All</div>
-                    <div class="chip" onclick="setFilter('profile', this)">Profiles</div>
-                    <div class="chip" onclick="setFilter('episode', this)">Episodes</div>
-                    <div class="chip" onclick="setFilter('charts', this)">Charts</div>
-                </div>
-                <div id="search-results">
-                    <div style="text-align:center; color:var(--text-secondary); margin-top:40px;">Find creators and stories.</div>
-                </div>
-            </div>
-
-            <div id="view-library" class="view hidden">
-                <div class="section-title">Your Chirps</div>
-                <div id="library-list"></div>
-            </div>
-
-            <div id="view-ai" class="view hidden">
-                <div id="chat-history">
-                    <div class="chat-row ai">
-                        <div class="chat-avatar"><svg class="icon" viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg></div>
-                        <div class="chat-msg">Hello! I'm Chirpless X4.2. Ask me about podcasts, stats, or how to use the app.</div>
-                    </div>
-                </div>
-                <div class="chat-input-wrapper">
-                    <div class="chat-input-area">
-                        <button class="deep-think-btn" id="deep-think-toggle" onclick="toggleDeepThink()"><svg class="icon" viewBox="0 0 24 24"><path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 2.96-3.08A2.5 2.5 0 0 1 9.5 2z M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-2.96-3.08A2.5 2.5 0 0 0 14.5 2z"/></svg></button>
-                        <input type="text" id="ai-input" class="chat-input" placeholder="Ask Chirpless X4.2..." onkeypress="if(event.key==='Enter')sendAI()">
-                        <button class="chat-send" onclick="sendAI()"><svg class="icon" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>
-                    </div>
-                </div>
-            </div>
-        </main>
-
-        <!-- PROFILE DETAIL VIEW -->
-        <div id="view-profile-detail" class="hidden">
-            <div id="profile-bg-glow"><img id="pd-bg-img" src=""></div>
-            <div style="position:absolute; top:max(15px, env(safe-area-inset-top)); left:20px; z-index:10;">
-                <button onclick="closeProfile()" style="background:var(--glass-panel); width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center; border:none; color:var(--text-primary); backdrop-filter:blur(10px);">
-                    <svg class="icon" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
-                </button>
-            </div>
+    <!-- ONBOARDING MODAL -->
+    <div id="onboarding" class="fixed inset-0 z-50 bg-chirp-bg flex items-center justify-center p-4">
+        <div class="bg-chirp-hover p-8 rounded-xl w-full max-w-2xl border border-chirp-border shadow-2xl">
+            <h1 class="text-4xl font-logo font-bold mb-2 text-center text-white">Chirpless</h1>
+            <p class="text-chirp-secondary text-center mb-8">Create your channel identity to start creating.</p>
             
-            <div class="profile-header">
-                <img id="pd-img" src="" class="profile-art">
-                <h1 id="pd-title" style="margin:0; font-size:1.8rem; line-height:1.2;">Title</h1>
-                <p id="pd-artist-container" style="margin:8px 0;">
-                    <span id="pd-artist" class="text-secondary clickable-artist" onclick="handleArtistClick(this.innerText)">Artist</span>
-                    <svg class="verified-badge lg" id="pd-verified" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
-                    <!-- Sticker Slot -->
-                    <span style="font-size:0.9rem; margin-left:5px; opacity:0.7;">🕮 ✩</span>
-                </p>
-                <div class="odometer-container" id="pd-header-stat" style="font-weight:700; font-size:1.1rem; margin-top:5px; opacity:0.8;"></div>
-                <div class="profile-btn-row">
-                    <button id="pd-chirp-btn" class="chirp-btn-lg" onclick="toggleProfileChirp()">
-                        <svg class="icon" viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
-                        <span id="pd-chirp-text">Chirp</span>
+            <form id="onboardingForm" class="space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Images -->
+                    <div class="space-y-4">
+                        <div class="flex flex-col items-center">
+                            <div class="w-24 h-24 rounded-full bg-chirp-bg border-2 border-chirp-border overflow-hidden mb-2 relative group cursor-pointer" onclick="document.getElementById('pfpInput').click()">
+                                <img id="pfpPreview" src="https://ui-avatars.com/api/?name=User&background=random" class="w-full h-full object-cover">
+                                <div class="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition">
+                                    <i class="fa-solid fa-camera"></i>
+                                </div>
+                            </div>
+                            <label class="text-sm text-chirp-secondary">Profile Picture</label>
+                            <input type="file" id="pfpInput" accept="image/*">
+                        </div>
+
+                        <div class="flex flex-col items-center">
+                            <div class="w-full h-24 rounded-lg bg-chirp-bg border-2 border-chirp-border overflow-hidden mb-2 relative group cursor-pointer" onclick="document.getElementById('bannerInput').click()">
+                                <img id="bannerPreview" src="https://via.placeholder.com/600x150/000000/333333?text=Channel+Banner" class="w-full h-full object-cover">
+                                <div class="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition">
+                                    <i class="fa-solid fa-image"></i>
+                                </div>
+                            </div>
+                            <label class="text-sm text-chirp-secondary">Channel Banner</label>
+                            <input type="file" id="bannerInput" accept="image/*">
+                        </div>
+                    </div>
+
+                    <!-- Details -->
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-1">Channel Name</label>
+                            <input type="text" id="channelName" required class="w-full bg-chirp-bg border border-chirp-border rounded p-2 focus:border-chirp-blue outline-none transition" placeholder="e.g. Tech Guru">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-1">Handle</label>
+                            <div class="flex items-center bg-chirp-bg border border-chirp-border rounded px-2">
+                                <span class="text-chirp-secondary">@</span>
+                                <input type="text" id="channelHandle" required class="w-full bg-transparent p-2 outline-none" placeholder="techguru">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-1">Subscriber Count (Start)</label>
+                            <input type="number" id="subCount" value="0" class="w-full bg-chirp-bg border border-chirp-border rounded p-2 focus:border-chirp-blue outline-none" placeholder="0">
+                        </div>
+                         <div>
+                            <label class="block text-sm font-medium mb-1">Country</label>
+                            <select id="country" class="w-full bg-chirp-bg border border-chirp-border rounded p-2 outline-none">
+                                <option value="United States">United States</option>
+                                <option value="United Kingdom">United Kingdom</option>
+                                <option value="Canada">Canada</option>
+                                <option value="Germany">Germany</option>
+                                <option value="Japan">Japan</option>
+                                <option value="Brazil">Brazil</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium mb-1">Bio / About</label>
+                    <textarea id="channelBio" rows="3" class="w-full bg-chirp-bg border border-chirp-border rounded p-2 focus:border-chirp-blue outline-none resize-none" placeholder="Tell viewers about your channel..."></textarea>
+                </div>
+
+                <button type="submit" class="w-full bg-chirp-blue text-black font-bold py-2 rounded-full hover:bg-blue-400 transition">Create Channel</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MAIN APP STRUCTURE (Hidden initially) -->
+    <div id="app" class="hidden flex-1 flex flex-col h-screen">
+        
+        <!-- HEADER -->
+        <nav class="h-14 bg-chirp-bg flex items-center justify-between px-6 fixed w-full top-0 z-40 border-b border-chirp-border/10">
+            <div class="flex items-center gap-6">
+                <button class="p-2 hover:bg-chirp-hover rounded-full w-10 h-10 flex items-center justify-center">
+                    <i class="fa-solid fa-bars text-xl"></i>
+                </button>
+                <div class="flex items-center cursor-pointer" onclick="router.navigate('channel')">
+                    <span class="font-logo font-bold text-2xl tracking-tight text-white select-none">Chirpless</span>
+                </div>
+            </div>
+
+            <div class="hidden md:flex flex-1 max-w-2xl mx-10">
+                <div class="flex w-full search-container rounded-full group">
+                    <input type="text" placeholder="Search" class="w-full bg-[#121212] border border-[#303030] rounded-l-full py-2 px-4 focus:border-blue-500 outline-none placeholder-gray-500 transition group-hover:bg-black">
+                    <button class="bg-[#222222] border border-l-0 border-[#303030] rounded-r-full px-5 py-2 hover:bg-[#303030] transition relative z-10">
+                        <i class="fa-solid fa-magnifying-glass text-gray-400"></i>
                     </button>
                 </div>
             </div>
 
-            <div class="filters" style="justify-content:center; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:15px;">
-                <div class="chip active" id="tab-episodes" onclick="switchProfileTab('episodes')">Episodes</div>
-                <div class="chip" id="tab-stats" onclick="switchProfileTab('stats')">Stats</div>
-            </div>
-
-            <div id="pd-content-episodes" style="padding-bottom:100px;"></div>
-            <div id="pd-loading-more" class="hidden"><div class="spinner"></div></div>
-
-            <div id="pd-content-stats" class="hidden" style="padding-bottom:100px;">
-                <div class="stats-grid">
-                    <div class="stat-box">
-                        <span class="text-xs text-secondary">Total Chirps</span>
-                        <span class="font-bold odometer-container" style="font-size:1.5rem" id="stat-chirps"></span>
-                    </div>
-                    <div class="stat-box">
-                        <span class="text-xs text-secondary">Total Cash Earned ($0.0000011/stream)</span>
-                        <span class="font-bold odometer-container" style="font-size:1.8rem; color:var(--text-primary);" id="stat-cash">--</span>
-                    </div>
+            <div class="flex items-center gap-4">
+                <button onclick="ui.toggleUploadModal()" class="p-2 hover:bg-chirp-hover rounded-full w-10 h-10 flex items-center justify-center relative group">
+                    <i class="fa-solid fa-video text-xl group-hover:text-white transition"></i>
+                    <span class="absolute -bottom-10 bg-gray-600 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition pointer-events-none">Create</span>
+                </button>
+                <button onclick="router.navigate('studio')" class="p-2 hover:bg-chirp-hover rounded-full w-10 h-10 flex items-center justify-center group relative" title="Manage Videos">
+                    <i class="fa-solid fa-wand-magic-sparkles text-xl group-hover:text-chirp-blue transition"></i>
+                </button>
+                <div class="w-8 h-8 rounded-full overflow-hidden cursor-pointer border border-transparent hover:border-chirp-blue transition" onclick="router.navigate('channel')">
+                    <img id="navPfp" src="" class="w-full h-full object-cover">
                 </div>
-                <div style="padding:20px; text-align:center; color:var(--text-secondary); font-size:0.8rem; line-height:1.5;">
-                    Lifetime Analytics across all platforms.<br>
-                </div>
-            </div>
-            
-            <div id="pd-error-view" class="hidden error-container">
-                 <div class="error-code">214 𖠌</div>
-                 <div>Content Unavailable</div>
-                 <button onclick="closeProfile()" class="install-btn btn-yes">Go Back</button>
-            </div>
-        </div>
-
-        <!-- MODALS -->
-        <div class="modal-overlay" id="install-overlay"></div>
-        <div id="install-modal">
-            <h2 style="margin-top:0;">Install Chirpless?</h2>
-            <p style="color:var(--text-secondary); margin-bottom:20px;">Get the full app experience on your home screen.</p>
-            <div class="flex justify-center">
-                <button class="install-btn btn-no" onclick="dismissInstall()">No</button>
-                <button class="install-btn btn-yes" onclick="triggerInstall()">Yes</button>
-            </div>
-        </div>
-
-        <div class="modal-overlay" id="withdraw-overlay"></div>
-        <div id="withdraw-modal">
-            <h2 style="margin-top:0;">Withdraw Funds</h2>
-            <p style="color:var(--text-secondary); margin-bottom:20px;">Contact <b>PeytoToria@gmail.com</b> to schedule a withdrawal.</p>
-            <p style="color:var(--text-secondary); font-size:0.8rem; margin-bottom:20px;">Processing time: 1 week - 4 years.</p>
-            <button class="install-btn btn-yes" onclick="closeWithdraw()">Okay</button>
-        </div>
-
-        <div class="modal-overlay" id="modal-overlay" onclick="closeCreatorsModal()"></div>
-        <div id="creators-modal">
-            <div style="text-align:center; font-weight:bold; margin-bottom:20px; opacity:0.6;">Featured Creators</div>
-            <div id="creators-list"></div>
-        </div>
-
-        <div id="toast"><svg width="20" height="20" viewBox="0 0 24 24" fill="var(--bg-color)"><path d="M21 15C21 19 17 22 13 22C9 22 10 18 10 15C10 12 5 10 3 8C5.5 6 12 2 12 2Z"/></svg> Chirped!</div>
-
-        <!-- MINI PLAYER -->
-        <div id="mini-player" class="glass-shine-hover" onclick="openFullPlayer()">
-            <img id="mini-img" src="" class="list-img" style="opacity:0">
-            <div style="flex:1; margin-left:12px; overflow:hidden;">
-                <div id="mini-title" class="font-bold text-sm" style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Select a chirp</div>
-                <div id="mini-artist" class="text-xs text-secondary">Chirpless</div>
-            </div>
-            <button id="mini-play-btn" onclick="event.stopPropagation(); togglePlay()" style="padding:10px; background:none; border:none; color:inherit;">
-                <svg class="icon" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
-            </button>
-        </div>
-
-        <!-- NAV -->
-        <nav>
-            <div class="nav-item active glass-shine-hover" onclick="switchView('home', this)">
-                <svg class="icon" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg> Home
-            </div>
-            <div class="nav-item glass-shine-hover" onclick="switchView('discover', this)">
-                <svg class="icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg> Discover
-            </div>
-            <div class="nav-item glass-shine-hover" onclick="switchView('library', this)">
-                <svg class="icon" viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg> Library
-            </div>
-             <div class="nav-item glass-shine-hover" onclick="switchView('ai', this)">
-                <svg class="icon" viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg> AI
             </div>
         </nav>
 
-        <!-- FULL PLAYER -->
-        <div id="full-player" class="glass-shine-hover">
-            <div class="player-top">
-                <button onclick="closeFullPlayer()" style="background:none; border:none; color:inherit;"><svg class="icon" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg></button>
-                <span class="text-xs font-bold" style="letter-spacing:2px;">NOW PLAYING</span>
-                <div style="width:24px;"></div>
-            </div>
-
-            <div class="player-art-area">
-                <div class="player-art-wrapper">
-                    <img id="fp-img" src="" alt="Album Art">
-                    <div id="lyrics-overlay">
-                        <div class="spinner" id="lyrics-spinner" style="margin-bottom:20px;"></div>
-                        <div class="lyrics-text" id="lyrics-content">Transcribing Audio Stream...</div>
+        <div class="flex flex-1 pt-14 overflow-hidden">
+            <!-- SIDEBAR -->
+            <aside class="w-20 md:w-64 bg-chirp-sidebar hidden md:flex flex-col overflow-y-auto pb-4 shrink-0 px-3">
+                <div class="space-y-1 mt-3">
+                    <div onclick="router.navigate('channel')" class="sidebar-item">
+                        <i class="fa-solid fa-house"></i>
+                        <span>Home</span>
+                    </div>
+                    <div onclick="router.navigate('shorts')" class="sidebar-item">
+                        <i class="fa-solid fa-bolt"></i>
+                        <span>Shorts</span>
+                    </div>
+                    <div class="sidebar-item">
+                        <i class="fa-solid fa-clapperboard"></i>
+                        <span>Subscriptions</span>
                     </div>
                 </div>
-            </div>
-
-            <div class="player-info">
-                <h2 id="fp-title" style="margin:0; font-size:1.5rem; line-height:1.2; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">Title</h2>
-                <p id="fp-artist" class="text-secondary clickable-artist" onclick="handleArtistClick(this.innerText)" style="margin:5px 0 0;">Artist</p>
-            </div>
-
-            <div class="player-controls-area">
-                <div class="flex justify-between items-center" style="margin-bottom:15px; padding:0 10px;">
-                    <button onclick="toggleLyrics()" style="color:var(--text-secondary); background:none; border:none;">
-                        <svg class="icon" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><line x1="9" y1="10" x2="15" y2="10"/><line x1="9" y1="6" x2="15" y2="6"/></svg>
-                    </button>
-                    <canvas id="wave-canvas" style="flex:1; height:40px; margin:0 15px; opacity:0.6;"></canvas>
+                <hr class="border-chirp-border my-3 mx-2">
+                <div class="space-y-1">
+                    <h3 class="px-3 py-1 font-bold text-base mb-1 flex items-center gap-2">You <i class="fa-solid fa-chevron-right text-xs"></i></h3>
+                    <div onclick="router.navigate('studio')" class="sidebar-item">
+                         <i class="fa-solid fa-user-gear"></i>
+                        <span>Your Channel</span>
+                    </div>
+                    <div onclick="router.navigate('history')" class="sidebar-item">
+                        <i class="fa-solid fa-clock-rotate-left"></i>
+                        <span>History</span>
+                    </div>
+                    <div onclick="router.navigate('playlists')" class="sidebar-item">
+                        <i class="fa-solid fa-list-ul"></i>
+                        <span>Playlists</span>
+                    </div>
+                     <div class="sidebar-item">
+                        <i class="fa-regular fa-thumbs-up"></i>
+                        <span>Liked videos</span>
+                    </div>
                 </div>
+                <hr class="border-chirp-border my-3 mx-2">
+                <div class="px-2">
+                    <button onclick="simulation.nextDay()" class="w-full bg-gradient-to-r from-chirp-blue to-purple-600 text-white font-bold py-3 rounded-lg shadow-lg hover:opacity-90 hover:scale-[1.02] transition active:scale-95 flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-calendar-day"></i> Next Day
+                    </button>
+                    <p id="currentDayDisplay" class="text-center text-xs text-chirp-secondary mt-2 font-mono">Day 1</p>
+                </div>
+            </aside>
+
+            <!-- MAIN CONTENT AREA -->
+            <main id="mainContent" class="flex-1 overflow-y-auto bg-chirp-bg p-4 relative scroll-smooth">
                 
-                <div id="progress-container" onclick="seek(event)" style="width:100%; height:20px; display:flex; align-items:center;">
-                    <div style="width:100%; height:4px; background:var(--accent-dim); border-radius:2px; overflow:hidden;">
-                        <div id="progress-fill" style="width:0%; height:100%; background:var(--text-primary);"></div>
+                <!-- CHANNEL VIEW -->
+                <div id="channelView" class="max-w-6xl mx-auto fade-enter-active">
+                    <!-- Banner -->
+                    <div class="w-full h-32 md:h-52 rounded-xl overflow-hidden bg-gray-800 mb-6">
+                        <img id="channelBanner" src="" class="w-full h-full object-cover">
+                    </div>
+
+                    <!-- Header -->
+                    <div class="flex flex-col md:flex-row gap-6 items-center md:items-start mb-6 px-4">
+                        <div class="w-32 h-32 md:w-40 md:h-40 rounded-full overflow-hidden border-4 border-chirp-bg -mt-20 z-10">
+                            <img id="channelPfp" src="" class="w-full h-full object-cover bg-black">
+                        </div>
+                        <div class="flex-1 text-center md:text-left">
+                            <h1 class="text-3xl font-bold flex items-center justify-center md:justify-start gap-2">
+                                <span id="displayName"></span>
+                                <i id="channelVerified" class="hidden fa-solid fa-circle-check text-chirp-secondary text-lg" title="Verified"></i>
+                            </h1>
+                            <div class="text-chirp-secondary text-sm flex flex-col md:flex-row gap-2 mt-1 items-center md:items-start">
+                                <span id="displayHandle"></span>
+                                <span class="hidden md:inline">•</span>
+                                <span id="displaySubs" class="odometer-target">0</span> subscribers
+                                <span class="hidden md:inline">•</span>
+                                <span id="displayVideoCount">0 videos</span>
+                            </div>
+                            <div class="mt-2 text-chirp-secondary text-sm truncate max-w-2xl cursor-pointer" onclick="ui.switchTab('about')">
+                                <span id="bioSnippet"></span> <span class="font-bold text-white">...more</span>
+                            </div>
+                            <div class="mt-4 flex gap-2 justify-center md:justify-start">
+                                <button class="bg-[#272727] hover:bg-[#3f3f3f] text-sm font-medium py-2 px-4 rounded-full transition">Customize channel</button>
+                                <button onclick="router.navigate('studio')" class="bg-[#272727] hover:bg-[#3f3f3f] text-sm font-medium py-2 px-4 rounded-full transition">Manage videos</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tabs -->
+                    <div class="border-b border-chirp-border mb-6 flex gap-6 px-4 overflow-x-auto">
+                        <button onclick="ui.switchTab('home')" class="tab-btn tab-active pb-3 font-medium uppercase text-sm" data-tab="home">Home</button>
+                        <button onclick="ui.switchTab('videos')" class="tab-btn tab-inactive pb-3 font-medium uppercase text-sm" data-tab="videos">Videos</button>
+                        <button onclick="ui.switchTab('shorts')" class="tab-btn tab-inactive pb-3 font-medium uppercase text-sm" data-tab="shorts">Shorts</button>
+                        <button onclick="ui.switchTab('playlists')" class="tab-btn tab-inactive pb-3 font-medium uppercase text-sm" data-tab="playlists">Playlists</button>
+                        <button onclick="ui.switchTab('about')" class="tab-btn tab-inactive pb-3 font-medium uppercase text-sm" data-tab="about">About</button>
+                    </div>
+
+                    <!-- Tab Contents -->
+                    <div id="tab-home" class="tab-content block">
+                        <div id="emptyState" class="text-center py-20 hidden">
+                            <div class="bg-[#1f1f1f] w-32 h-32 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <i class="fa-solid fa-video text-4xl text-chirp-secondary"></i>
+                            </div>
+                            <h3 class="text-xl font-bold">Upload a video to get started</h3>
+                            <p class="text-chirp-secondary mb-4">Start sharing your story with the world.</p>
+                            <button onclick="ui.toggleUploadModal()" class="bg-chirp-blue text-black font-bold py-2 px-4 rounded-full">Upload Video</button>
+                        </div>
+                        <div id="latestVideosGrid" class="video-grid"></div>
+                    </div>
+
+                    <div id="tab-videos" class="tab-content hidden">
+                        <h2 class="text-lg font-bold mb-4">Videos</h2>
+                        <div id="allVideosGrid" class="video-grid"></div>
+                    </div>
+
+                    <div id="tab-shorts" class="tab-content hidden">
+                        <h2 class="text-lg font-bold mb-4 flex items-center gap-2"><i class="fa-solid fa-bolt text-chirp-red"></i> Shorts</h2>
+                        <div id="shortsGrid" class="shorts-grid"></div>
+                    </div>
+
+                    <div id="tab-playlists" class="tab-content hidden">
+                        <div class="flex justify-between items-center mb-4">
+                            <h2 class="text-lg font-bold">Created Playlists</h2>
+                            <button onclick="playlistMgr.create()" class="text-sm bg-[#272727] hover:bg-[#3f3f3f] px-3 py-1 rounded-full font-medium">
+                                <i class="fa-solid fa-plus mr-1"></i> New Playlist
+                            </button>
+                        </div>
+                        <div id="playlistsGrid" class="video-grid"></div>
+                    </div>
+
+                    <div id="tab-about" class="tab-content hidden">
+                        <div class="flex flex-col md:flex-row gap-8">
+                            <div class="flex-1">
+                                <h3 class="text-lg font-bold mb-2">Description</h3>
+                                <p id="fullBio" class="whitespace-pre-wrap text-sm leading-relaxed text-gray-300"></p>
+                            </div>
+                            <div class="w-full md:w-80 space-y-4">
+                                <h3 class="text-lg font-bold border-b border-chirp-border pb-2">Stats</h3>
+                                <div class="space-y-3 text-sm">
+                                    <div class="border-b border-chirp-border pb-3">
+                                        Joined <span id="joinDate"></span>
+                                    </div>
+                                    <div class="border-b border-chirp-border pb-3">
+                                        <span id="totalViewsStats" class="odometer-target">0</span> views
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <i class="fa-solid fa-earth-americas text-chirp-secondary"></i>
+                                        <span id="countryDisplay"></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <div class="flex justify-between text-xs text-secondary" style="margin-bottom:20px;">
-                    <span id="time-current">0:00</span>
-                    <span id="time-total">0:00</span>
+
+                <!-- STUDIO / MANAGE VIDEOS VIEW -->
+                <div id="studioView" class="hidden max-w-7xl mx-auto p-4">
+                    <h1 class="text-2xl font-bold mb-6">Channel Studio</h1>
+                    
+                    <!-- Top Analytics Cards -->
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+                        <div class="bg-[#1f1f1f] p-5 rounded-xl border border-chirp-border">
+                            <h3 class="text-chirp-secondary text-sm font-medium mb-1">Total Revenue (Est.)</h3>
+                            <div class="text-2xl font-bold text-chirp-green">$<span id="studioRevenue">0.00</span></div>
+                            <p class="text-xs text-chirp-secondary mt-2">Lifetime earnings</p>
+                        </div>
+                        <div class="bg-[#1f1f1f] p-5 rounded-xl border border-chirp-border">
+                            <h3 class="text-chirp-secondary text-sm font-medium mb-1">Views (Today)</h3>
+                            <div class="text-2xl font-bold" id="studioViewsToday">0</div>
+                            <p class="text-xs text-chirp-green mt-2"><i class="fa-solid fa-arrow-up"></i> Live</p>
+                        </div>
+                         <div class="bg-[#1f1f1f] p-5 rounded-xl border border-chirp-border">
+                            <h3 class="text-chirp-secondary text-sm font-medium mb-1">Views (Lifetime)</h3>
+                            <div class="text-2xl font-bold" id="studioViewsLife">0</div>
+                        </div>
+                        <div class="bg-[#1f1f1f] p-5 rounded-xl border border-chirp-border">
+                            <h3 class="text-chirp-secondary text-sm font-medium mb-1">Subscribers</h3>
+                            <div class="text-2xl font-bold" id="studioSubs">0</div>
+                        </div>
+                    </div>
+
+                    <div class="flex gap-6 flex-col lg:flex-row">
+                        <!-- Video List -->
+                        <div class="flex-1 bg-[#1f1f1f] rounded-xl border border-chirp-border overflow-hidden">
+                            <div class="p-4 border-b border-chirp-border flex justify-between items-center">
+                                <h3 class="font-bold">Video Content</h3>
+                                <span class="text-xs text-chirp-secondary" id="storageCount">0/2 Videos (Storage Limit)</span>
+                            </div>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left text-sm">
+                                    <thead class="bg-[#121212] text-chirp-secondary uppercase text-xs">
+                                        <tr>
+                                            <th class="p-4">Video</th>
+                                            <th class="p-4">Date</th>
+                                            <th class="p-4">Views</th>
+                                            <th class="p-4">Likes</th>
+                                            <th class="p-4 text-right">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="studioVideoList" class="divide-y divide-chirp-border">
+                                        <!-- Studio Items -->
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div id="studioEmpty" class="hidden p-8 text-center text-chirp-secondary">
+                                No videos found.
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
-                <div class="flex justify-between items-center" style="max-width:350px; margin:0 auto;">
-                    <button class="bird-btn" id="fp-bird-btn" onclick="toggleTrackChirp()" style="background:var(--surface-highlight); width:44px; height:44px; border-radius:50%; display:flex; align-items:center; justify-content:center; color:inherit; border:none;">
-                        <svg class="icon" viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
-                    </button>
-                    <div class="odometer-container" id="fp-chirp-count" style="font-weight:700; font-size:1rem; position:absolute; transform:translate(55px, -20px);"></div>
-                    <button onclick="skip(-15)" style="background:none; border:none; color:inherit;"><svg class="icon" style="width:32px; height:32px;" viewBox="0 0 24 24"><path d="M11 17l-5-5 5-5M18 17l-5-5 5-5"/></svg></button>
-                    <button onclick="togglePlay()" style="width:70px; height:70px; background:var(--text-primary); color:var(--bg-color); border-radius:50%; display:flex; align-items:center; justify-content:center; border:none;">
-                        <svg id="fp-play-icon" style="width:32px; height:32px; fill:currentColor; stroke:none;" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
-                    </button>
-                    <button onclick="skip(15)" style="background:none; border:none; color:inherit;"><svg class="icon" style="width:32px; height:32px;" viewBox="0 0 24 24"><path d="M13 17l5-5-5-5M6 17l5-5-5-5"/></svg></button>
-                    <button onclick="changeSpeed()" style="background:var(--surface-highlight); width:44px; height:44px; border-radius:50%; font-weight:bold; font-size:0.8rem; border:none; color:inherit;" id="speed-btn">1x</button>
+                <!-- GENERIC LIST VIEW (Shorts, History, Subscriptions) -->
+                <div id="genericView" class="hidden max-w-6xl mx-auto">
+                    <h2 id="genericTitle" class="text-2xl font-bold mb-6"></h2>
+                    <div id="genericGrid" class="video-grid"></div>
                 </div>
+
+                <!-- PLAYLIST DETAIL VIEW -->
+                <div id="playlistDetailView" class="hidden max-w-6xl mx-auto flex flex-col md:flex-row gap-8">
+                    <!-- Playlist Sidebar -->
+                    <div class="w-full md:w-80 shrink-0">
+                         <div class="bg-gradient-to-b from-[#444] to-[#111] p-6 rounded-xl min-h-[500px] flex flex-col text-center md:text-left sticky top-4">
+                            <div class="aspect-video bg-black rounded-xl overflow-hidden mb-4 shadow-xl">
+                                <img id="plDetailThumb" src="" class="w-full h-full object-cover">
+                            </div>
+                            <h2 id="plDetailTitle" class="text-2xl font-bold mb-2"></h2>
+                            <p id="plDetailOwner" class="text-sm font-bold text-white mb-1"></p>
+                            <div class="text-xs text-[#aaa] mb-4">
+                                <span id="plDetailVideoCount"></span> videos • <span id="plDetailViews" class="odometer-target">0</span> views
+                            </div>
+                            <div class="flex gap-2 mt-auto">
+                                <button class="flex-1 bg-white text-black font-bold py-2 rounded-full hover:bg-gray-200"><i class="fa-solid fa-play mr-2"></i> Play all</button>
+                                <button class="w-10 h-10 flex items-center justify-center bg-[#ffffff1a] rounded-full hover:bg-[#ffffff33]"><i class="fa-solid fa-shuffle text-white"></i></button>
+                            </div>
+                         </div>
+                    </div>
+                    <!-- Playlist Videos -->
+                    <div class="flex-1 space-y-2" id="plDetailList">
+                        <!-- Items injected here -->
+                    </div>
+                </div>
+
+                <!-- WATCH VIEW -->
+                <div id="watchView" class="hidden max-w-[1700px] mx-auto flex flex-col lg:flex-row gap-6">
+                    <!-- Left: Player & Comments -->
+                    <div class="flex-1">
+                        <!-- Player -->
+                        <div id="playerContainer" class="w-full bg-black rounded-none md:rounded-xl overflow-hidden aspect-video-container shadow-lg shadow-black/50 ambient-glow">
+                            <video id="mainPlayer" controls class="w-full h-full object-contain" controlsList="nodownload"></video>
+                        </div>
+
+                        <!-- Info -->
+                        <div class="py-4 px-2 md:px-0">
+                            <h1 id="videoTitle" class="text-xl md:text-2xl font-bold mb-2 line-clamp-2"></h1>
+                            
+                            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 rounded-full overflow-hidden cursor-pointer" onclick="router.navigate('channel')">
+                                        <img id="videoOwnerPfp" src="" class="w-full h-full object-cover">
+                                    </div>
+                                    <div>
+                                        <div class="flex items-center gap-1 cursor-pointer hover:text-gray-300" onclick="videoMgr.showCollabModal()">
+                                            <div id="videoOwnerName" class="font-bold text-sm"></div>
+                                            <i id="videoVerified" class="hidden fa-solid fa-circle-check text-chirp-secondary text-xs" title="Verified"></i>
+                                        </div>
+                                        <div id="videoOwnerSubs" class="text-xs text-chirp-secondary"></div>
+                                    </div>
+                                    <button class="ml-4 bg-white text-black px-4 py-2 rounded-full font-bold text-sm hover:bg-gray-200">Subscribe</button>
+                                </div>
+
+                                <div class="flex items-center gap-2 overflow-x-auto pb-2 md:pb-0">
+                                    <div class="flex bg-[#222222] rounded-full h-9 items-center">
+                                        <button id="likeBtn" class="flex items-center gap-2 px-4 h-full hover:bg-[#303030] rounded-l-full border-r border-[#303030] relative overflow-hidden" onclick="videoMgr.likeVideo(this)">
+                                            <i class="fa-regular fa-thumbs-up transition-transform duration-200"></i>
+                                            <span id="likeCount" class="text-sm font-medium odometer-target">0</span>
+                                        </button>
+                                        <button class="px-4 h-full hover:bg-[#303030] rounded-r-full" onclick="videoMgr.dislikeVideo()">
+                                            <i class="fa-regular fa-thumbs-down"></i>
+                                        </button>
+                                    </div>
+                                    <button class="flex items-center gap-2 px-4 py-2 bg-[#222222] rounded-full hover:bg-[#303030] text-sm font-medium">
+                                        <i class="fa-solid fa-share"></i> Share
+                                    </button>
+                                    <button class="flex items-center gap-2 px-4 py-2 bg-[#222222] rounded-full hover:bg-[#303030] text-sm font-medium">
+                                        <i class="fa-solid fa-download"></i> Download
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Description Box -->
+                            <div id="descContainer" class="bg-[#222222] rounded-xl p-3 mt-4 text-sm cursor-pointer hover:bg-[#303030] transition ambient-glow">
+                                <div class="font-bold mb-1">
+                                    <span id="viewCount" class="odometer-target">0</span> views • <span id="uploadDate"></span>
+                                </div>
+                                <p id="videoDesc" class="text-white whitespace-pre-wrap">No description provided.</p>
+                            </div>
+                        </div>
+
+                        <!-- Comments Section -->
+                        <div class="mt-6 px-2 md:px-0">
+                            <div class="flex items-center gap-8 mb-6">
+                                <h3 class="text-xl font-bold"><span id="commentCount">0</span> Comments</h3>
+                                <div class="flex items-center gap-2 text-sm font-medium cursor-pointer">
+                                    <i class="fa-solid fa-arrow-down-short-wide"></i> Sort by
+                                </div>
+                            </div>
+
+                            <!-- Comment Input -->
+                            <div class="flex gap-4 mb-8">
+                                <div class="w-10 h-10 rounded-full overflow-hidden shrink-0">
+                                    <img id="commentPfp" src="" class="w-full h-full object-cover">
+                                </div>
+                                <div class="flex-1">
+                                    <input type="text" id="commentInput" placeholder="Add a comment..." class="w-full bg-transparent border-b border-chirp-border focus:border-white outline-none pb-1 transition placeholder-gray-500">
+                                    <div class="flex justify-end mt-2 gap-2">
+                                        <button onclick="document.getElementById('commentInput').value=''" class="px-3 py-2 text-sm font-medium hover:bg-chirp-hover rounded-full">Cancel</button>
+                                        <button onclick="videoMgr.postComment()" class="px-3 py-2 text-sm font-medium bg-chirp-blue text-black rounded-full hover:bg-blue-400">Comment</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Featured Comments Toggle -->
+                            <div id="viewCommentsBtn" class="w-full py-3 border border-chirp-border rounded-full text-center font-bold text-chirp-blue hover:bg-blue-900/20 cursor-pointer mb-4 select-none" onclick="ui.toggleComments()">
+                                View Featured Comments
+                            </div>
+
+                            <div id="commentsList" class="space-y-6 hidden">
+                                <!-- Comments injected here -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right: Recommendations -->
+                    <div class="w-full lg:w-[400px] shrink-0 px-2 lg:px-0">
+                        <div id="recommendationsList" class="space-y-3">
+                            <!-- Recs injected here -->
+                        </div>
+                    </div>
+                </div>
+
+            </main>
+        </div>
+    </div>
+
+    <!-- UPLOAD MODAL -->
+    <div id="uploadModal" class="hidden fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4">
+        <div class="bg-[#282828] w-full max-w-4xl h-[80vh] rounded-xl flex flex-col shadow-2xl relative">
+            <div class="flex justify-between items-center p-4 border-b border-[#3e3e3e]">
+                <h2 class="text-xl font-bold">Upload videos</h2>
+                <button onclick="ui.toggleUploadModal()" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark text-2xl"></i></button>
+            </div>
+            
+            <div class="flex-1 flex flex-col items-center justify-center p-10 text-center" id="uploadDropZone">
+                <div class="w-32 h-32 rounded-full bg-[#1f1f1f] flex items-center justify-center mb-6">
+                    <i class="fa-solid fa-upload text-5xl text-chirp-secondary"></i>
+                </div>
+                <h3 class="text-lg font-medium mb-1">Select files to upload</h3>
+                <p class="text-xs text-chirp-secondary mb-6">Your videos will be private until you publish them.</p>
+                
+                <button id="selectFilesBtn" onclick="document.getElementById('videoInput').click()" class="bg-chirp-blue text-black font-bold py-2 px-6 rounded-sm uppercase text-sm">Select Files</button>
+                <input type="file" id="videoInput" accept="video/mp4,video/webm" onchange="videoMgr.handleFileSelect(this)">
+            </div>
+
+            <!-- Upload details form (hidden initially) -->
+            <div id="uploadDetails" class="hidden flex-1 p-6 overflow-y-auto flex-col md:flex-row gap-6">
+                <div class="flex-1 space-y-4">
+                    <div>
+                        <label class="block text-xs font-bold mb-1 text-chirp-secondary">Title (required)</label>
+                        <input type="text" id="upTitle" class="w-full bg-chirp-bg border border-chirp-border rounded p-3 text-sm focus:border-chirp-blue outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold mb-1 text-chirp-secondary">Description</label>
+                        <textarea id="upDesc" rows="5" class="w-full bg-chirp-bg border border-chirp-border rounded p-3 text-sm focus:border-chirp-blue outline-none resize-none"></textarea>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold mb-1 text-chirp-secondary">Collaborator (Optional)</label>
+                        <select id="collabSelect" class="w-full bg-chirp-bg border border-chirp-border rounded p-3 text-sm focus:border-chirp-blue outline-none">
+                            <option value="">None</option>
+                            <!-- Populated by JS -->
+                        </select>
+                    </div>
+                    <div class="flex items-center gap-4">
+                         <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" id="upIsShort" class="w-4 h-4 text-chirp-blue">
+                            <span class="text-sm">Upload as Short</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer">
+                             <input type="checkbox" id="upAddToPlaylist" class="w-4 h-4 text-chirp-blue">
+                            <span class="text-sm">Add to 'My Videos' Playlist</span>
+                        </label>
+                    </div>
+                </div>
+                <div class="w-full md:w-72 bg-[#1f1f1f] rounded-lg p-4 flex flex-col gap-2">
+                    <div class="aspect-video bg-black rounded overflow-hidden">
+                        <video id="previewPlayer" class="w-full h-full object-cover"></video>
+                    </div>
+                    <div class="text-xs text-chirp-secondary mt-2">
+                        <p>Filename: <span id="upFilename" class="text-white truncate"></span></p>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="uploadActions" class="hidden p-4 border-t border-[#3e3e3e] flex justify-end gap-3">
+                 <button onclick="ui.resetUpload()" class="text-sm font-medium px-4 py-2 hover:bg-[#3e3e3e] rounded">Cancel</button>
+                <button onclick="videoMgr.finalizeUpload()" class="bg-chirp-blue text-black font-bold py-2 px-6 rounded-sm uppercase text-sm">Publish</button>
             </div>
         </div>
     </div>
 
-    <audio id="audio-player" preload="none"></audio>
-
+    <!-- JAVASCRIPT LOGIC -->
     <script>
-        // --- 1. UTILITY FUNCTIONS (Must be first) ---
-        function formatTime(s) { if(!s) return "0:00"; const m = Math.floor(s/60); const sec = Math.floor(s%60); return `${m}:${sec<10?'0':''}${sec}`; }
-        function seededRandom(str) { let h=1779033703^str.length; for(let i=0;i<str.length;i++)h=Math.imul(h^str.charCodeAt(i),3432918353); return function(){h=Math.imul(h^(h>>>16),2246822507);h=Math.imul(h^(h>>>13),3266489909);return(h>>>0)/4294967296;} }
-        function formatNumber(n) { if(isNaN(n))return"0"; if(n>=1e9)return(n/1e9).toFixed(1)+'b'; if(n>=1e6)return(n/1e6).toFixed(1)+'m'; if(n>=1e3)return(n/1e3).toFixed(1)+'k'; return n.toLocaleString(); }
-        function formatCurrency(n) { if(isNaN(n))return"$0.00"; return new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(n); }
-        function isNewEpisode(d) { if(!d)return false; const date=new Date(d); if(isNaN(date.getTime()))return false; return(new Date()-date)<(7*24*60*60*1000); }
-        function timeAgo(d) { const s=Math.floor((new Date()-new Date(d))/1000); if(s<60)return'now'; if(s<3600)return Math.floor(s/60)+'m'; if(s<86400)return Math.floor(s/3600)+'h'; if(s<604800)return Math.floor(s/86400)+'d'; return Math.floor(s/604800)+'w'; }
-        
-        function parseTitleAndArtist(title, originalArtist) {
-            if (!title) title = "Untitled"; if (!originalArtist) originalArtist = "Unknown Artist";
-            const featRegex = /\s*[\(\[](?:feat\.|ft\.|featuring)\s+([^)\].]+)[\)\]]/i;
-            const match = title.match(featRegex);
-            let displayTitle = title;
-            let displayArtist = originalArtist;
-            if (match) {
-                displayTitle = title.replace(match[0], '').trim();
-                const featuredPart = match[1];
-                const feats = featuredPart.split(/,|&|\band\b/i).map(s => s.trim()).filter(s => s);
-                feats.forEach(f => { if (!displayArtist.toLowerCase().includes(f.toLowerCase())) displayArtist += `, ${f}`; });
+        // --- State Management ---
+        const store = {
+            user: null,
+            videos: [],
+            playlists: [],
+            currentVideoId: null,
+            day: 1,
+            stats: {
+                revenue: 0,
+                viewsToday: 0
             }
-            return { title: displayTitle, artist: displayArtist };
-        }
+        };
 
-        // --- 2. STATS & CONFIG ---
-        let currentTrack = null; let isPlaying = false; let playbackSpeed = 1.0; let currentFilter = 'all';
-        let savedChirps = JSON.parse(localStorage.getItem('chirps_v40') || '[]');
-        let savedProfileChirps = JSON.parse(localStorage.getItem('profile_chirps_v40') || '[]');
-        let currentProfileId = null; let currentProfileEpisodes = []; let renderedEpisodeCount = 0; const EPISODES_PER_PAGE = 10;
-        let activeProfileStats = null;
-        let lyricsInterval = null;
-        let deferredPrompt = null;
-        let lastUserQuery = "";
-        let isDeepThink = false;
-        
-        const CHAT_API_KEY = "sk-sN2S_4qIvqZqJKC_H6_htCRFzH6VmDn4XovLYmhbtM7D77Oy5k0rB_zLcQ6a1Ciro9jWsRdiUE_-TT1I0uA6U68D";
-        const VERIFIED_BADGE_HTML = `<svg class="verified-badge" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>`;
-        const PODCAST_SCRIPT = ["So, I was thinking about this the other day.","Right, exactly.","It's a complex issue.","Data suggests otherwise.","Wait, let me pull that up.","Ideally, yes.","That's fascinating.","Moving on.","Incredible point.","Let's dive deeper."];
-        const FALLBACK_RESPONSES = { "support": "You can reach support at pricepeyton987@gmail.com.", "email": "Please email pricepeyton987@gmail.com for assistance.", "chirp": "Chirps are like likes. They show popularity. >50M Chirps gets you verified!", "money": "The current payout rate is $0.0000011 per stream based on engagement.", "cash": "Cash is calculated at $0.0000011 per stream.", "code": "I cannot write code. My contract with Chirpless Technology restricts me to app support only.", "coding": "I cannot write code. My contract with Chirpless Technology restricts me to app support only.", "default": "I'm having trouble connecting to the neural network, but I'm here to help with Chirpless features!" };
+        const collaborators = [
+            { name: "MrBeast", subs: 320000000 },
+            { name: "The Rock", subs: 70000000 },
+            { name: "Hulk Hogan", subs: 5000000 },
+            { name: "PewDiePie", subs: 111000000 },
+            { name: "MKBHD", subs: 19000000 },
+            { name: "Gordon Ramsay", subs: 20000000 },
+            { name: "Billie Eilish", subs: 45000000 },
+            { name: "Ninja", subs: 23000000 },
+            { name: "Elon Musk", subs: 150000000 },
+            { name: "Mark Zuckerberg", subs: 12 },
+            { name: "Jeff Bezos", subs: 500 },
+            { name: "Shroud", subs: 10000000 },
+            { name: "Pokimane", subs: 6000000 }
+        ];
 
-        function getDeterministicStats(id, isProfile=false, dateStr=null) {
-            const rng=seededRandom(id); const t=rng(), v=rng();
-            let minC=3000, maxC=281000;
-            if(t<0.4){minC=3000;maxC=281000} else if(t<0.7){minC=1200;maxC=14200000} else if(t<0.9){minC=827000;maxC=28000000} else {minC=5000000;maxC=5000000000}
-            if(isProfile) { const c=Math.floor(minC+Math.pow(v,2)*(maxC-minC)); return {chirps:c, listens:0, cash:0}; }
-            let epMin=Math.floor(minC/50), epMax=Math.floor(maxC/20); if(epMin<100)epMin=100;
-            if(dateStr){ const d=new Date(dateStr); if(!isNaN(d.getTime())) { const h=(new Date()-d)/(1000*60*60); if(h<24)epMax=Math.min(epMax,15000); else if(h<168)epMax=Math.min(epMax,500000); else if(h<720)epMax=Math.min(epMax,5000000); } }
-            const c=Math.floor(epMin+Math.pow(v,3)*(epMax-epMin));
-            const l=c*20; const cash=l*0.0000011;
-            return {listens:l, chirps:c, cash:cash};
-        }
-        function getChartRank(id) { const rng=seededRandom(id+"_chart"); return rng()>0.8?Math.floor(rng()*45)+1:null; }
-        function getTopNewRank(id,d) { if(!isNewEpisode(d))return null; const rng=seededRandom(id+"_newchart"); return rng()>0.7?Math.floor(rng()*45)+1:null; }
-        function getExtraBadge(id) { const rng = seededRandom(id+"_badg"), r = rng(); if(r > 0.95) return `<span class="trending-badge">#${Math.floor(rng()*50)+1} On Top Trending ⚠︎</span>`; if(r < 0.05) return `<span class="new-badge">Recommended ᯓ★</span>`; return ''; }
+        const bots = [
+            { name: "TechFan99", pfp: "https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" },
+            { name: "PixelPerfect", pfp: "https://api.dicebear.com/7.x/avataaars/svg?seed=Aneka" },
+            { name: "CodeMaster", pfp: "https://api.dicebear.com/7.x/avataaars/svg?seed=Bob" },
+            { name: "VistaViewer", pfp: "https://api.dicebear.com/7.x/avataaars/svg?seed=Jack" },
+            { name: "DigitalDream", pfp: "https://api.dicebear.com/7.x/avataaars/svg?seed=Molly" },
+            { name: "StreamQueen", pfp: "https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah" },
+        ];
 
-        function updateOdometer(c, val) {
-            if(!c)return; const fmt=typeof val==='number'?formatNumber(val):val;
-            if(!c.hasChildNodes()){
-                c.innerHTML='';c.classList.add('odometer-wrapper');
-                fmt.split('').forEach(ch=>{
-                    if(/[0-9]/.test(ch)){
-                        const w=document.createElement('span');w.className='odometer-digit';
-                        const r=document.createElement('div');r.className='odometer-ribbon';
-                        for(let i=0;i<=9;i++){const d=document.createElement('div');d.innerText=i;r.appendChild(d)}
-                        w.appendChild(r);c.appendChild(w);
-                    }else{const s=document.createElement('span');s.className='odometer-static';s.innerText=ch;c.appendChild(s)}
-                });
-            }
-            requestAnimationFrame(()=>{requestAnimationFrame(()=>{
-                c.classList.add('active');c.classList.add('pop-effect');
-                const chs=fmt.split(''); let idx=0;
-                Array.from(c.children).forEach(child=>{
-                    if(child.classList.contains('odometer-digit')){
-                        const t=parseInt(chs[idx]); const r=child.querySelector('.odometer-ribbon');
-                        if(r&&!isNaN(t))r.style.transform=`translateY(${t*-1.2}em)`;
-                    } idx++;
-                });
-                setTimeout(()=>c.classList.remove('pop-effect'),500);
-            })});
-        }
-        function simLive(){if(activeProfileStats&&!document.getElementById('pd-content-stats').classList.contains('hidden')){activeProfileStats.chirps+=Math.floor(Math.random()*5)+1;activeProfileStats.cash=activeProfileStats.chirps*20*0.0000011;updateOdometer(document.getElementById('stat-chirps'),activeProfileStats.chirps);updateOdometer(document.getElementById('stat-cash'),formatCurrency(activeProfileStats.cash));}}
+        const botComments = [
+            "This is actually insane quality! 🔥",
+            "First view! Notification squad wya?",
+            "Underrated channel, keep it up.",
+            "The editing on this is next level.",
+            "Make more of this content please!!",
+            "Chirpless is taking over.",
+            "Who is watching this in 2026? 👇",
+            "Love the vibe of this video."
+        ];
 
-        // --- 3. PLAYER FUNCTIONS (Moved Up) ---
-        function togglePlay(){const a=document.getElementById('audio-player'); if(a.paused&&a.src){a.play();isPlaying=true;startWaveform();}else{a.pause();isPlaying=false;}updPlay();}
-        function playTrack(t){
-            currentTrack=t; 
-            const parsed = parseTitleAndArtist(t.title, t.artist);
-            const s=getDeterministicStats(t.id.toString(),false);
-            
-            document.getElementById('mini-img').src=t.image; document.getElementById('mini-title').innerText=parsed.title; document.getElementById('mini-artist').innerText=parsed.artist; 
-            document.getElementById('fp-img').src=t.image; document.getElementById('fp-title').innerText=parsed.title; document.getElementById('fp-artist').innerText=parsed.artist; 
-            
-            const odo = document.getElementById('fp-chirp-count'); odo.innerHTML='';
-            // 2.4% logic
-            const displayedChirps = Math.floor(s.chirps * 0.024);
-            setTimeout(()=>updateOdometer(odo, displayedChirps), 50);
+        // --- Utils ---
+        const util = {
+            formatNumber: (num) => {
+                if (num >= 1000000000) return (num / 1000000000).toFixed(1) + 'B';
+                if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+                if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+                return num.toString();
+            },
+            getTimeAgo: (date) => {
+                const seconds = Math.floor((new Date() - new Date(date)) / 1000);
+                let interval = seconds / 31536000;
+                if (interval > 1) return Math.floor(interval) + " years ago";
+                interval = seconds / 2592000;
+                if (interval > 1) return Math.floor(interval) + " months ago";
+                interval = seconds / 86400;
+                if (interval > 1) return Math.floor(interval) + " days ago";
+                interval = seconds / 3600;
+                if (interval > 1) return Math.floor(interval) + " hours ago";
+                return "Just now";
+            },
+            getRandomInt: (min, max) => Math.floor(Math.random() * (max - min + 1)) + min,
 
-            if(parsed.artist.includes(',') || parsed.artist.includes('&') || parsed.artist.includes(' and '))document.getElementById('fp-artist').classList.add('has-multi'); else document.getElementById('fp-artist').classList.remove('has-multi'); 
-            const b=document.getElementById('fp-bird-btn'); const is=savedChirps.some(x=>x.id===t.id); b.style.background=is?'var(--text-primary)':'rgba(255,255,255,0.1)'; b.style.color=is?'var(--bg-color)':'inherit'; 
-            const a=document.getElementById('audio-player'); a.src=t.src; a.play().then(()=>{isPlaying=true;updPlay();openFullPlayer();startWaveform();});
-        }
-        function toggleTrackChirp(){if(!currentTrack)return; const i=savedChirps.findIndex(x=>x.id===currentTrack.id); if(i>-1)savedChirps.splice(i,1); else{savedChirps.unshift(currentTrack);showToast();} localStorage.setItem('chirps_v40',JSON.stringify(savedChirps)); renderLibrary(); const b=document.getElementById('fp-bird-btn'); const is=savedChirps.some(x=>x.id===currentTrack.id); b.style.background=is?'var(--text-primary)':'rgba(255,255,255,0.1)'; b.style.color=is?'var(--bg-color)':'inherit';}
-        function toggleTrackChirpSearch(id) { alert("Saved to Library!"); }
-        
-        function openFullPlayer(){document.getElementById('full-player').classList.add('active');document.getElementById('mini-player').classList.add('expanded');}
-        function closeFullPlayer(){document.getElementById('full-player').classList.remove('active');document.getElementById('mini-player').classList.remove('expanded');}
-        function updPlay(){const p=isPlaying?'<rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect>':'<polygon points="5 3 19 12 5 21 5 3"></polygon>'; document.querySelectorAll('#mini-play-btn svg,#fp-play-icon').forEach(s=>s.innerHTML=p);}
-        function toggleLyrics(){
-            const o=document.getElementById('lyrics-overlay');
-            if(o.classList.contains('active')){o.classList.remove('active');clearInterval(lyricsInterval);}
-            else{o.classList.add('active'); const t=document.getElementById('lyrics-content'), s=document.getElementById('lyrics-spinner'); t.innerText="Analyzing..."; t.style.opacity=0.7; s.style.display="block"; setTimeout(()=>{s.style.display="none";t.style.opacity=1; let i=Math.floor(Math.random()*PODCAST_SCRIPT.length); lyricsInterval=setInterval(()=>{t.style.opacity=0; setTimeout(()=>{t.innerText=PODCAST_SCRIPT[i++%PODCAST_SCRIPT.length];t.style.opacity=1;},200);},3000);},1000);}
-        }
-
-        // --- 4. API ---
-        async function search(q, entOverride=null){
-            let ent = entOverride || (currentFilter==='profile'?'podcast':'podcastEpisode');
-            try{
-                const r=await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(q)}&media=podcast&entity=${ent}&limit=45&_t=${Date.now()}`);
-                const d=await r.json(); return (d.results||[]).map(i=>({
-                    id:i.trackId||i.collectionId, type:i.kind==='podcast'?'profile':'episode',
-                    title:i.trackName||i.collectionName||'Untitled', collectionName:i.collectionName||i.trackName,
-                    artist:i.artistName||i.collectionName||'Unknown', image:i.artworkUrl600,
-                    src:i.episodeUrl, collectionId:i.collectionId, date:i.releaseDate
-                }));
-            }catch(e){return[]}
-        }
-        async function fetchProfileEpisodes(id, fallback, original){
-            try{
-                const r=await fetch(`https://itunes.apple.com/lookup?id=${id}&media=podcast&entity=podcastEpisode&limit=60&_t=${Date.now()}`);
-                const d=await r.json(); if(!d.results||d.results.length===0)throw new Error();
-                const art=d.results[0].artistName||d.results[0].collectionName||"Unknown";
-                return d.results.slice(1).map(i=>({id:i.trackId, title:i.trackName||"Untitled", src:i.episodeUrl, image:i.artworkUrl600, artist:art, date:i.releaseDate}));
-            }catch(e){
-                if(fallback){const r=await search(fallback); if(r.length>0)return r.filter(x=>x.type==='episode');}
-                if(original)return[{id:original.id, title:original.title, src:original.src, image:original.image, artist:original.artist, date:original.date}];
-                return [];
-            }
-        }
-
-        // --- 5. UI ---
-        function init(){
-            renderLibrary(); loadHomeContent(); setInterval(simLive,1400); 
-            document.getElementById('view-profile-detail').addEventListener('scroll',e=>{if(e.target.scrollTop+e.target.clientHeight>=e.target.scrollHeight-50)renderMore();});
-            switchView('home', document.querySelectorAll('.nav-item')[0]);
-            window.onpopstate = (event) => { if(event.state && event.state.view) { if(event.state.view === 'profile') { closeProfile(); switchView(event.state.prevView || 'home'); } else { closeProfile(); switchView(event.state.view); } } };
-            // PWA
-            window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredPrompt = e; });
-            if ('serviceWorker' in navigator) {
-                window.addEventListener('load', () => {
-                    navigator.serviceWorker.register('./service-worker.js').catch(console.log);
-                    setTimeout(() => { if (deferredPrompt) { document.getElementById('install-overlay').classList.add('active'); document.getElementById('install-modal').classList.add('active'); } }, 3000);
-                });
-            }
-        }
-
-        async function loadHomeContent(){
-            const t=document.getElementById('trending-container'); t.innerHTML='';
-            const res=await search('Popular','podcast'); if(res.length===0)t.innerHTML='<div style="padding:20px;opacity:0.5">Offline</div>'; else res.slice(0,10).forEach(i=>createCard(i,t));
-            const m=document.getElementById('mix-container'); m.innerHTML='';
-            const mix=await search('Culture','podcast'); if(mix.length>0)mix.slice(0,10).forEach(i=>createCard(i,m));
-        }
-
-        function createCard(i,c){
-            const s=getDeterministicStats(i.id.toString(),true);
-            const v=s.chirps>5e7?VERIFIED_BADGE_HTML:'';
-            const parsed = parseTitleAndArtist(i.title, i.artist);
-            const d=document.createElement('div'); d.className='podcast-card premium-hover glass-shine-hover';
-            d.onclick=()=>i.type==='profile'?openProfile(i):playTrack(i);
-            d.innerHTML=`<div class="cover-art"><img src="${i.image}"></div><div style="font-weight:700;font-size:0.9rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${parsed.title}</div><div style="font-size:0.8rem;opacity:0.6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${parsed.artist} ${v}</div>`;
-            c.appendChild(d);
-        }
-
-        function setFilter(f,b){
-            currentFilter=f; document.querySelectorAll('.filters .chip').forEach(c=>c.classList.remove('active')); b.classList.add('active'); 
-            if(f==='charts') renderCharts(); else{ const v=document.getElementById('search-input').value; if(v)doSearch(v); else document.getElementById('search-results').innerHTML='<div style="text-align:center;padding:40px;opacity:0.5">Find content</div>'; }
-        }
-
-        async function renderCharts(){
-            const c=document.getElementById('search-results'); c.innerHTML='<div class="spinner"></div>';
-            const r=await search('Podcast Hits','podcast'); c.innerHTML='';
-            const tDiv = document.createElement('div'); tDiv.className='section-title'; tDiv.innerText='Top 45 Global'; c.appendChild(tDiv);
-            r.slice(0,45).forEach((i,x)=>{
-                const parsed = parseTitleAndArtist(i.title, i.artist);
-                const el=document.createElement('div');el.className='list-item premium-hover glass-shine-hover';
-                el.onclick=()=>i.type==='profile'?openProfile(i):playTrack(i);
-                el.innerHTML=`<div class="list-rank">${x+1}</div><img src="${i.image}" class="list-img"><div style="flex:1"><div style="font-weight:700;font-size:0.95rem">${parsed.title}</div><div style="font-size:0.8rem;opacity:0.6">${parsed.artist}</div></div>`;
-                c.appendChild(el);
-            });
-            const nDiv = document.createElement('div'); nDiv.className='section-title'; nDiv.innerText='Top New'; c.appendChild(nDiv);
-            const n=r.filter(x=>isNewEpisode(x.date)).slice(0,45);
-            if(!n.length) {const empty = document.createElement('div'); empty.style.cssText='padding:20px;opacity:0.5;text-align:center'; empty.innerText='No new entries'; c.appendChild(empty);}
-            else n.forEach((i,x)=>{
-                const parsed = parseTitleAndArtist(i.title, i.artist);
-                const el=document.createElement('div');el.className='list-item premium-hover glass-shine-hover';
-                el.onclick=()=>playTrack(i);
-                el.innerHTML=`<div class="list-rank" style="color:var(--text-primary)">${x+1}</div><img src="${i.image}" class="list-img"><div style="flex:1"><div style="font-weight:700;font-size:0.95rem">${parsed.title} <span class="new-badge">NEW</span></div><div style="font-size:0.8rem;opacity:0.6">${parsed.artist}</div></div>`;
-                c.appendChild(el);
-            });
-        }
-
-        function handleSearch(e){ if(e.key==='Enter'){ document.getElementById('search-input').blur(); if(currentFilter==='charts') setFilter('all',document.querySelector('.filters .chip')); doSearch(e.target.value); } }
-
-        async function doSearch(q){
-            const c=document.getElementById('search-results'); c.innerHTML='<div class="spinner"></div>';
-            const r=await search(q); c.innerHTML=''; 
-            if(r.length===0){c.innerHTML='<div style="text-align:center;opacity:0.5;padding:20px">No results</div>';return;}
-            r.forEach(i=>{
-                const s=getDeterministicStats(i.id.toString(), i.type==='profile', i.date);
-                const parsed = parseTitleAndArtist(i.title, i.artist);
-                const el=document.createElement('div'); el.className='list-item premium-hover glass-shine-hover';
+            // Odometer Logic
+            updateOdometer: (elementId, value) => {
+                const el = document.getElementById(elementId);
+                if (!el) return;
                 
-                const viewProfileBtn = `<button class="search-action-btn" onclick="event.stopPropagation(); openProfile({id:'${i.collectionId}', collectionId:'${i.collectionId}', title:'${i.collectionName?.replace(/'/g, "\\'") || ''}', artist:'${i.artist?.replace(/'/g, "\\'") || ''}', image:'${i.image}'})"><svg class="icon" style="width:16px" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></button>`;
-                const isSaved = savedChirps.some(x=>x.id===i.id);
-                const birdColor = isSaved ? 'var(--text-primary)' : 'var(--text-secondary)';
-                const birdBtn = `<button class="search-action-btn" onclick="event.stopPropagation(); toggleTrackChirpSearch('${i.id}')"><svg class="icon" style="width:16px; color:${birdColor}" viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg></button>`;
+                let strValue = value.toString();
+                strValue = util.formatNumber(value);
 
-                if(i.type==='profile'){
-                    el.onclick=()=>openProfile(i);
-                    const v=s.chirps>5e7?VERIFIED_BADGE_HTML:'';
-                    el.innerHTML=`<img src="${i.image}" class="list-img" style="border-radius:50%"><div style="flex:1" class="info-col"><div style="font-weight:700">${parsed.title} ${v}</div><div style="opacity:0.6;font-size:0.85rem">Podcast • ${parsed.artist}</div></div><button style="padding:6px 14px;border-radius:20px;background:var(--glass-border);border:none;color:inherit;font-weight:600">View</button>`;
-                }else{
-                    el.onclick=()=>playTrack(i);
-                    const n=isNewEpisode(i.date)?'<span class="new-badge">NEW</span>':'';
-                    el.innerHTML=`<img src="${i.image}" class="list-img"><div style="flex:1"><div style="font-weight:700;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden;">${parsed.title} ${n}</div><div style="display:flex;align-items:center;gap:6px;font-size:0.8rem;opacity:0.6;margin-top:2px;"><span>${timeAgo(i.date)}</span> • <span class="odo-c"></span> Chirps</div></div>${birdBtn}`;
-                    setTimeout(()=>updateOdometer(el.querySelector('.odo-c'),s.chirps),300);
+                if (!el.classList.contains('odometer-initialized')) {
+                    el.classList.add('odometer-initialized');
+                    el.innerHTML = ''; 
+                    const wrapper = document.createElement('div');
+                    wrapper.className = 'odometer-wrapper';
+                    el.appendChild(wrapper);
                 }
-                c.appendChild(el);
-            });
-        }
 
-        async function openProfile(i){
-            currentProfileId=(i.collectionId||i.id).toString();
-            try { history.pushState({view: 'profile', id: currentProfileId, prevView: 'discover'}, '', `/podcast/${currentProfileId}`); } catch(e){}
+                const wrapper = el.querySelector('.odometer-wrapper');
+                const currentDigits = wrapper.children;
+                
+                if (currentDigits.length !== strValue.length) {
+                    wrapper.innerHTML = '';
+                    for (let char of strValue) {
+                        const digitContainer = document.createElement('div');
+                        digitContainer.className = 'odometer-digit';
+                        
+                        if (/[0-9]/.test(char)) {
+                            const strip = document.createElement('div');
+                            strip.className = 'odometer-digit-strip';
+                            for(let i=0; i<=9; i++) {
+                                const span = document.createElement('span');
+                                span.innerText = i;
+                                strip.appendChild(span);
+                            }
+                            digitContainer.appendChild(strip);
+                        } else {
+                            digitContainer.innerText = char;
+                        }
+                        wrapper.appendChild(digitContainer);
+                    }
+                }
+
+                Array.from(wrapper.children).forEach((digitDiv, idx) => {
+                    const char = strValue[idx];
+                    if (/[0-9]/.test(char)) {
+                        const strip = digitDiv.querySelector('.odometer-digit-strip');
+                        const num = parseInt(char);
+                        if(strip) {
+                            strip.style.transform = `translateY(-${num * 1.2}em)`;
+                            strip.style.transition = `transform ${1 + (idx * 0.1)}s cubic-bezier(0.16, 1, 0.3, 1)`; 
+                        }
+                    } else {
+                        if(digitDiv.innerText !== char && !digitDiv.querySelector('.odometer-digit-strip')) {
+                             digitDiv.innerText = char;
+                        }
+                    }
+                });
+            },
+
+            // Generate a random pleasant color for ambient mode
+            getRandomColor: () => {
+                const colors = [
+                    '#3ea6ff', '#cc0000', '#2ba640', '#9c27b0', '#ff9800', '#e91e63', '#00bcd4', '#673ab7'
+                ];
+                return colors[Math.floor(Math.random() * colors.length)];
+            }
+        };
+
+        // --- Core Logic ---
+        
+        const simulation = {
+            nextDay: () => {
+                store.day++;
+                document.getElementById('currentDayDisplay').innerText = `Day ${store.day}`;
+                store.stats.viewsToday = 0; // Reset daily counter
+
+                // Process Videos
+                store.videos.forEach(vid => {
+                    // 1. Decay Logic (Video Falloff)
+                    // Age multiplied by decayRate means some videos age faster/slower
+                    const effectiveAge = (store.day - (vid.uploadDay || 1)) * vid.decayRate;
+                    
+                    let decay = 1;
+                    if (effectiveAge > 7) decay = 0.5;   
+                    if (effectiveAge > 30) decay = 0.1;  
+                    if (effectiveAge > 90) decay = 0.01; 
+
+                    // 2. View Growth
+                    const subCount = store.user.subscribers;
+                    const isFlop = Math.random() < 0.2; 
+                    
+                    let viewGrowth = 0;
+                    
+                    if (subCount > 0) {
+                        if (isFlop) {
+                            viewGrowth = util.getRandomInt(0, Math.ceil(subCount * 0.05));
+                        } else {
+                            viewGrowth = util.getRandomInt(Math.ceil(subCount * 0.1), Math.ceil(subCount * 0.4));
+                        }
+                        if(Math.random() > 0.95) viewGrowth *= 3; // Viral hit
+                    } else {
+                        // New channel luck
+                        viewGrowth = util.getRandomInt(0, 100); 
+                    }
+
+                    // Apply Decay
+                    viewGrowth = Math.floor(viewGrowth * decay);
+                    if (viewGrowth < 0) viewGrowth = 0;
+
+                    const likeGrowth = Math.floor(viewGrowth * (util.getRandomInt(2, 8) / 100)); 
+
+                    vid.views += viewGrowth;
+                    vid.likes += likeGrowth;
+                    
+                    // Convert Views to Subs (Approx 1 sub per 100-300 views for example)
+                    // Or just random small percentage
+                    const newSubs = Math.floor(viewGrowth * (Math.random() * 0.01));
+                    store.user.subscribers += newSubs;
+
+                    store.user.totalViews += viewGrowth;
+                    store.stats.viewsToday += viewGrowth;
+                    
+                    // CPM Simulation ($2.00 - $5.00 per 1000 views)
+                    const revenue = (viewGrowth / 1000) * (Math.random() * 3 + 2);
+                    store.stats.revenue += revenue;
+
+                    // 3. Comment Logic
+                    vid.comments.forEach(c => {
+                         if(c.isCreator) {
+                             c.likes += util.getRandomInt(500, 50000); 
+                         } else {
+                             const potential = Math.max(1, Math.floor(vid.views * 0.0001));
+                             if(Math.random() > 0.5) c.likes += util.getRandomInt(0, potential);
+                         }
+                    });
+
+                    // Add new comments randomly
+                    if(viewGrowth > 0 && Math.random() > 0.7) {
+                         const bot = bots[util.getRandomInt(0, bots.length - 1)];
+                         vid.comments.unshift({
+                            id: 'c_' + Date.now() + Math.random(),
+                            author: bot.name,
+                            pfp: bot.pfp,
+                            text: botComments[util.getRandomInt(0, botComments.length - 1)],
+                            likes: 0,
+                            date: 'Just now',
+                            isCreator: false
+                        });
+                    }
+                });
+                
+                // Process Playlists
+                store.playlists.forEach(pl => {
+                    pl.views += util.getRandomInt(0, 50);
+                });
+
+                // Refresh Current View
+                ui.refreshCurrentView();
+                
+                // Global Total Views on channel header
+                util.updateOdometer("displaySubs", store.user.subscribers);
+            }
+        };
+
+        // Onboarding
+        const onboarding = {
+            init: () => {
+                // Populate Collaborator Dropdown
+                const sel = document.getElementById('collabSelect');
+                collaborators.forEach(c => {
+                    const opt = document.createElement('option');
+                    opt.value = c.name;
+                    opt.innerText = `${c.name} (${util.formatNumber(c.subs)} subs)`;
+                    sel.appendChild(opt);
+                });
+
+                document.getElementById('onboardingForm').addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    
+                    const pfpFile = document.getElementById('pfpInput').files[0];
+                    const bannerFile = document.getElementById('bannerInput').files[0];
+                    const subs = parseInt(document.getElementById('subCount').value) || 0;
+                    
+                    store.user = {
+                        name: document.getElementById('channelName').value,
+                        handle: '@' + document.getElementById('channelHandle').value.replace('@', ''),
+                        subscribers: subs,
+                        isVerified: subs >= 100000,
+                        bio: document.getElementById('channelBio').value,
+                        country: document.getElementById('country').value,
+                        joinDate: new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }),
+                        pfp: pfpFile ? URL.createObjectURL(pfpFile) : document.getElementById('pfpPreview').src,
+                        banner: bannerFile ? URL.createObjectURL(bannerFile) : document.getElementById('bannerPreview').src,
+                        totalViews: 0
+                    };
+
+                    // Initial Playlist
+                    store.playlists.push({
+                        id: 'pl_1',
+                        title: 'My Favorites',
+                        views: util.getRandomInt(10, 500),
+                        videoCount: 0,
+                        thumbnail: 'https://via.placeholder.com/300x169/111/555?text=Playlist',
+                        videos: []
+                    });
+
+                    onboarding.complete();
+                });
+
+                // Previews
+                ['pfp', 'banner'].forEach(type => {
+                    document.getElementById(`${type}Input`).addEventListener('change', function(e) {
+                        if (this.files && this.files[0]) {
+                            document.getElementById(`${type}Preview`).src = URL.createObjectURL(this.files[0]);
+                        }
+                    });
+                });
+            },
+            complete: () => {
+                document.getElementById('onboarding').classList.add('hidden');
+                document.getElementById('app').classList.remove('hidden');
+                ui.renderUserInfo();
+                router.navigate('channel');
+            }
+        };
+
+        // Router
+        const router = {
+            currentPage: 'channel',
+            navigate: (page, data = null) => {
+                router.currentPage = page;
+                
+                // Pause video
+                const player = document.getElementById('mainPlayer');
+                player.pause();
+
+                // Hide all main views
+                ['channelView', 'watchView', 'genericView', 'playlistDetailView', 'studioView'].forEach(id => {
+                    document.getElementById(id).classList.add('hidden');
+                });
+
+                if (page === 'channel') {
+                    document.getElementById('channelView').classList.remove('hidden');
+                    ui.switchTab('home');
+                    util.updateOdometer("displaySubs", store.user.subscribers);
+                } else if (page === 'watch') {
+                    document.getElementById('watchView').classList.remove('hidden');
+                    videoMgr.loadVideo(data);
+                } else if (page === 'shorts') {
+                    document.getElementById('genericView').classList.remove('hidden');
+                    document.getElementById('genericTitle').innerText = "Shorts";
+                    const shorts = store.videos.filter(v => v.type === 'short');
+                    ui.renderGrid('genericGrid', shorts, true);
+                } else if (page === 'studio') {
+                    document.getElementById('studioView').classList.remove('hidden');
+                    studioMgr.render();
+                } else if (page === 'history') {
+                    document.getElementById('genericView').classList.remove('hidden');
+                    document.getElementById('genericTitle').innerText = "Watch History";
+                     ui.renderGrid('genericGrid', store.videos);
+                } else if (page === 'playlists') {
+                     document.getElementById('channelView').classList.remove('hidden');
+                     ui.switchTab('playlists');
+                } else if (page === 'playlistView') {
+                    document.getElementById('playlistDetailView').classList.remove('hidden');
+                    playlistMgr.renderDetail(data);
+                }
+                
+                document.getElementById('mainContent').scrollTop = 0;
+            }
+        };
+
+        // Studio Manager
+        const studioMgr = {
+            render: () => {
+                // Update Storage Count
+                const count = store.videos.length;
+                const limit = 2; // Auto delete logic now
+                const storageEl = document.getElementById('storageCount');
+                storageEl.innerText = `${count}/${limit} Videos (Auto-delete oldest > 2)`;
+                storageEl.className = "text-xs text-chirp-secondary";
+
+                // Update Stats
+                document.getElementById('studioRevenue').innerText = util.formatNumber(store.stats.revenue); // Uses Format for Billions
+                document.getElementById('studioViewsToday').innerText = util.formatNumber(store.stats.viewsToday);
+                document.getElementById('studioViewsLife').innerText = util.formatNumber(store.user.totalViews);
+                document.getElementById('studioSubs').innerText = util.formatNumber(store.user.subscribers);
+
+                // Render List
+                const list = document.getElementById('studioVideoList');
+                list.innerHTML = '';
+                
+                if (count === 0) {
+                    document.getElementById('studioEmpty').classList.remove('hidden');
+                } else {
+                    document.getElementById('studioEmpty').classList.add('hidden');
+                    store.videos.forEach(vid => {
+                        const tr = document.createElement('tr');
+                        tr.className = 'hover:bg-[#1a1a1a]';
+                        tr.innerHTML = `
+                            <td class="p-4 flex gap-3 items-center">
+                                <div class="w-24 h-14 bg-black rounded overflow-hidden shrink-0">
+                                    <video src="${vid.src}" class="w-full h-full object-cover"></video>
+                                </div>
+                                <div class="truncate max-w-[200px] font-medium">${vid.title}</div>
+                            </td>
+                            <td class="p-4 text-chirp-secondary">${new Date(vid.uploadDate).toLocaleDateString()}</td>
+                            <td class="p-4">${util.formatNumber(vid.views)}</td>
+                            <td class="p-4">${util.formatNumber(vid.likes)}</td>
+                            <td class="p-4 text-right">
+                                <button onclick="studioMgr.deleteVideo('${vid.id}')" class="text-chirp-secondary hover:text-chirp-red transition px-2">
+                                    <i class="fa-solid fa-trash"></i>
+                                </button>
+                            </td>
+                        `;
+                        list.appendChild(tr);
+                    });
+                }
+            },
+            deleteVideo: (id) => {
+                if(confirm("Are you sure you want to delete this video?")) {
+                    store.videos = store.videos.filter(v => v.id !== id);
+                    // Also remove from playlist refs
+                    store.playlists.forEach(pl => {
+                         pl.videos = pl.videos.filter(vidId => vidId !== id);
+                         pl.videoCount = pl.videos.length;
+                    });
+                    
+                    studioMgr.render();
+                    
+                    // Update header count immediately
+                    document.getElementById('displayVideoCount').innerText = store.videos.length + ' videos';
+                }
+            }
+        };
+
+        // UI Manager
+        const ui = {
+            renderUserInfo: () => {
+                // Nav
+                document.getElementById('navPfp').src = store.user.pfp;
+                document.getElementById('commentPfp').src = store.user.pfp;
+                
+                // Channel Header
+                document.getElementById('channelPfp').src = store.user.pfp;
+                document.getElementById('channelBanner').src = store.user.banner;
+                document.getElementById('displayName').innerText = store.user.name;
+                document.getElementById('displayHandle').innerText = store.user.handle;
+                document.getElementById('bioSnippet').innerText = store.user.bio.substring(0, 60);
+                document.getElementById('fullBio').innerText = store.user.bio;
+                document.getElementById('joinDate').innerText = store.user.joinDate;
+                document.getElementById('countryDisplay').innerText = store.user.country;
+                
+                // Verification Badge (Header)
+                if(store.user.isVerified) {
+                    document.getElementById('channelVerified').classList.remove('hidden');
+                }
+            },
             
-            const v=document.getElementById('view-profile-detail');
-            document.getElementById('pd-img').src=i.image; document.getElementById('pd-title').innerText=i.title||i.collectionName;
-            document.getElementById('pd-artist').innerText=i.artist;
-            if(i.artist.includes(',')||i.artist.includes('&')||i.artist.includes(' and '))document.getElementById('pd-artist').classList.add('has-multi'); else document.getElementById('pd-artist').classList.remove('has-multi');
+            refreshCurrentView: () => {
+                // Refresh grids based on active view
+                if(router.currentPage === 'channel') {
+                    util.updateOdometer("totalViewsStats", store.user.totalViews);
+                    if(!document.getElementById('tab-home').classList.contains('hidden')) {
+                        ui.renderGrid('latestVideosGrid', store.videos.slice(0, 10), false);
+                    }
+                    if(!document.getElementById('tab-videos').classList.contains('hidden')) {
+                         ui.renderGrid('allVideosGrid', store.videos.filter(v=>v.type==='video'));
+                    }
+                } else if (router.currentPage === 'watch') {
+                     videoMgr.refreshWatchStats();
+                     // Re-render comments to show scaled likes
+                     videoMgr.renderComments(store.videos.find(v => v.id === store.currentVideoId));
+                } else if (router.currentPage === 'playlistView') {
+                    playlistMgr.refreshView();
+                } else if (router.currentPage === 'studio') {
+                    studioMgr.render();
+                }
+            },
             
-            document.getElementById('pd-bg-img').src = i.image;
-            updateProfBtn(); v.classList.remove('hidden'); switchProfileTab('episodes');
-            
-            activeProfileStats=null; document.getElementById('stat-chirps').innerHTML=''; document.getElementById('stat-cash').innerHTML='';
-            document.getElementById('pd-verified').classList.remove('visible');
-            document.getElementById('pd-content-episodes').innerHTML='<div class="spinner"></div>';
-            
-            currentProfileEpisodes=await fetchProfileEpisodes(i.collectionId||i.id, i.artist, i);
-            let ac=0, am=0;
-            if(currentProfileEpisodes.length>0){
-                currentProfileEpisodes.forEach(e=>{const s=getDeterministicStats(e.id.toString(),false,e.date);ac+=s.chirps;am+=s.cash;});
-                activeProfileStats={chirps:ac, cash:am};
-                setTimeout(()=>{updateOdometer(document.getElementById('stat-chirps'),ac);updateOdometer(document.getElementById('stat-cash'),formatCurrency(am));},100);
-                if(ac>=5e7)document.getElementById('pd-verified').classList.add('visible');
-                document.getElementById('pd-header-stat').innerHTML = ''; updateOdometer(document.getElementById('pd-header-stat'), ac);
-                document.getElementById('pd-content-episodes').innerHTML=''; renderedEpisodeCount=0; renderMore();
-                document.getElementById('pd-error-view').classList.add('hidden'); document.getElementById('pd-content-stats').classList.remove('hidden');
-            } else { 
-                document.getElementById('pd-content-episodes').innerHTML='';
-                document.getElementById('pd-error-view').classList.remove('hidden'); document.getElementById('pd-content-stats').classList.add('hidden');
+            switchTab: (tabName) => {
+                document.querySelectorAll('.tab-btn').forEach(btn => {
+                    if (btn.dataset.tab === tabName) {
+                        btn.classList.add('tab-active');
+                        btn.classList.remove('tab-inactive');
+                    } else {
+                        btn.classList.remove('tab-active');
+                        btn.classList.add('tab-inactive');
+                    }
+                });
+                
+                document.querySelectorAll('.tab-content').forEach(content => {
+                    content.classList.add('hidden');
+                });
+                document.getElementById(`tab-${tabName}`).classList.remove('hidden');
+                
+                // Re-render grids on tab switch to ensure view counts are fresh
+                if(tabName === 'home') ui.renderGrid('latestVideosGrid', store.videos.slice(0, 10), false);
+                if(tabName === 'videos') ui.renderGrid('allVideosGrid', store.videos.filter(v=>v.type==='video'));
+                if(tabName === 'shorts') ui.renderGrid('shortsGrid', store.videos.filter(v => v.type === 'short'), true);
+
+                if(tabName === 'about') {
+                     util.updateOdometer("totalViewsStats", store.user.totalViews);
+                }
+            },
+
+            toggleUploadModal: () => {
+                const modal = document.getElementById('uploadModal');
+                // No blocking check anymore, just visual note or nothing since we auto-delete
+                modal.classList.toggle('hidden');
+            },
+
+            resetUpload: () => {
+                document.getElementById('uploadDropZone').classList.remove('hidden');
+                document.getElementById('uploadDetails').classList.add('hidden');
+                document.getElementById('uploadActions').classList.add('hidden');
+                document.getElementById('videoInput').value = '';
+                document.getElementById('previewPlayer').src = '';
+                document.getElementById('collabSelect').value = '';
+            },
+
+            toggleComments: () => {
+                const list = document.getElementById('commentsList');
+                const btn = document.getElementById('viewCommentsBtn');
+                list.classList.remove('hidden');
+                btn.style.display = 'none';
+                
+                list.style.opacity = '0';
+                list.style.transform = 'translateY(20px)';
+                setTimeout(() => {
+                    list.style.transition = 'all 0.5s ease';
+                    list.style.opacity = '1';
+                    list.style.transform = 'translateY(0)';
+                }, 10);
+            },
+
+            renderGrid: (containerId, videos, isShorts = false) => {
+                const container = document.getElementById(containerId);
+                container.innerHTML = '';
+
+                if (videos.length === 0 && containerId === 'latestVideosGrid') {
+                    document.getElementById('emptyState').classList.remove('hidden');
+                    return;
+                } else if (containerId === 'latestVideosGrid') {
+                    document.getElementById('emptyState').classList.add('hidden');
+                }
+
+                videos.forEach(vid => {
+                    const el = document.createElement('div');
+                    el.className = 'cursor-pointer group';
+                    el.onclick = () => router.navigate('watch', vid.id);
+
+                    const collabText = vid.collaborator ? ` & ${vid.collaborator}` : '';
+
+                    if (isShorts) {
+                        el.innerHTML = `
+                             <div class="aspect-[9/16] rounded-xl overflow-hidden bg-gray-800 relative mb-2">
+                                <video src="${vid.src}" class="w-full h-full object-cover group-hover:scale-105 transition duration-300" onmouseover="this.play()" onmouseout="this.pause();this.currentTime=0;" muted></video>
+                                <div class="absolute bottom-2 right-2 text-xs font-bold shadow-md drop-shadow-md">
+                                    <i class="fa-solid fa-play"></i> ${util.formatNumber(vid.views)}
+                                </div>
+                            </div>
+                            <h3 class="font-bold text-sm leading-tight line-clamp-2 mb-1">${vid.title}</h3>
+                            <p class="text-xs text-chirp-secondary">${util.formatNumber(vid.views)} views</p>
+                        `;
+                    } else {
+                        el.innerHTML = `
+                            <div class="aspect-video rounded-xl overflow-hidden bg-gray-800 relative mb-3">
+                                <video src="${vid.src}" class="w-full h-full object-cover group-hover:scale-105 transition duration-300" muted onmouseover="this.play()" onmouseout="this.pause();this.currentTime=0;"></video>
+                                <div class="absolute bottom-2 right-2 bg-black/80 px-1 rounded text-xs font-bold">12:34</div>
+                            </div>
+                            <div class="flex gap-3 items-start">
+                                <img src="${store.user.pfp}" class="w-9 h-9 rounded-full object-cover">
+                                <div>
+                                    <h3 class="font-bold text-sm leading-tight line-clamp-2 mb-1 group-hover:text-white text-white">${vid.title}</h3>
+                                    <p class="text-xs text-chirp-secondary hover:text-white transition">${store.user.name}${collabText} <i class="fa-solid fa-circle-check text-[10px]"></i></p>
+                                    <p class="text-xs text-chirp-secondary">${util.formatNumber(vid.views)} views • ${util.getTimeAgo(vid.uploadDate)}</p>
+                                </div>
+                            </div>
+                        `;
+                    }
+                    container.appendChild(el);
+                });
+            },
+
+            renderPlaylists: () => {
+                const container = document.getElementById('playlistsGrid');
+                container.innerHTML = '';
+                store.playlists.forEach(pl => {
+                    const el = document.createElement('div');
+                    el.className = 'cursor-pointer group';
+                    el.onclick = () => router.navigate('playlistView', pl.id);
+                    el.innerHTML = `
+                         <div class="aspect-video rounded-xl overflow-hidden bg-gray-800 relative mb-3 border-r-8 border-[#222]">
+                                <div class="w-full h-full bg-[#111] flex items-center justify-center relative">
+                                    <span class="text-2xl font-bold z-10">${pl.videoCount}</span>
+                                    <div class="absolute inset-0 bg-black/50 flex items-center justify-center">
+                                        <i class="fa-solid fa-list text-3xl"></i>
+                                    </div>
+                                    <img src="${pl.thumbnail}" class="absolute inset-0 w-full h-full object-cover opacity-50">
+                                </div>
+                            </div>
+                            <h3 class="font-bold text-sm leading-tight mb-1">${pl.title}</h3>
+                            <p class="text-xs text-chirp-secondary">View full playlist</p>
+                    `;
+                    container.appendChild(el);
+                });
+            },
+
+            triggerExplosion: (element) => {
+                const rect = element.getBoundingClientRect();
+                const centerX = rect.width / 2;
+                const centerY = rect.height / 2;
+                
+                for(let i=0; i<8; i++) {
+                    const particle = document.createElement('div');
+                    particle.classList.add('particle');
+                    particle.style.width = Math.random() * 6 + 4 + 'px';
+                    particle.style.height = particle.style.width;
+                    particle.style.background = util.getRandomColor();
+                    particle.style.left = centerX + 'px';
+                    particle.style.top = centerY + 'px';
+                    
+                    const angle = Math.random() * Math.PI * 2;
+                    const velocity = Math.random() * 50 + 20;
+                    const tx = Math.cos(angle) * velocity;
+                    const ty = Math.sin(angle) * velocity;
+                    
+                    particle.style.setProperty('--tw-translate-x', `${tx}px`);
+                    particle.style.setProperty('--tw-translate-y', `${ty}px`);
+                    
+                    element.appendChild(particle);
+                    
+                    setTimeout(() => particle.remove(), 600);
+                }
+            }
+        };
+
+        const playlistMgr = {
+            create: () => {
+                const name = prompt("Enter playlist name:");
+                if(name) {
+                    store.playlists.push({
+                        id: 'pl_' + Date.now(),
+                        title: name,
+                        views: 0,
+                        videoCount: 0,
+                        thumbnail: 'https://via.placeholder.com/300x169/300/555?text=' + encodeURIComponent(name),
+                        videos: []
+                    });
+                    ui.renderPlaylists();
+                }
+            },
+            renderDetail: (id) => {
+                const pl = store.playlists.find(p => p.id === id);
+                if(!pl) return;
+                
+                document.getElementById('plDetailTitle').innerText = pl.title;
+                document.getElementById('plDetailOwner').innerText = store.user.name;
+                document.getElementById('plDetailVideoCount').innerText = pl.videoCount;
+                document.getElementById('plDetailThumb').src = pl.thumbnail;
+                
+                util.updateOdometer('plDetailViews', pl.views);
+
+                const list = document.getElementById('plDetailList');
+                list.innerHTML = '';
+                
+                if(pl.videos.length === 0) {
+                    list.innerHTML = '<div class="p-10 text-center text-gray-500">No videos in this playlist yet.</div>';
+                    return;
+                }
+
+                pl.videos.forEach((vidId, index) => {
+                    const vid = store.videos.find(v => v.id === vidId);
+                    if(vid) {
+                        const el = document.createElement('div');
+                        el.className = 'flex gap-4 p-2 hover:bg-[#272727] rounded-lg cursor-pointer group items-center';
+                        el.onclick = () => router.navigate('watch', vid.id);
+                        el.innerHTML = `
+                            <div class="text-gray-500 w-6 text-center font-medium">${index + 1}</div>
+                            <div class="w-32 h-20 bg-gray-800 rounded-lg overflow-hidden shrink-0 relative">
+                                <video src="${vid.src}" class="w-full h-full object-cover"></video>
+                            </div>
+                            <div class="flex-1">
+                                <h4 class="font-bold text-sm line-clamp-2 text-white">${vid.title}</h4>
+                                <p class="text-xs text-chirp-secondary">${store.user.name} • ${util.formatNumber(vid.views)} views</p>
+                            </div>
+                        `;
+                        list.appendChild(el);
+                    }
+                });
+            },
+            refreshView: () => {
+                const title = document.getElementById('plDetailTitle').innerText;
+                const pl = store.playlists.find(p => p.title === title);
+                if(pl) util.updateOdometer('plDetailViews', pl.views);
             }
         }
 
-        function renderMore(){
-            if(renderedEpisodeCount>=currentProfileEpisodes.length)return;
-            const c=document.getElementById('pd-content-episodes');
-            const end=Math.min(renderedEpisodeCount+EPISODES_PER_PAGE, currentProfileEpisodes.length);
-            for(let i=renderedEpisodeCount;i<end;i++){
-                const e=currentProfileEpisodes[i]; const s=getDeterministicStats(e.id.toString(),false,e.date);
-                const parsed = parseTitleAndArtist(e.title, e.artist);
-                const d=document.createElement('div'); d.className='list-item premium-hover glass-shine-hover';
-                if(!e.artist)e.artist=document.getElementById('pd-artist').innerText;
-                const n=isNewEpisode(e.date)?'<span class="new-badge">NEW</span>': getExtraBadge(e.id.toString());
-                d.onclick=()=>playTrack(e);
-                d.innerHTML=`<div style="width:44px;height:44px;background:rgba(255,255,255,0.1);border-radius:50%;display:flex;align-items:center;justify-content:center"><svg class="icon" style="width:18px" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg></div><div style="flex:1"><div style="font-weight:700;font-size:0.95rem;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden">${parsed.title} ${n}</div><div style="font-size:0.8rem;opacity:0.6;margin-top:4px;display:flex;gap:8px"><span>${timeAgo(e.date)}</span> • <span class="odo-sub"></span></div></div>`;
-                c.appendChild(d); setTimeout(()=>updateOdometer(d.querySelector('.odo-sub'),s.chirps),50+(i-renderedEpisodeCount)*30);
+        // Video Manager
+        const videoMgr = {
+            currentFile: null,
+            
+            handleFileSelect: (input) => {
+                if(input.files && input.files[0]){
+                    videoMgr.currentFile = input.files[0];
+                    const url = URL.createObjectURL(videoMgr.currentFile);
+                    const player = document.getElementById('previewPlayer');
+                    player.src = url;
+                    
+                    document.getElementById('uploadDropZone').classList.add('hidden');
+                    document.getElementById('uploadDetails').classList.remove('hidden');
+                    document.getElementById('uploadDetails').style.display = 'flex';
+                    document.getElementById('uploadActions').classList.remove('hidden');
+                    
+                    document.getElementById('upFilename').innerText = videoMgr.currentFile.name;
+                    document.getElementById('upTitle').value = videoMgr.currentFile.name.split('.')[0];
+                }
+            },
+
+            finalizeUpload: () => {
+                const isShort = document.getElementById('upIsShort').checked;
+                const addToPl = document.getElementById('upAddToPlaylist').checked;
+                const collabName = document.getElementById('collabSelect').value;
+                
+                // AUTO DELETE IF > 2 (Limit logic)
+                // Limit is 2. If we have 2, remove last (oldest) before adding new.
+                // store.videos[0] is newest. store.videos[length-1] is oldest.
+                if(store.videos.length >= 2) {
+                    store.videos.pop(); 
+                }
+
+                const newVideo = {
+                    id: 'v_' + Date.now(),
+                    title: document.getElementById('upTitle').value || 'Untitled Video',
+                    description: document.getElementById('upDesc').value,
+                    src: document.getElementById('previewPlayer').src,
+                    uploadDate: new Date().toISOString(),
+                    uploadDay: store.day,
+                    views: 0,
+                    likes: util.getRandomInt(0, 50),
+                    dislikes: 0,
+                    type: isShort ? 'short' : 'video',
+                    hasLiked: false, 
+                    comments: [],
+                    color: util.getRandomColor(),
+                    collaborator: collabName || null,
+                    // Unique decay rate: 0.5 (slow decay) to 1.5 (fast decay)
+                    decayRate: Math.random() + 0.5
+                };
+
+                // Fake comments
+                const numComments = util.getRandomInt(3, 8);
+                for(let i=0; i<numComments; i++) {
+                    const bot = bots[util.getRandomInt(0, bots.length - 1)];
+                    newVideo.comments.push({
+                        id: 'c_'+i,
+                        author: bot.name,
+                        pfp: bot.pfp,
+                        text: botComments[util.getRandomInt(0, botComments.length - 1)],
+                        likes: util.getRandomInt(0, 200),
+                        date: '2 hours ago',
+                        isCreator: false
+                    });
+                }
+
+                store.videos.unshift(newVideo);
+                ui.toggleUploadModal();
+                
+                // Update Grids
+                const normalVideos = store.videos.filter(v => v.type === 'video');
+                const shortVideos = store.videos.filter(v => v.type === 'short');
+                
+                ui.renderGrid('latestVideosGrid', store.videos.slice(0, 10), false);
+                ui.renderGrid('allVideosGrid', normalVideos);
+                ui.renderGrid('shortsGrid', shortVideos, true);
+                
+                document.getElementById('displayVideoCount').innerText = store.videos.length + ' videos';
+
+                if(addToPl && store.playlists.length > 0) {
+                    const pl = store.playlists[0]; // Add to first playlist (Favorites)
+                    pl.videoCount++;
+                    pl.thumbnail = newVideo.src;
+                    pl.videos.push(newVideo.id);
+                    ui.renderPlaylists();
+                }
+
+                router.navigate('channel');
+            },
+
+            loadVideo: (id) => {
+                store.currentVideoId = id;
+                const video = store.videos.find(v => v.id === id);
+                if(!video) return;
+
+                const player = document.getElementById('mainPlayer');
+                player.src = video.src;
+                player.play();
+
+                // Ambient Mode
+                const hexColor = video.color || '#222';
+                document.getElementById('playerContainer').style.background = `linear-gradient(to bottom, ${hexColor}40, #000)`;
+                document.getElementById('descContainer').style.background = `linear-gradient(to right, ${hexColor}30, #222)`;
+                document.getElementById('descContainer').style.borderColor = `${hexColor}40`;
+
+                // Meta
+                document.getElementById('videoTitle').innerText = video.title;
+                document.getElementById('videoDesc').innerText = video.description || "No description provided.";
+                document.getElementById('uploadDate').innerText = util.getTimeAgo(video.uploadDate);
+                document.getElementById('videoOwnerPfp').src = store.user.pfp;
+                
+                const collabText = video.collaborator ? ` & ${video.collaborator}` : '';
+                document.getElementById('videoOwnerName').innerText = store.user.name + collabText;
+                
+                document.getElementById('videoOwnerSubs').innerText = util.formatNumber(store.user.subscribers) + ' subscribers';
+                document.getElementById('commentCount').innerText = video.comments.length;
+
+                // Watch Page Verification Badge
+                if(store.user.isVerified) {
+                    document.getElementById('videoVerified').classList.remove('hidden');
+                } else {
+                    document.getElementById('videoVerified').classList.add('hidden');
+                }
+
+                // Animation using new Odometer
+                util.updateOdometer('viewCount', video.views);
+                util.updateOdometer('likeCount', video.likes);
+
+                // Update Like Button State
+                const likeBtn = document.getElementById('likeBtn');
+                if(video.hasLiked) {
+                    likeBtn.querySelector('i').classList.remove('fa-regular');
+                    likeBtn.querySelector('i').classList.add('fa-solid');
+                } else {
+                    likeBtn.querySelector('i').classList.remove('fa-solid');
+                    likeBtn.querySelector('i').classList.add('fa-regular');
+                }
+
+                // Render Comments
+                videoMgr.renderComments(video);
+
+                // Recommendations
+                const rList = document.getElementById('recommendationsList');
+                rList.innerHTML = '';
+                const fakeRecs = [
+                    { t: "Building a YouTube Clone in 1 Hour", v: "1.2M", ago: "1 year ago" },
+                    { t: "Why Code is Art", v: "400K", ago: "2 months ago" },
+                    { t: "Top 10 CSS Tricks", v: "89K", ago: "5 days ago" }
+                ];
+                const mix = [...store.videos.filter(v=>v.id !== id), ...fakeRecs];
+                
+                mix.forEach((item, idx) => {
+                    const isReal = item.id !== undefined;
+                    const el = document.createElement('div');
+                    el.className = 'flex gap-2 cursor-pointer group';
+                    if(isReal) el.onclick = () => router.navigate('watch', item.id);
+                    
+                    el.innerHTML = `
+                        <div class="w-40 h-24 bg-gray-800 rounded-lg overflow-hidden shrink-0 relative">
+                             ${isReal ? `<video src="${item.src}" class="w-full h-full object-cover"></video>` : '<div class="w-full h-full bg-[#333]"></div>'}
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-sm line-clamp-2 leading-tight mb-1 group-hover:text-white text-white">${isReal ? item.title : item.t}</h4>
+                            <p class="text-xs text-chirp-secondary">${isReal ? store.user.name : 'Random Channel'}</p>
+                            <p class="text-xs text-chirp-secondary">${isReal ? util.formatNumber(item.views) : item.v} views • ${isReal ? util.getTimeAgo(item.uploadDate) : item.ago}</p>
+                        </div>
+                    `;
+                    rList.appendChild(el);
+                });
+            },
+
+            showCollabModal: () => {
+                const vid = store.videos.find(v => v.id === store.currentVideoId);
+                if(!vid || !vid.collaborator) return;
+                
+                const collabData = collaborators.find(c => c.name === vid.collaborator);
+                const collabSubs = collabData ? collabData.subs : 0;
+                
+                const msg = `
+CHANNELS IN THIS VIDEO:
+----------------------
+1. ${store.user.name} 
+   ${util.formatNumber(store.user.subscribers)} Subscribers
+
+2. ${vid.collaborator} 
+   ${util.formatNumber(collabSubs)} Subscribers
+`;
+                alert(msg);
+            },
+
+            renderComments: (video) => {
+                const cList = document.getElementById('commentsList');
+                cList.innerHTML = '';
+                video.comments.forEach(c => {
+                    const el = document.createElement('div');
+                    el.className = 'flex gap-3';
+                    const bgClass = c.isCreator ? 'bg-chirp-hover/50 p-2 rounded-lg' : '';
+                    
+                    // Assign a stable ID to comment counter for odometer
+                    const counterId = `cnt_${c.id}`;
+                    
+                    el.innerHTML = `
+                         <div class="w-10 h-10 rounded-full overflow-hidden shrink-0">
+                            <img src="${c.pfp}" class="w-full h-full object-cover">
+                        </div>
+                        <div class="flex-1 ${bgClass}">
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="font-bold text-sm ${c.isCreator ? 'bg-chirp-text text-black px-2 rounded-full' : 'bg-[#333] px-2 py-0.5 rounded-full text-xs text-white'}">${c.author}</span>
+                                ${c.isCreator ? '<i class="fa-solid fa-circle-check text-chirp-secondary text-xs"></i>' : ''}
+                                <span class="text-xs text-chirp-secondary">${c.date}</span>
+                            </div>
+                            <p class="text-sm text-white mb-2">${c.text}</p>
+                            <div class="flex items-center gap-4 text-sm text-chirp-secondary">
+                                <button onclick="videoMgr.botLikeComment('${c.id}', this)" class="flex items-center gap-1 hover:text-white group relative">
+                                    <i class="fa-regular fa-thumbs-up group-active:scale-125 transition"></i> <span id="${counterId}" class="like-counter odometer-target">0</span>
+                                </button>
+                                <button class="hover:text-white"><i class="fa-regular fa-thumbs-down"></i></button>
+                                <button class="font-bold hover:text-white text-xs">Reply</button>
+                                <button onclick="videoMgr.botLikeBoost(this)" class="text-[10px] text-chirp-blue hover:underline opacity-0 group-hover:opacity-100 transition">Bot Boost</button>
+                            </div>
+                        </div>
+                    `;
+                    cList.appendChild(el);
+                    
+                    // Initialize odometer with value immediately
+                    setTimeout(() => {
+                        util.updateOdometer(counterId, c.likes);
+                    }, 0);
+                });
+            },
+
+            postComment: () => {
+                const input = document.getElementById('commentInput');
+                if(!input.value.trim()) return;
+                
+                const vid = store.videos.find(v => v.id === store.currentVideoId);
+                if(vid) {
+                    vid.comments.unshift({
+                        id: 'c_' + Date.now(),
+                        author: store.user.name,
+                        pfp: store.user.pfp,
+                        text: input.value,
+                        likes: 0,
+                        date: 'Just now',
+                        isCreator: true
+                    });
+                    input.value = '';
+                    document.getElementById('commentCount').innerText = vid.comments.length;
+                    videoMgr.renderComments(vid);
+                }
+            },
+
+            refreshWatchStats: () => {
+                 const vid = store.videos.find(v => v.id === store.currentVideoId);
+                 if(vid) {
+                     util.updateOdometer('viewCount', vid.views);
+                     util.updateOdometer('likeCount', vid.likes);
+                 }
+            },
+
+            likeVideo: (btn) => {
+                const vid = store.videos.find(v => v.id === store.currentVideoId);
+                if(vid && !vid.hasLiked) {
+                    vid.likes++;
+                    vid.hasLiked = true;
+                    util.updateOdometer('likeCount', vid.likes);
+                    
+                    // Update Button UI
+                    const icon = btn.querySelector('i');
+                    icon.classList.remove('fa-regular');
+                    icon.classList.add('fa-solid');
+                    
+                    // Trigger Explosion
+                    ui.triggerExplosion(btn);
+                }
+            },
+            
+            dislikeVideo: () => {
+                 const btn = event.currentTarget.querySelector('i');
+                 btn.classList.add('text-white');
+                 setTimeout(() => btn.classList.remove('text-white'), 200);
+            },
+
+            botLikeComment: (cid, btn) => {
+                // Visual toggle and explosion
+                const icon = btn.querySelector('i');
+                icon.classList.remove('fa-regular');
+                icon.classList.add('fa-solid');
+                ui.triggerExplosion(btn);
+            },
+            
+            botLikeBoost: (btn) => {
+                 const container = btn.parentElement;
+                 const counter = container.querySelector('.like-counter');
+                 // Ensure ID
+                 if(!counter.id) counter.id = 'comm_like_' + Math.random().toString(36).substr(2,9);
+                 
+                 const randomBig = util.getRandomInt(1000, 50000);
+                 util.updateOdometer(counter.id, randomBig);
+                 
+                 // Also explode on boost
+                 ui.triggerExplosion(container.querySelector('button'));
             }
-            renderedEpisodeCount=end;
-        }
+        };
 
-        function renderLibrary(){const l=document.getElementById('library-list'); l.innerHTML=''; if(!savedChirps.length){l.innerHTML='<div style="padding:20px;opacity:0.5;text-align:center">No saved chirps</div>';return;} savedChirps.forEach(i=>{const d=document.createElement('div');d.className='list-item premium-hover glass-shine-hover';d.onclick=()=>playTrack(i);d.innerHTML=`<img src="${i.image}" class="list-img"><div style="flex:1"><div style="font-weight:700;font-size:0.95rem">${i.title}</div><div style="font-size:0.8rem;opacity:0.6">Saved</div></div>`;l.appendChild(d);});}
-        function switchView(n,el){ document.getElementById('view-home').classList.add('hidden'); document.getElementById('view-discover').classList.add('hidden'); document.getElementById('view-library').classList.add('hidden'); document.getElementById('view-ai').classList.add('hidden'); document.getElementById('view-'+n).classList.remove('hidden'); try{history.pushState({view: n}, '', `/${n}`);}catch(e){} if(el) { const targetText = el.innerText.trim(); document.querySelectorAll('.nav-item, .sidebar-item').forEach(i=>{i.classList.remove('active');if(i.innerText.trim()===targetText) i.classList.add('active');});}}
-        function closeProfile(){document.getElementById('view-profile-detail').classList.add('hidden'); activeProfileStats=null; document.getElementById('pd-error-view').classList.add('hidden'); document.getElementById('pd-content-stats').classList.remove('hidden'); }
-        function switchProfileTab(t){document.getElementById('tab-episodes').classList.toggle('active',t==='episodes'); document.getElementById('tab-stats').classList.toggle('active',t==='stats'); const s=document.getElementById('pd-content-stats'); const e=document.getElementById('pd-content-episodes'); if(t==='stats'){e.classList.add('hidden');s.classList.remove('hidden');if(activeProfileStats){const c=document.getElementById('stat-chirps'),m=document.getElementById('stat-cash');c.innerHTML='';m.innerHTML='';setTimeout(()=>{updateOdometer(c,activeProfileStats.chirps);updateOdometer(m,formatCurrency(activeProfileStats.cash));},50);}}else{s.classList.add('hidden');e.classList.remove('hidden');}}
-        function toggleTrackChirp(){if(!currentTrack)return; const i=savedChirps.findIndex(x=>x.id===currentTrack.id); if(i>-1)savedChirps.splice(i,1); else{savedChirps.unshift(currentTrack);showToast();} localStorage.setItem('chirps_v40',JSON.stringify(savedChirps)); renderLibrary(); const b=document.getElementById('fp-bird-btn'); const is=savedChirps.some(x=>x.id===currentTrack.id); b.style.background=is?'var(--text-primary)':'rgba(255,255,255,0.1)'; b.style.color=is?'var(--bg-color)':'inherit';}
-        function toggleProfileChirp(){const i=savedProfileChirps.indexOf(currentProfileId); if(i>-1)savedProfileChirps.splice(i,1); else{savedProfileChirps.push(currentProfileId);showToast();} localStorage.setItem('profile_chirps_v40',JSON.stringify(savedProfileChirps)); updateProfBtn();}
-        function updateProfBtn(){const a=savedProfileChirps.includes(currentProfileId); const b=document.getElementById('pd-chirp-btn'), t=document.getElementById('pd-chirp-text'); if(a){b.classList.add('active');t.innerText="Chirped!";}else{b.classList.remove('active');t.innerText="Chirp";}}
-        function showToast(){const t=document.getElementById('toast');t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2000);}
-        function handleArtistClick(str){if(!str)return; const c=str.split(/,|&|\band\b/i).filter(x=>x.trim()); if(c.length>1){const l=document.getElementById('creators-list');l.innerHTML='';c.forEach(x=>{const d=document.createElement('div');d.className='creator-item';d.innerHTML=`${x.trim()} <svg class="icon" style="width:16px;opacity:0.5" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>`;d.onclick=()=>{closeCreatorsModal();closeFullPlayer();closeProfile();switchView('discover',document.querySelectorAll('.nav-item')[1]);document.getElementById('search-input').value=x.trim();doSearch(x.trim());};l.appendChild(d);});document.getElementById('modal-overlay').classList.add('active');document.getElementById('creators-modal').classList.add('active');}else{closeFullPlayer();closeProfile();switchView('discover',document.querySelectorAll('.nav-item')[1]);document.getElementById('search-input').value=str;doSearch(str);}}
-        function closeCreatorsModal(){document.getElementById('modal-overlay').classList.remove('active');document.getElementById('creators-modal').classList.remove('active');}
-        function toggleTheme(){document.body.setAttribute('data-theme',document.body.getAttribute('data-theme')==='dark'?'light':'dark');}
-        function toggleTrackChirpSearch(id) { alert("Saved to Library!"); }
-        function openWithdraw(){ document.getElementById('withdraw-overlay').classList.add('active'); document.getElementById('withdraw-modal').classList.add('active'); }
-        function closeWithdraw(){ document.getElementById('withdraw-overlay').classList.remove('active'); document.getElementById('withdraw-modal').classList.remove('active'); }
+        // Initialize
+        onboarding.init();
 
-        async function sendAI() {
-            const i=document.getElementById('ai-input'), t=i.value.trim(); if(!t)return;
-            lastUserQuery=t;
-            const h=document.getElementById('chat-history');
-            const u=document.createElement('div'); u.className='chat-row user'; u.innerHTML=`<div class="chat-msg">${t}</div>`; h.appendChild(u);
-            i.value='';
-            const emojis = t.match(/[\p{Emoji_Presentation}\u2600-\u27BF]/gu);
-            if(emojis) emojis.forEach(e => triggerEmojiExplosion(e));
-            const l=document.createElement('div'); l.className='chat-row ai'; 
-            l.innerHTML=`<div class="chat-avatar"><svg class="icon" viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg></div><div class="chat-msg"><div class="typing-dots"><span></span><span></span><span></span></div></div>`;
-            h.appendChild(l); h.scrollTop=h.scrollHeight;
-            try {
-                let sysPrompt = "You are Chirpless X4.2, a helpful AI owned by Chirpless Technology. You assist users with the Chirpless podcast app. Features: Search podcasts, Chirps (likes), Cash Value ($0.0000011/stream), Top Charts. Support: pricepeyton987@gmail.com. If asked to code or do unrelated tasks, refuse politiely as per your contract.";
-                if(isDeepThink) sysPrompt += " Provide a deep, analytical, detailed response."; else sysPrompt += " Keep responses concise and helpful.";
-                const r = await fetch('https://api.routeway.co/v1/chat/completions', { method: 'POST', headers: {'Content-Type':'application/json','Authorization':`Bearer ${CHAT_API_KEY}`}, body: JSON.stringify({model:"llama-3.3-70b-instruct", messages:[{role:"system",content:sysPrompt},{role:"user",content:t}]}) });
-                if(!r.ok) throw new Error("API Error");
-                const d=await r.json(); const aiTxt = d.choices?.[0]?.message?.content || "Connection error.";
-                renderAIResponse(l, aiTxt);
-            } catch(e){ setTimeout(() => { const fallback = getFallbackResponse(t); renderAIResponse(l, fallback); }, 2000); }
-            h.scrollTop=h.scrollHeight;
-        }
-        function getFallbackResponse(query) { const q = query.toLowerCase(); if(q.includes('code') || q.includes('programming') || q.includes('html')) return FALLBACK_RESPONSES.code; if(q.includes('support') || q.includes('help')) return FALLBACK_RESPONSES.support; if(q.includes('chirp')) return FALLBACK_RESPONSES.chirp; if(q.includes('cash') || q.includes('money') || q.includes('value')) return FALLBACK_RESPONSES.cash; return FALLBACK_RESPONSES.default; }
-        function renderAIResponse(el, txt) { el.innerHTML = `<div class="chat-avatar"><svg class="icon" viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg></div><div style="flex:1"><div class="chat-msg">${txt}</div><div class="chat-actions"><button class="chat-action-btn" onclick="copyText('${txt.replace(/'/g, "\\'")}')">Copy</button><button class="chat-action-btn" onclick="refineResponse('${txt.replace(/'/g, "\\'")}')">Refine</button><button class="chat-action-btn" onclick="redoResponse()">Redo</button></div></div>`; }
-        function toggleDeepThink() { isDeepThink = !isDeepThink; document.getElementById('deep-think-toggle').classList.toggle('active'); }
-        function copyText(txt) { navigator.clipboard.writeText(txt).then(() => alert("Copied!")); }
-        function refineResponse(txt) { const i = document.getElementById('ai-input'); i.value = `Refine this: "${txt.substring(0, 50)}..."`; i.focus(); }
-        function redoResponse() { if(lastUserQuery) { document.getElementById('ai-input').value = lastUserQuery; sendAI(); } }
-        function triggerEmojiExplosion(emoji) { for(let i=0; i<30; i++) { const el = document.createElement('div'); el.innerText = emoji; el.className = 'emoji-particle'; el.style.left = '50%'; el.style.top = '50%'; const angle = Math.random() * Math.PI * 2; const dist = 100 + Math.random() * 300; el.style.setProperty('--tx', Math.cos(angle) * dist + 'px'); el.style.setProperty('--ty', Math.sin(angle) * dist + 'px'); el.style.setProperty('--rot', (Math.random() * 360) + 'deg'); document.body.appendChild(el); setTimeout(() => el.remove(), 1000); } }
-
-        const cvs=document.getElementById('wave-canvas'); const ctx=cvs.getContext('2d'); let aid;
-        function startWaveform(){if(aid)cancelAnimationFrame(aid); cvs.width=cvs.offsetWidth; cvs.height=cvs.offsetHeight; loop();}
-        function loop(){if(!isPlaying)return; ctx.clearRect(0,0,cvs.width,cvs.height); ctx.fillStyle=getComputedStyle(document.body).getPropertyValue('--text-primary'); const b=50,w=cvs.width/b; for(let i=0;i<b;i++){const h=Math.abs(Math.sin(Date.now()/200+i*0.5))*cvs.height; ctx.fillRect(i*w,(cvs.height-h)/2,w-2,h);} aid=requestAnimationFrame(loop);}
-        function seek(e){const r=document.getElementById('progress-container').getBoundingClientRect(); const p=(e.clientX-r.left)/r.width; document.getElementById('audio-player').currentTime=p*document.getElementById('audio-player').duration;}
-        const aEl=document.getElementById('audio-player');
-        aEl.ontimeupdate=()=>{if(aEl.duration && !isNaN(aEl.duration)){const p=(aEl.currentTime/aEl.duration)*100; document.getElementById('progress-fill').style.width=p+'%'; document.getElementById('time-current').innerText=formatTime(aEl.currentTime); document.getElementById('time-total').innerText=formatTime(aEl.duration);}};
-        function changeSpeed(){playbackSpeed=playbackSpeed===1.0?1.5:(playbackSpeed===1.5?2.0:1.0); aEl.playbackRate=playbackSpeed; document.getElementById('speed-btn').innerText=playbackSpeed+'x';}
-        function skip(v){aEl.currentTime+=v;}
-
-        init();
     </script>
 </body>
 </html>
