@@ -278,7 +278,7 @@
         .post-text { font-size: 1rem; line-height: 1.6; margin-bottom: 1rem; white-space: pre-wrap; font-weight: 400; }
         .post-image { width: 100%; height: auto; border-radius: 12px; margin-bottom: 1rem; border: 1px solid var(--border); display: block; max-height: 500px; object-fit: cover; }
 
-        /* POST MENU */
+        /* MENUS */
         .post-menu-container { position: relative; }
         .post-menu-btn { background: none; border: none; padding: 4px; cursor: pointer; color: var(--subtle); border-radius: 50%; display: flex; align-items: center; justify-content: center; }
         .post-menu-btn:hover { background: var(--border); color: var(--text); }
@@ -326,12 +326,16 @@
         /* PROFILE */
         .profile-header { padding: 2rem 1.5rem; border-bottom: 1px solid var(--border); flex-shrink: 0; }
         .profile-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem; }
-        .profile-info h2 { font-size: 1.8rem; margin-bottom: 0.2rem; display: flex; align-items: center; gap: 6px; }
+        .profile-info h2 { font-size: 1.8rem; margin-bottom: 0.2rem; display: flex; align-items: center; gap: 6px; cursor: pointer; }
         .profile-handle { color: var(--subtle); margin-bottom: 1rem; display: block; }
         .profile-stats-row { display: flex; gap: 1.5rem; font-size: 0.95rem; }
         .profile-stat span { font-weight: 800; color: var(--text); }
         .profile-action-btn { background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 0.5rem 1.2rem; border-radius: 12px; font-weight: 600; cursor: pointer; }
         .profile-action-btn.primary { background: var(--text); color: var(--bg); border: none; }
+        
+        /* Bounce Animation */
+        @keyframes bounce-click { 0% { transform: scale(1); } 50% { transform: scale(0.9); } 100% { transform: scale(1); } }
+        .bounce-active { animation: bounce-click 0.3s ease; }
 
         /* MOBILE NAV */
         .mobile-nav {
@@ -373,13 +377,19 @@
     <div id="collab-modal" class="modal-overlay hidden">
         <div class="modal-card">
             <h2>Collaboration Hub</h2>
-            <p class="subtle" style="margin-bottom: 1.5rem;">Create bots to collaborate with. Higher stats = bigger boost.</p>
+            <p class="subtle" style="margin-bottom: 1.5rem;">Create bots to collaborate with. Enable "Custom Bot" to control them.</p>
             <div class="input-group"><label>BOT NAME</label><input type="text" id="bot-name" placeholder="e.g. Cool Brand"></div>
             <div class="input-group"><label>BOT HANDLE</label><input type="text" id="bot-handle" placeholder="e.g. coolbrand"></div>
             <div style="display: flex; gap: 1rem;">
                 <div class="input-group"><label>AUDIENCE</label><input type="number" id="bot-audience" value="50000"></div>
                 <div class="input-group"><label>FOLLOWERS</label><input type="number" id="bot-followers" value="2000"></div>
             </div>
+            <!-- Checkbox for custom -->
+            <div style="margin-bottom:1rem; display:flex; align-items:center; gap:8px;">
+                <input type="checkbox" id="bot-custom" style="width:auto;">
+                <label for="bot-custom" style="margin:0; font-size:0.9rem; font-weight:600; cursor:pointer;">Enable Control (Custom Bot)</label>
+            </div>
+            
             <button class="btn-primary" onclick="confirmAddBot()">Create Bot</button>
             <button class="btn-secondary" onclick="closeCollabModal()">Close</button>
             <div style="margin-top: 2rem; border-top: 1px solid var(--border); padding-top: 1rem;">
@@ -534,13 +544,14 @@
             lastPostDay: 0,
             activeTab: 'home',
             previousTab: 'home',
-            viewingProfile: null
+            viewingProfile: null,
+            activeAccountId: 'me' // 'me' or bot ID
         };
         
-        let currentImageBase64 = null; // Temp holder for composer
+        let currentImageBase64 = null; 
 
         // --- PERSISTENCE ---
-        const DB_KEY = 'chirpless_save_v5';
+        const DB_KEY = 'chirpless_save_v6';
         
         function saveData() {
             try {
@@ -557,10 +568,74 @@
                     const parsed = JSON.parse(saved);
                     state = { ...state, ...parsed };
                     if(!state.user.pfp) state.user.pfp = null;
+                    if(!state.activeAccountId) state.activeAccountId = 'me';
+                    // Ensure bots have following prop
+                    state.bots.forEach(b => { if(typeof b.following === 'undefined') b.following = false; });
                     return true;
                 } catch(e) { console.error("Save data corrupted", e); return false; }
             }
             return false;
+        }
+
+        // --- ACCOUNT HELPERS ---
+        function getCurrentUser() {
+            if (state.activeAccountId === 'me') return state.user;
+            return state.bots.find(b => b.id == state.activeAccountId) || state.user;
+        }
+
+        function switchAccount(id) {
+            state.activeAccountId = id;
+            updateUserAvatarDisplay();
+            updateGlobalStats(true);
+            saveData();
+            // Refresh current view
+            if(state.activeTab === 'profile') renderProfile(id); // Go to self profile
+            else if(state.activeTab === 'home') renderFeed('feed'); // refresh feed composer
+            closeAllMenus();
+        }
+
+        function toggleAccountMenu(event) {
+            event.stopPropagation();
+            closeAllMenus();
+            
+            // Generate list of accounts: Me + Custom Bots
+            const accounts = [{id: 'me', name: state.user.name, handle: state.user.handle, pfp: state.user.pfp}];
+            state.bots.filter(b => b.isCustom).forEach(b => accounts.push(b));
+            
+            const div = document.createElement('div');
+            div.className = 'post-menu active';
+            div.style.position = 'absolute';
+            div.style.top = '100%';
+            div.style.left = '0';
+            div.style.minWidth = '200px';
+            div.style.zIndex = 1000;
+            
+            let html = '';
+            accounts.forEach(acc => {
+                const isMe = acc.id === 'me';
+                const avatar = isMe ? (acc.pfp ? `<img src="${acc.pfp}" style="width:24px;height:24px;border-radius:50%;object-fit:cover;margin-right:8px;">` : `<div style="width:24px;height:24px;border-radius:50%;background:#eee;margin-right:8px;display:flex;align-items:center;justify-content:center;font-size:0.8rem;font-weight:700;">${acc.name.substring(0,1)}</div>`) 
+                                    : `<img src="https://api.dicebear.com/9.x/thumbs/svg?seed=${acc.handle}" style="width:24px;height:24px;border-radius:50%;object-fit:cover;margin-right:8px;">`;
+                
+                const check = state.activeAccountId == acc.id ? ' ✓' : '';
+                html += `<button class="menu-item" onclick="switchAccount('${acc.id}')" style="display:flex;align-items:center;">
+                    ${avatar} ${acc.name}${check}
+                </button>`;
+            });
+            div.innerHTML = html;
+            
+            // Append to the header (need reference)
+            const h2 = event.currentTarget.parentElement; // The h2 container
+            if(h2) {
+               h2.style.position = 'relative';
+               h2.appendChild(div);
+            }
+            
+            const remover = (e) => { 
+                if(!div.contains(e.target)) {
+                    div.remove(); document.body.removeEventListener('click', remover); 
+                }
+            };
+            setTimeout(() => document.body.addEventListener('click', remover), 0);
         }
 
         // --- DEFAULTS ---
@@ -578,7 +653,7 @@
                     { name: "PlayStation", handle: "@playstation", audience: 80000000, followers: 25000000 },
                     { name: "Nike", handle: "@nike", audience: 90000000, followers: 28000000 }
                 ];
-                state.bots = defaults.map((d, i) => ({ ...d, id: Date.now() + i }));
+                state.bots = defaults.map((d, i) => ({ ...d, id: Date.now() + i, following: false, isCustom: false }));
                 saveData();
             }
         }
@@ -600,12 +675,14 @@
         };
 
         function updateUserAvatarDisplay() {
+            const currentUser = getCurrentUser();
             const el = document.getElementById('user-avatar');
-            el.innerHTML = getAvatarContent(state.user, false);
+            const isBot = state.activeAccountId !== 'me';
+            el.innerHTML = getAvatarContent(currentUser, isBot);
         }
 
         function getAvatarContent(user, isBot) {
-            if (isBot) {
+            if (isBot || user.isCustom) { // Treat custom users like bots for avatar logic if needed
                 return `<img src="https://api.dicebear.com/9.x/thumbs/svg?seed=${user.handle}" style="width:100%; height:100%; object-fit:cover;">`;
             }
             if (user.pfp) {
@@ -705,13 +782,14 @@
         }
 
         function updateGlobalStats(force = false) {
+            const currentUser = getCurrentUser();
             ['audience-count', 'mob-audience-count'].forEach(id => {
                 const el = document.getElementById(id);
-                if(force) createTicker(el, state.user.audience); else updateTicker(el, state.user.audience);
+                if(force) createTicker(el, currentUser.audience); else updateTicker(el, currentUser.audience);
             });
             ['follower-count', 'mob-follower-count'].forEach(id => {
                 const el = document.getElementById(id);
-                if(force) createTicker(el, state.user.followers); else updateTicker(el, state.user.followers);
+                if(force) createTicker(el, currentUser.followers); else updateTicker(el, currentUser.followers);
             });
         }
 
@@ -771,19 +849,20 @@
 
             if(!text && !hasPoll && !currentImageBase64) return;
 
+            const currentUser = getCurrentUser();
             const collabId = document.getElementById('collab-select').value;
             const bot = state.bots.find(b => b.id == collabId);
             
             let mult = 1.0;
-            if (bot) mult = 1 + (bot.audience / (state.user.audience + 1000)) * 0.5;
+            if (bot) mult = 1 + (bot.audience / (currentUser.audience + 1000)) * 0.5;
 
-            const followerContribution = state.user.followers * (0.15 + Math.random() * 0.15);
-            const audienceContribution = state.user.audience * (0.8 + Math.random() * 0.4);
+            const followerContribution = currentUser.followers * (0.15 + Math.random() * 0.15);
+            const audienceContribution = currentUser.audience * (0.8 + Math.random() * 0.4);
             const combinedPotential = (followerContribution + audienceContribution) * mult;
 
             const newPost = {
                 id: Date.now(),
-                authorId: 'me',
+                authorId: state.activeAccountId, // Post as active user (me or bot)
                 content: text,
                 dayPosted: state.day,
                 views: 0, likes: 0, reposts: 0,
@@ -802,7 +881,7 @@
 
             state.posts.unshift(newPost);
             state.lastPostDay = state.day;
-            state.user.audience += Math.floor(state.user.audience * 0.02) + 50; 
+            currentUser.audience += Math.floor(currentUser.audience * 0.02) + 50; 
             
             document.getElementById('post-input').value = '';
             document.getElementById('poll-opt-1').value = '';
@@ -813,7 +892,7 @@
             checkInput();
             
             if(state.activeTab === 'home') renderFeed('feed');
-            else if(state.activeTab === 'profile' && state.viewingProfile === 'me') renderProfile('me');
+            else if(state.activeTab === 'profile') renderProfile(state.activeAccountId);
             
             updateGlobalStats();
             saveData();
@@ -826,7 +905,6 @@
 
         // --- NAVIGATION & VIEWS ---
         function switchTab(tab, profileId = null) {
-            // Save previous tab unless we are navigating to post detail (handled separately)
             if (tab !== 'post-detail' && state.activeTab !== 'post-detail') {
                 state.previousTab = state.activeTab;
             }
@@ -846,7 +924,7 @@
                 renderSearch();
             } else if(tab === 'profile') {
                 document.getElementById('view-profile').classList.add('active');
-                renderProfile(profileId || 'me');
+                renderProfile(profileId || state.activeAccountId);
             } else if(tab === 'notes') {
                 document.getElementById('view-notes').classList.add('active');
                 renderFeed('notes-feed');
@@ -890,9 +968,13 @@
                 
                 const bot = state.bots.find(b => b.id == collabId);
                 const botName = bot ? bot.name : "Collaborator";
+                
+                // Need to find author name
+                const author = authorId === 'me' ? state.user : state.bots.find(b => b.id == authorId);
+                const authorName = author ? author.name : "Author";
 
                 div.innerHTML = `
-                    <button class="menu-item" onclick="switchTab('profile', '${authorId}')">View ${state.user.name}</button>
+                    <button class="menu-item" onclick="switchTab('profile', '${authorId}')">View ${authorName}</button>
                     <button class="menu-item" onclick="switchTab('profile', '${collabId}')">View ${botName}</button>
                 `;
                 document.body.appendChild(div);
@@ -934,7 +1016,7 @@
             closeNoteModal();
         }
 
-        // --- COLLAB MODAL ---
+        // --- COLLAB & FOLLOW ---
         function openCollabModal() {
             document.getElementById('collab-modal').classList.remove('hidden');
             document.getElementById('collab-modal').style.opacity = '1';
@@ -948,9 +1030,12 @@
             let handle = document.getElementById('bot-handle').value;
             const aud = parseInt(document.getElementById('bot-audience').value) || 0;
             const fol = parseInt(document.getElementById('bot-followers').value) || 0;
+            const isCustom = document.getElementById('bot-custom').checked;
+            
             if(!name || !handle) return;
             if(!handle.startsWith('@')) handle = '@' + handle;
-            const bot = { id: Date.now(), name, handle, audience: aud, followers: fol };
+            
+            const bot = { id: Date.now(), name, handle, audience: aud, followers: fol, following: false, isCustom: isCustom };
             state.bots.push(bot);
             updateBotList();
             closeCollabModal();
@@ -960,9 +1045,18 @@
             const list = document.getElementById('bot-list');
             const select = document.getElementById('collab-select');
             list.innerHTML = state.bots.length ? state.bots.map(b => 
-                `<div><b>${b.name}</b> <span class="subtle">${b.handle}</span><br><span style="font-size:0.8rem">Aud: ${formatNumber(b.audience)} | Fol: ${formatNumber(b.followers)}</span></div>`
+                `<div><b>${b.name}</b> <span class="subtle">${b.handle}</span>${b.isCustom ? ' <span style="font-size:0.7rem;background:var(--border);padding:2px 4px;border-radius:4px;">Custom</span>' : ''}<br><span style="font-size:0.8rem">Aud: ${formatNumber(b.audience)} | Fol: ${formatNumber(b.followers)}</span></div>`
             ).join('<hr style="border:0; border-top:1px solid var(--border); margin:0.5rem 0;">') : "No bots yet.";
             select.innerHTML = `<option value="">No Collaborator</option>` + state.bots.map(b => `<option value="${b.id}">${b.name}</option>`).join('');
+        }
+
+        function toggleFollow(botId) {
+            const bot = state.bots.find(b => b.id == botId);
+            if(bot) {
+                bot.following = !bot.following;
+                saveData();
+                renderProfile(botId);
+            }
         }
 
         // --- SIMULATION ---
@@ -998,10 +1092,8 @@
                             updatePollDOM(post);
                         }
                     }
-                    // Update stats in both feed and detail view if open
                     updatePostStatsDOM(post.id, post.views, post.likes, post.reposts);
                     if(state.activeTab === 'post-detail') {
-                        // Refresh detail ticker specifically
                         updateTicker(document.getElementById(`detail-view-${post.id}`), post.views);
                         updateTicker(document.getElementById(`detail-like-${post.id}`), post.likes);
                         updateTicker(document.getElementById(`detail-repost-${post.id}`), post.reposts);
@@ -1009,21 +1101,21 @@
                 }
             });
 
+            const currentUser = getCurrentUser();
             let audChange = 0;
             if (daysSincePost < 4) {
                 audChange = Math.floor(totalNewViews * 0.015) + Math.floor(Math.random() * 100);
             } else if (daysSincePost >= 4 && daysSincePost < 23) {
                 const slideFactor = 0.005 * (daysSincePost - 3);
-                audChange = -Math.floor(state.user.audience * slideFactor);
+                audChange = -Math.floor(currentUser.audience * slideFactor);
             } else {
-                audChange = -Math.floor(state.user.audience * 0.10);
+                audChange = -Math.floor(currentUser.audience * 0.10);
             }
             
-            state.user.audience = Math.max(0, state.user.audience + audChange);
-            state.user.followers += Math.floor(totalNewViews * 0.001);
+            currentUser.audience = Math.max(0, currentUser.audience + audChange);
+            currentUser.followers += Math.floor(totalNewViews * 0.001);
             
             updateGlobalStats();
-            // Refreshes feeds
             if(state.activeTab !== 'post-detail') {
                 const activeFeed = state.activeTab === 'notes' ? 'notes-feed' : 
                                    state.activeTab === 'profile' ? 'profile-feed' : 'feed';
@@ -1039,12 +1131,10 @@
             post.liked = !post.liked;
             post.likes += post.liked ? 1 : -1;
             
-            // Update feed items
             const btn = document.getElementById(`like-btn-${postId}`);
             if(btn) { if(post.liked) btn.classList.add('liked'); else btn.classList.remove('liked'); }
             updateTicker(document.getElementById(`like-${postId}`), post.likes);
             
-            // Update Detail View
             const dBtn = document.getElementById(`detail-like-btn-${postId}`);
             if(dBtn) { if(post.liked) dBtn.classList.add('liked'); else dBtn.classList.remove('liked'); }
             updateTicker(document.getElementById(`detail-like-${postId}`), post.likes);
@@ -1073,7 +1163,7 @@
             post.poll.voted = true;
             post.poll.totalVotes++;
             post.poll.options[optIdx].votes++;
-            updatePollDOM(post); // Updates all instances of this poll ID
+            updatePollDOM(post);
             saveData();
         }
 
@@ -1083,13 +1173,19 @@
             if(!container) return;
             
             let posts = state.posts;
+            const currentUser = getCurrentUser(); // for 'me' context
+
             if (containerId === 'profile-feed') {
-                if(state.viewingProfile === 'me') posts = state.posts.filter(p => p.authorId === 'me');
-                else posts = state.posts.filter(p => p.collab && p.collab.id == state.viewingProfile);
+                // If viewing a profile, show posts BY that author (authorId === viewingProfile)
+                // OR posts where that profile is a collaborator
+                const targetId = state.viewingProfile;
+                posts = state.posts.filter(p => p.authorId == targetId || (p.collab && p.collab.id == targetId));
             } else if (containerId === 'search-results') {
                 const query = document.getElementById('search-input').value.toLowerCase();
                 posts = state.posts.filter(p => p.content.toLowerCase().includes(query));
             } else if (containerId === 'notes-feed') {
+                // Notes are personal to the active account viewing them? 
+                // Currently notes are global to the browser session. Let's keep it simple.
                 posts = state.posts.filter(p => p.myNote && p.myNote.trim().length > 0);
             }
 
@@ -1114,27 +1210,58 @@
         function renderProfile(profileId) {
             state.viewingProfile = profileId;
             const container = document.getElementById('profile-container');
-            const isMe = profileId === 'me';
-            const user = isMe ? state.user : state.bots.find(b => b.id == profileId);
+            const isMe = profileId == state.activeAccountId; // Is this the profile I am currently acting as?
+            
+            let user;
+            if (profileId === 'me') user = state.user;
+            else user = state.bots.find(b => b.id == profileId);
+            
+            // If we are looking for 'me' but active account is a bot, we might need to handle ID mismatch
+            // If profileId is 'me', it means the main user object
+            if (profileId === 'me' && state.activeAccountId !== 'me') {
+               // We are viewing main profile while logged in as bot
+               user = state.user;
+            } else if (profileId == state.activeAccountId && state.activeAccountId !== 'me') {
+               // Viewing active bot profile
+               user = state.bots.find(b => b.id == state.activeAccountId);
+            }
+
             if (!user) { container.innerHTML = "User not found"; return; }
             
             const badge = (user.followers >= 15000) ? getVerifiedBadge() : '';
-            const avatarHTML = getAvatarContent(user, !isMe);
+            const avatarHTML = getAvatarContent(user, profileId !== 'me' && profileId !== state.user.id); // Treat as bot if not main user ID? 
+            
+            // Dropdown trigger logic
+            let nameHTML = `<h2>${user.name} ${badge}</h2>`;
+            // If we are viewing the profile we are logged in as (whether 'me' or bot), show dropdown
+            if (isMe) {
+                nameHTML = `<h2 onclick="toggleAccountMenu(event)">${user.name} ${badge} <span style="font-size:0.8em; opacity:0.5; margin-left:4px;">▼</span></h2>`;
+            }
+
+            let actionButton = '';
+            if (isMe) {
+                actionButton = `
+                    <div style="display:flex; gap:8px;">
+                        <button class="profile-action-btn" onclick="switchTab('notes')">My Notes</button>
+                        <button class="profile-action-btn" onclick="triggerPfpUpload()">Edit Profile</button>
+                    </div>
+                    <input type="file" id="pfp-upload-input" accept="image/*" style="display: none;" onchange="handlePfpFile(this)">
+                `;
+            } else {
+                // Following button
+                const text = user.following ? 'Following' : 'Follow';
+                const cls = user.following ? 'profile-action-btn' : 'profile-action-btn primary';
+                actionButton = `<button class="${cls}" onclick="toggleFollow('${user.id}'); this.classList.add('bounce-active'); setTimeout(()=>this.classList.remove('bounce-active'),300);">${text}</button>`;
+            }
 
             container.innerHTML = `
                 <div class="profile-header">
                     <div class="profile-top">
                         <div class="avatar" style="width:80px; height:80px; font-size:2rem; cursor:default; background:#eee;">${avatarHTML}</div>
-                        ${isMe ? `
-                            <div style="display:flex; gap:8px;">
-                                <button class="profile-action-btn" onclick="switchTab('notes')">My Notes</button>
-                                <button class="profile-action-btn" onclick="triggerPfpUpload()">Edit Profile</button>
-                            </div>
-                            <input type="file" id="pfp-upload-input" accept="image/*" style="display: none;" onchange="handlePfpFile(this)">
-                        ` : `<button class="profile-action-btn primary" onclick="this.innerText = this.innerText==='Follow'?'Following':'Follow'">Follow</button>`}
+                        ${actionButton}
                     </div>
                     <div class="profile-info">
-                        <h2>${user.name} ${badge}</h2>
+                        ${nameHTML}
                         <span class="profile-handle">${user.handle}</span>
                         <div class="profile-stats-row"><div class="profile-stat"><span>${formatNumber(user.followers)}</span> followers</div><div class="profile-stat"><span>${formatNumber(user.audience)}</span> audience</div></div>
                     </div>
@@ -1149,14 +1276,19 @@
             if(!post) { container.innerHTML = "Post not found"; return; }
 
             const timeStr = formatTime(post.dayPosted, state.day);
-            const badge = (state.user.followers >= 15000) ? getVerifiedBadge() : '';
-            const avatarContent = getAvatarContent(state.user, false);
+            
+            // Resolve author
+            let author = post.authorId === 'me' ? state.user : state.bots.find(b => b.id == post.authorId);
+            if(!author) author = {name:'Unknown', handle:'@unknown', followers:0};
+
+            const badge = (author.followers >= 15000) ? getVerifiedBadge() : '';
+            const avatarContent = getAvatarContent(author, post.authorId !== 'me');
 
             let handleHTML = `
-                <div class="handle-group" onclick="handleHandleClick(event, 'me', '${post.collab ? post.collab.id : ''}')">
+                <div class="handle-group" onclick="handleHandleClick(event, '${post.authorId}', '${post.collab ? post.collab.id : ''}')">
                     <div class="avatar" style="width:48px;height:48px;margin-right:10px;">${avatarContent}</div>
                     <div>
-                        <div class="handle" style="font-size:1.1rem;">${state.user.name} ${badge}</div>
+                        <div class="handle" style="font-size:1.1rem;">${author.name} ${badge}</div>
                         ${post.collab ? `<span class="collab-text">with ${post.collab.name}</span>` : ''}
                     </div>
                 </div>
@@ -1172,7 +1304,6 @@
                 imageHTML = `<img src="${post.image}" class="post-image" style="max-height:600px;">`;
             }
 
-            // Stats
             const statsHTML = `
                 <div class="post-detail-stats">
                     <div class="detail-stat-item">
@@ -1226,7 +1357,6 @@
                 </div>
             `;
 
-            // Init tickers
             setTimeout(() => {
                 createTicker(container.querySelector(`#detail-view-${post.id}`), post.views);
                 createTicker(container.querySelector(`#detail-like-${post.id}`), post.likes);
@@ -1239,20 +1369,23 @@
             const div = document.createElement('div');
             div.className = 'post glass-shine';
             div.id = `post-${post.id}`;
-            // IMPORTANT: Open detail on click
             div.onclick = (e) => {
-                // Prevent if clicked on button or link
                 if(e.target.closest('button') || e.target.closest('.handle-group') || e.target.closest('.poll-option')) return;
                 openPostDetail(post.id);
             };
 
             const timeStr = formatTime(post.dayPosted, state.day);
-            const badge = (state.user.followers >= 15000) ? getVerifiedBadge() : '';
-            const avatarContent = getAvatarContent(state.user, false);
+            
+            // Resolve author
+            let author = post.authorId === 'me' ? state.user : state.bots.find(b => b.id == post.authorId);
+            if(!author) author = {name:'Unknown', handle:'@unknown', followers:0};
+
+            const badge = (author.followers >= 15000) ? getVerifiedBadge() : '';
+            const avatarContent = getAvatarContent(author, post.authorId !== 'me');
 
             let handleHTML = `
-                <div class="handle-group glass-shine" onclick="handleHandleClick(event, 'me', '${post.collab ? post.collab.id : ''}')">
-                    <span class="handle">${state.user.name} ${badge}</span>
+                <div class="handle-group glass-shine" onclick="handleHandleClick(event, '${post.authorId}', '${post.collab ? post.collab.id : ''}')">
+                    <span class="handle">${author.name} ${badge}</span>
                     ${post.collab ? `<span class="collab-text">+1 collaborator</span>` : ''}
                 </div>
             `;
@@ -1273,7 +1406,7 @@
             }
 
             div.innerHTML = `
-                <div class="avatar" onclick="event.stopPropagation(); switchTab('profile', 'me')">${avatarContent}</div>
+                <div class="avatar" onclick="event.stopPropagation(); switchTab('profile', '${post.authorId}')">${avatarContent}</div>
                 <div class="post-content">
                     <div class="post-header">
                         ${handleHTML}
@@ -1319,20 +1452,10 @@
         }
 
         function updatePollDOM(post, element) {
-            // Updated to handle multiple potential elements (feed + detail)
-            const selectors = [`#poll-${post.id}`, `#poll-${post.id}`]; 
-            // Logic handled by caller usually passing element, or we query all
-            // For simplicity, we stick to ID based updates, but since ID must be unique, 
-            // if Detail is open, it might conflict with Feed ID if both present?
-            // HTML5 IDs must be unique. Let's make Detail IDs different? 
-            // Actually, in `renderPostDetail`, I reused `id="poll-${post.id}"`. 
-            // This is bad practice but standard browsers handle the first one found.
-            // Let's rely on passed element if available, or just querySelector.
-            
             const el = element || document.getElementById(`poll-${post.id}`);
             if(!el) return;
             const total = post.poll.totalVotes || 1; 
-            const showResults = post.poll.voted || post.authorId === 'me';
+            const showResults = post.poll.voted || post.authorId === state.activeAccountId; // Show if voted or if author (me or my bot)
             let html = '';
             post.poll.options.forEach((opt, idx) => {
                 if(showResults) {
