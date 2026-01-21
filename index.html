@@ -12,18 +12,22 @@
     <link rel="icon" href="siteicon.png" type="image/png">
     <link rel="apple-touch-icon" href="siteicon.png">
 
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
     <style>
         /* --- RESET & VARS --- */
         :root {
             --bg: #ffffff;
             --text: #000000;
-            --subtle: #888888;
-            --border: #f0f0f0;
+            --subtle: #6e6e6e;
+            --border: #e8e8e8;
             --accent: #000000;
-            --glass: rgba(255, 255, 255, 0.9);
-            --glass-border: rgba(0, 0, 0, 0.05);
+            --glass: rgba(255, 255, 255, 0.95);
             --sidebar-width: 260px;
-            --font-main: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            --font-main: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             --anim-speed: 0.8s;
             --anim-ease: cubic-bezier(0.25, 1, 0.5, 1);
             
@@ -34,23 +38,22 @@
 
         @media (prefers-color-scheme: dark) {
             :root {
-                --bg: #000000;
+                --bg: #050505;
                 --text: #ffffff;
-                --subtle: #666666;
-                --border: #1f1f1f;
+                --subtle: #888888;
+                --border: #222222;
                 --accent: #ffffff;
-                --glass: rgba(0, 0, 0, 0.9);
-                --glass-border: rgba(255, 255, 255, 0.1);
+                --glass: rgba(5, 5, 5, 0.95);
             }
         }
 
         * { box-sizing: border-box; outline: none; -webkit-tap-highlight-color: transparent; }
-        body, html { margin: 0; padding: 0; font-family: var(--font-main); background: var(--bg); color: var(--text); height: 100%; overflow: hidden; }
+        body, html { margin: 0; padding: 0; font-family: var(--font-main); background: var(--bg); color: var(--text); height: 100%; overflow: hidden; letter-spacing: -0.015em; }
 
         /* --- TYPOGRAPHY --- */
-        h1, h2, h3 { margin: 0; font-weight: 700; letter-spacing: -0.02em; }
-        p { margin: 0; line-height: 1.5; }
-        .bold { font-weight: 600; }
+        h1, h2, h3 { margin: 0; font-weight: 800; letter-spacing: -0.03em; }
+        p { margin: 0; line-height: 1.6; }
+        .bold { font-weight: 700; }
         .subtle { color: var(--subtle); font-size: 0.9rem; }
         .pointer { cursor: pointer; }
 
@@ -86,7 +89,8 @@
         .modal-overlay {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
-            background: var(--bg);
+            background: rgba(0,0,0,0.5); /* Dimmed background */
+            backdrop-filter: blur(5px);
             z-index: 999;
             display: flex;
             flex-direction: column;
@@ -98,34 +102,35 @@
         }
         .modal-overlay.hidden { opacity: 0; pointer-events: none; }
         
-        #collab-modal, #note-modal { background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); }
+        #onboarding { background: var(--bg); }
+
         .modal-card {
             background: var(--bg);
             padding: 2rem;
-            border-radius: 20px;
+            border-radius: 24px;
             max-width: 400px;
             width: 100%;
             border: 1px solid var(--border);
             text-align: left;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
             max-height: 90vh;
             overflow-y: auto;
         }
 
         .input-group { margin: 1rem 0; width: 100%; text-align: left; }
-        .input-group label { display: block; font-size: 0.75rem; color: var(--subtle); margin-bottom: 0.4rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; }
+        .input-group label { display: block; font-size: 0.75rem; color: var(--subtle); margin-bottom: 0.5rem; font-weight: 700; letter-spacing: 0.02em; text-transform: uppercase; }
         input[type="text"], input[type="number"], textarea.modal-input {
-            width: 100%; padding: 0.8rem; background: var(--bg); border: 1px solid var(--border); border-radius: 10px; color: var(--text); font-size: 1rem; font-family: inherit;
+            width: 100%; padding: 1rem; background: var(--bg); border: 1px solid var(--border); border-radius: 14px; color: var(--text); font-size: 1rem; font-family: inherit; transition: border-color 0.2s;
         }
         textarea.modal-input { min-height: 100px; resize: none; }
         input:focus, textarea.modal-input:focus { border-color: var(--text); }
         
         .btn-primary {
-            background: var(--text); color: var(--bg); border: none; padding: 1rem; border-radius: 12px; font-weight: 700; cursor: pointer; width: 100%; margin-top: 1rem;
+            background: var(--text); color: var(--bg); border: none; padding: 1rem; border-radius: 14px; font-weight: 700; cursor: pointer; width: 100%; margin-top: 1rem; transition: transform 0.1s;
         }
         .btn-primary:active { transform: scale(0.98); }
         .btn-secondary {
-            background: transparent; color: var(--subtle); border: 1px solid var(--border); padding: 0.8rem; border-radius: 12px; font-weight: 600; cursor: pointer; width: 100%; margin-top: 0.5rem;
+            background: transparent; color: var(--subtle); border: 1px solid var(--border); padding: 0.8rem; border-radius: 14px; font-weight: 600; cursor: pointer; width: 100%; margin-top: 0.5rem;
         }
 
         /* --- LAYOUT --- */
@@ -141,7 +146,7 @@
         .brand-icon { width: 28px; height: 28px; background: var(--text); border-radius: 8px; }
 
         .nav-btn {
-            background: transparent; border: none; text-align: left; padding: 1rem 1.2rem; font-size: 1.1rem;
+            background: transparent; border: none; text-align: left; padding: 1rem 1.2rem; font-size: 1.05rem;
             color: var(--subtle); cursor: pointer; transition: color 0.2s, transform 0.2s;
             display: flex; align-items: center; gap: 15px; font-weight: 600;
             border-radius: 16px; margin-bottom: 0.5rem;
@@ -149,131 +154,159 @@
         }
         .nav-btn.active { color: var(--text); font-weight: 800; background: var(--border); }
         .nav-btn:hover { color: var(--text); background: rgba(125,125,125,0.05); }
-        .nav-btn::after {
+        
+        /* Glass Shine for Buttons */
+        @keyframes shine {
+            0% { left: -100%; opacity: 0.5; }
+            50% { opacity: 1; }
+            100% { left: 150%; opacity: 0.5; }
+        }
+        .nav-btn::after, .glass-shine::after {
             content: ''; position: absolute; top: 0; left: -100%; width: 50%; height: 100%;
             background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
-            transform: skewX(-20deg); transition: 0.5s; pointer-events: none;
+            transform: skewX(-20deg); pointer-events: none; transition: 0.5s;
         }
         @media (prefers-color-scheme: dark) {
-            .nav-btn::after { background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent); }
+            .nav-btn::after, .glass-shine::after { background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent); }
         }
-        .nav-btn:hover::after { left: 150%; transition: 0.7s; }
+        .nav-btn:hover::after, .glass-shine:hover::after { animation: shine 1.2s cubic-bezier(0.25, 1, 0.5, 1); }
         
         .sidebar-stats { margin-top: auto; padding-top: 2rem; border-top: 1px solid var(--border); }
         .stat-block { margin-bottom: 1.5rem; }
-        .stat-label { font-size: 0.75rem; color: var(--subtle); text-transform: uppercase; font-weight: 700; margin-bottom: 0.3rem;}
-        .stat-value { font-size: 1.3rem; font-weight: 800; }
+        .stat-label { font-size: 0.75rem; color: var(--subtle); text-transform: uppercase; font-weight: 700; margin-bottom: 0.3rem; letter-spacing: 0.05em; }
+        .stat-value { font-size: 1.3rem; font-weight: 800; letter-spacing: -0.02em; }
 
         /* MAIN CONTENT */
         .main-content {
-            flex: 1; display: flex; flex-direction: column; position: relative; max-width: 650px; margin: 0 auto; width: 100%;
+            flex: 1; display: flex; flex-direction: column; position: relative; max-width: 650px; margin: 0 auto; width: 100%; height: 100%;
         }
 
         .top-bar {
             padding: 1rem 1.5rem; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;
-            background: rgba(255,255,255,0.85); backdrop-filter: blur(12px); position: sticky; top: 0; z-index: 20;
+            background: rgba(255,255,255,0.85); backdrop-filter: blur(12px); position: sticky; top: 0; z-index: 20; flex-shrink: 0;
         }
         @media (prefers-color-scheme: dark) { .top-bar { background: rgba(0,0,0,0.85); } }
 
         .day-counter { font-weight: 800; font-size: 0.9rem; padding: 0.5rem 1rem; background: var(--border); border-radius: 20px; }
         .btn-next-day {
-            background: var(--text); color: var(--bg); border: none; padding: 0.6rem 1.2rem; border-radius: 20px; font-weight: 700; font-size: 0.9rem; cursor: pointer; transition: transform 0.2s;
+            background: var(--text); color: var(--bg); border: none; padding: 0.6rem 1.4rem; border-radius: 20px; 
+            font-weight: 700; font-size: 0.9rem; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
         }
-        .btn-next-day:hover { transform: scale(1.05); }
+        .btn-next-day:hover { transform: translateY(-1px); box-shadow: 0 6px 15px rgba(0,0,0,0.15); }
+        .btn-next-day:active { transform: scale(0.96); }
 
         .mobile-stats-bar {
             display: none; padding: 0.8rem 1rem; background: var(--bg); border-bottom: 1px solid var(--border); gap: 1rem; justify-content: space-between; font-size: 0.9rem;
-            position: sticky; top: 61px; z-index: 15;
+            position: sticky; top: 61px; z-index: 15; flex-shrink: 0;
         }
 
-        .view-section { display: none; flex-direction: column; flex: 1; overflow-y: auto; }
+        /* VIEW SECTION */
+        .view-section { 
+            display: none; 
+            flex-direction: column; 
+            flex: 1; 
+            overflow-y: auto; 
+            -webkit-overflow-scrolling: touch; 
+            padding-bottom: 80px;
+        }
         .view-section.active { display: flex; }
 
         /* COMPOSER */
-        .composer { padding: 1.5rem; border-bottom: 1px solid var(--border); display: flex; gap: 1rem; flex-direction: column; }
+        .composer { padding: 1.5rem; border-bottom: 1px solid var(--border); display: flex; gap: 1rem; flex-direction: column; flex-shrink: 0; }
         .composer-top { display: flex; gap: 1rem; }
         .avatar {
             width: 44px; height: 44px; background: #333; color: #fff; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1.1rem; cursor: pointer;
         }
         .avatar.bot { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
-        textarea { width: 100%; border: none; resize: none; background: transparent; font-family: inherit; font-size: 1.1rem; color: var(--text); min-height: 50px; padding: 0.5rem 0; }
-        
+        textarea { width: 100%; border: none; resize: none; background: transparent; font-family: inherit; font-size: 1.1rem; color: var(--text); min-height: 50px; padding: 0.5rem 0; line-height: 1.4; }
+        textarea::placeholder { color: var(--subtle); opacity: 0.7; }
+
         .composer-tools { display: flex; justify-content: space-between; align-items: center; padding-left: 60px; }
         .tools-left { display: flex; gap: 0.5rem; align-items: center; }
         .collab-select { font-size: 0.85rem; padding: 0.4rem 0.8rem; border-radius: 15px; border: 1px solid var(--border); background: transparent; color: var(--text); cursor: pointer; }
         .btn-icon { background: transparent; border: 1px solid var(--border); padding: 0.4rem; border-radius: 50%; color: var(--text); cursor: pointer; display: flex; align-items: center; justify-content: center;}
         .btn-icon:hover { background: var(--border); }
-        .btn-post { background: var(--text); color: var(--bg); border: none; padding: 0.5rem 1.5rem; border-radius: 20px; font-weight: 700; cursor: pointer; opacity: 0.5; pointer-events: none; transition: 0.2s; }
+        .btn-post { background: var(--text); color: var(--bg); border: none; padding: 0.6rem 1.6rem; border-radius: 24px; font-weight: 700; cursor: pointer; opacity: 0.5; pointer-events: none; transition: 0.2s; }
         .btn-post.active { opacity: 1; pointer-events: auto; }
 
         /* POLL CREATOR */
-        .poll-creator { display: none; flex-direction: column; gap: 0.5rem; margin-top: 0.5rem; padding: 1rem; background: var(--border); border-radius: 12px; margin-left: 60px; }
+        .poll-creator { display: none; flex-direction: column; gap: 0.5rem; margin-top: 0.5rem; padding: 1rem; background: var(--border); border-radius: 16px; margin-left: 60px; }
         .poll-creator.active { display: flex; }
-        .poll-creator input { padding: 0.5rem; font-size: 0.9rem; background: var(--bg); }
+        .poll-creator input { padding: 0.6rem; font-size: 0.9rem; background: var(--bg); border-radius: 10px; }
 
         /* POSTS */
-        .post { padding: 1.5rem; border-bottom: 1px solid var(--border); display: flex; gap: 1rem; animation: slideIn 0.4s ease-out; position: relative; }
+        .post { 
+            padding: 1.5rem; border-bottom: 1px solid var(--border); display: flex; gap: 1rem; 
+            animation: slideIn 0.4s ease-out; position: relative; flex-shrink: 0; 
+            overflow: hidden; /* For shine effect */
+        }
         @keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         
-        .post-header { display: flex; justify-content: space-between; margin-bottom: 0.3rem; align-items: baseline; }
-        .handle-group { display: flex; gap: 6px; align-items: baseline; flex-wrap: wrap; cursor: pointer; }
-        .handle { font-weight: 800; color: var(--text); text-decoration: none; }
-        .handle:hover { text-decoration: underline; }
-        .collab-badge { font-size: 0.75rem; background: var(--border); padding: 1px 6px; border-radius: 4px; color: var(--text); }
-        .post-text { font-size: 1rem; line-height: 1.5; margin-bottom: 1rem; white-space: pre-wrap; }
+        .post-header { display: flex; justify-content: space-between; margin-bottom: 0.4rem; align-items: flex-start; }
+        .handle-group { display: flex; align-items: center; flex-wrap: wrap; cursor: pointer; gap: 4px; transition: opacity 0.2s; }
+        .handle-group:hover { opacity: 0.8; }
+        .handle { font-weight: 800; color: var(--text); text-decoration: none; display: flex; align-items: center; gap: 3px; }
+        
+        /* Verification Badge */
+        .verified-badge { width: 14px; height: 14px; fill: var(--text); flex-shrink: 0; }
+        
+        .collab-text { font-size: 0.9rem; color: var(--subtle); margin-left: 4px; }
+        .collab-text:hover { text-decoration: underline; color: var(--text); }
+        
+        .post-text { font-size: 1rem; line-height: 1.6; margin-bottom: 1rem; white-space: pre-wrap; font-weight: 400; }
 
-        /* POST MENU (3 DOTS) */
+        /* POST MENU */
         .post-menu-container { position: relative; }
         .post-menu-btn { background: none; border: none; padding: 4px; cursor: pointer; color: var(--subtle); border-radius: 50%; display: flex; align-items: center; justify-content: center; }
         .post-menu-btn:hover { background: var(--border); color: var(--text); }
         .post-menu { 
             position: absolute; right: 0; top: 100%; background: var(--bg); border: 1px solid var(--border); 
-            border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); display: none; z-index: 100; min-width: 150px; overflow: hidden;
-            margin-top: 4px;
+            border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.15); display: none; z-index: 100; min-width: 160px; overflow: hidden;
+            margin-top: 4px; padding: 0.5rem 0;
         }
         .post-menu.active { display: block; }
-        .menu-item { display: block; padding: 0.8rem 1rem; width: 100%; text-align: left; background: none; border: none; cursor: pointer; font-size: 0.9rem; color: var(--text); font-weight: 500; }
+        .menu-item { display: block; padding: 0.8rem 1.2rem; width: 100%; text-align: left; background: none; border: none; cursor: pointer; font-size: 0.9rem; color: var(--text); font-weight: 500; font-family: inherit; }
         .menu-item:hover { background: var(--border); }
 
-        /* PRIVATE NOTE DISPLAY */
+        /* PRIVATE NOTE */
         .private-note { 
-            background: #fdfdfd; padding: 1rem; border-radius: 8px; margin-bottom: 1rem; font-size: 0.9rem; 
+            background: rgba(0,0,0,0.03); padding: 1rem; border-radius: 12px; margin-bottom: 1rem; font-size: 0.9rem; 
             color: var(--text); border-left: 3px solid var(--text); font-style: italic; display: flex; flex-direction: column; gap: 4px;
         }
-        .private-note-label { font-size: 0.7rem; font-weight: 700; color: var(--subtle); text-transform: uppercase; }
-        @media (prefers-color-scheme: dark) { .private-note { background: #111; } }
+        .private-note-label { font-size: 0.7rem; font-weight: 800; color: var(--subtle); text-transform: uppercase; letter-spacing: 0.05em; }
 
         /* POLL DISPLAY */
-        .poll-wrapper { margin-bottom: 1rem; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+        .poll-wrapper { margin-bottom: 1rem; border: 1px solid var(--border); border-radius: 16px; overflow: hidden; }
         .poll-option {
             padding: 0.8rem 1rem; background: var(--bg); border-bottom: 1px solid var(--border); cursor: pointer;
-            display: flex; justify-content: space-between; align-items: center; position: relative; height: 3rem;
+            display: flex; justify-content: space-between; align-items: center; position: relative; height: 3.2rem;
         }
         .poll-option:last-child { border-bottom: none; }
         .poll-option:hover { background: rgba(0,0,0,0.02); }
         .poll-result-bg {
-            position: absolute; top:0; left:0; height:100%; background: rgba(0,0,0,0.08); z-index: 0; transition: width 0.8s cubic-bezier(0.25, 1, 0.5, 1);
+            position: absolute; top:0; left:0; height:100%; background: rgba(0,0,0,0.06); z-index: 0; transition: width 0.8s cubic-bezier(0.25, 1, 0.5, 1);
         }
-        @media (prefers-color-scheme: dark) { .poll-result-bg { background: rgba(255,255,255,0.15); } }
-        .poll-text { z-index: 1; font-weight: 500; font-size: 0.95rem; }
+        @media (prefers-color-scheme: dark) { .poll-result-bg { background: rgba(255,255,255,0.1); } }
+        .poll-text { z-index: 1; font-weight: 600; font-size: 0.95rem; }
         .poll-percent { z-index: 1; font-weight: 700; display: flex; align-items: center; font-size: 0.9rem; }
         
         /* INTERACTIONS */
         .post-stats { display: flex; gap: 1.5rem; font-size: 0.9rem; color: var(--subtle); align-items: center; }
         .stat-item { display: flex; align-items: center; gap: 6px; cursor: pointer; transition: transform 0.1s; user-select: none; }
         .stat-item:active { transform: scale(0.9); }
-        .stat-icon { stroke: currentColor; fill: transparent; transition: 0.3s; }
+        .stat-icon { stroke: currentColor; fill: transparent; transition: 0.3s; width: 19px; height: 19px; }
         .stat-item.liked .stat-icon { fill: var(--text); stroke: var(--text); animation: bounce 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
         @keyframes bounce { 0% { transform: scale(1); } 50% { transform: scale(1.4); } 100% { transform: scale(1); } }
         .stat-item.reposted .stat-icon { stroke: orange; animation: spin 0.6s ease; }
         .stat-item.reposted { color: orange; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        .view-count-container { margin-top: 0.8rem; font-size: 0.8rem; color: var(--subtle); font-weight: 700; display: flex; align-items: center; gap: 4px; opacity: 0.8; }
+        .view-count-container { margin-top: 1rem; font-size: 0.85rem; color: var(--subtle); font-weight: 700; display: flex; align-items: center; gap: 4px; opacity: 0.9; }
 
         /* PROFILE */
-        .profile-header { padding: 2rem 1.5rem; border-bottom: 1px solid var(--border); }
+        .profile-header { padding: 2rem 1.5rem; border-bottom: 1px solid var(--border); flex-shrink: 0; }
         .profile-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem; }
-        .profile-info h2 { font-size: 1.8rem; margin-bottom: 0.2rem; }
+        .profile-info h2 { font-size: 1.8rem; margin-bottom: 0.2rem; display: flex; align-items: center; gap: 6px; }
         .profile-handle { color: var(--subtle); margin-bottom: 1rem; display: block; }
         .profile-stats-row { display: flex; gap: 1.5rem; font-size: 0.95rem; }
         .profile-stat span { font-weight: 800; color: var(--text); }
@@ -413,7 +446,7 @@
 
             <!-- SEARCH TAB -->
             <div id="view-search" class="view-section">
-                <div style="padding: 1rem 1.5rem; border-bottom: 1px solid var(--border);">
+                <div style="padding: 1rem 1.5rem; border-bottom: 1px solid var(--border); flex-shrink: 0;">
                     <input type="text" id="search-input" placeholder="Search posts..." oninput="renderSearch()">
                 </div>
                 <div id="search-results"></div>
@@ -427,7 +460,7 @@
 
             <!-- NOTES TAB -->
             <div id="view-notes" class="view-section">
-                <div style="padding: 2rem 1.5rem; border-bottom: 1px solid var(--border);">
+                <div style="padding: 2rem 1.5rem; border-bottom: 1px solid var(--border); flex-shrink: 0;">
                     <h2>My Notes</h2>
                     <p class="subtle">Private thoughts on posts.</p>
                 </div>
@@ -459,7 +492,7 @@
         };
 
         // --- PERSISTENCE ---
-        const DB_KEY = 'chirpless_save_v2';
+        const DB_KEY = 'chirpless_save_v3';
         
         function saveData() {
             localStorage.setItem(DB_KEY, JSON.stringify(state));
@@ -470,7 +503,6 @@
             if (saved) {
                 try {
                     const parsed = JSON.parse(saved);
-                    // Merge cleanly to ensure new fields in future updates don't break
                     state = { ...state, ...parsed };
                     return true;
                 } catch(e) { console.error("Save data corrupted", e); return false; }
@@ -481,19 +513,15 @@
         // --- APP INIT ---
         window.onload = function() {
             if(loadData()) {
-                // Restore UI from loaded state
                 document.getElementById('onboarding').classList.add('hidden');
                 document.getElementById('app').style.display = 'flex';
-                
                 const initials = state.user.name.substring(0,2).toUpperCase();
                 document.getElementById('user-avatar').innerText = initials;
                 document.getElementById('day-display').innerText = state.day;
-
                 updateGlobalStats(true);
                 updateBotList();
                 renderFeed('feed');
             } else {
-                // Show Onboarding
                 document.getElementById('onboarding').classList.remove('hidden');
             }
         };
@@ -549,9 +577,15 @@
         }
 
         function formatNumber(num) {
+            if (num >= 1000000000) return (num / 1000000000).toFixed(1) + 'B';
             if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
             if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
             return Math.floor(num).toString();
+        }
+        
+        // --- HELPERS ---
+        function getVerifiedBadge() {
+            return `<svg class="verified-badge" viewBox="0 0 24 24"><path d="M22.5 12.5c0-1.58-.875-2.95-2.148-3.6.154-.435.238-.905.238-1.4 0-2.21-1.71-3.998-3.818-3.998-.47 0-.92.114-1.32.325C14.808 2.65 13.447 1.77 11.875 1.77c-1.558 0-2.908.866-3.55 2.025-.404-.2-.848-.31-1.325-.31-2.11 0-3.818 1.79-3.818 4 0 .47.076.914.215 1.332-1.295.64-2.197 2.016-2.197 3.633 0 1.565.86 2.9 2.095 3.56-.16.447-.254.936-.254 1.44 0 2.21 1.71 4 3.818 4 .47 0 .914-.11 1.314-.316.646 1.18 2.01 1.996 3.577 1.996 1.564 0 2.93-.816 3.577-1.996.4.206.843.316 1.314.316 2.11 0 3.818-1.79 3.818-4 0-.53-.105-1.04-.282-1.507 1.185-.68 1.982-2.035 1.982-3.623zM9.52 16.29l-3.328-3.326 1.414-1.416 1.914 1.913 5.414-5.414 1.414 1.414-6.828 6.828z"></path></svg>`;
         }
 
         // --- CORE LOGIC ---
@@ -674,7 +708,7 @@
             }
         }
 
-        // --- NOTES SYSTEM ---
+        // --- NOTES SYSTEM & MENUS ---
         let currentNotePostId = null;
 
         function togglePostMenu(event, postId) {
@@ -683,16 +717,50 @@
             const menu = document.getElementById(`menu-${postId}`);
             if(menu) menu.classList.add('active');
         }
+        
+        function handleHandleClick(event, authorId, collabId) {
+            event.stopPropagation();
+            if(!collabId) {
+                switchTab('profile', authorId);
+            } else {
+                // Show collab choice menu
+                closeAllMenus();
+                // We'll treat this simple: just prompt or show alert for simplicity in this version?
+                // Better: Reuse menu system but custom position
+                // Let's create a temporary menu
+                const menuId = `collab-menu-${Date.now()}`;
+                const div = document.createElement('div');
+                div.className = 'post-menu active';
+                div.style.position = 'fixed';
+                div.style.left = event.clientX + 'px';
+                div.style.top = event.clientY + 'px';
+                div.style.zIndex = 1000;
+                
+                const bot = state.bots.find(b => b.id == collabId);
+                const botName = bot ? bot.name : "Collaborator";
+
+                div.innerHTML = `
+                    <button class="menu-item" onclick="switchTab('profile', '${authorId}')">View ${state.user.name}</button>
+                    <button class="menu-item" onclick="switchTab('profile', '${collabId}')">View ${botName}</button>
+                `;
+                document.body.appendChild(div);
+                
+                // Remove on next click
+                const remover = () => { div.remove(); document.body.removeEventListener('click', remover); };
+                setTimeout(() => document.body.addEventListener('click', remover), 0);
+            }
+        }
 
         function closeAllMenus(e) {
-            document.querySelectorAll('.post-menu').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.post-menu').forEach(el => {
+                if(el.style.position !== 'fixed') el.classList.remove('active'); // Don't kill fixed menus instantly
+            });
         }
 
         function openNoteModal(postId) {
             currentNotePostId = postId;
             const post = state.posts.find(p => p.id === postId);
             if(!post) return;
-            
             document.getElementById('note-input').value = post.myNote || "";
             document.getElementById('note-modal').classList.remove('hidden');
             document.getElementById('note-modal').style.opacity = '1';
@@ -708,10 +776,8 @@
             if(!currentNotePostId) return;
             const text = document.getElementById('note-input').value.trim();
             const post = state.posts.find(p => p.id === currentNotePostId);
-            
             if(post) {
                 post.myNote = text;
-                // Re-render to show note indicator or updated view
                 const currentContainer = state.activeTab === 'notes' ? 'notes-feed' : 
                                          state.activeTab === 'profile' ? 'profile-feed' : 'feed';
                 renderFeed(currentContainer);
@@ -772,13 +838,21 @@
                     post.likes += Math.floor(dailyViews * 0.04);
                     post.reposts += Math.floor(dailyViews * 0.008);
                     
-                    if(post.poll && age < 3 && Math.random() > 0.5) {
-                        const votes = Math.floor(dailyViews * 0.1);
-                        post.poll.totalVotes += votes;
-                        const split = Math.random();
-                        post.poll.options[0].votes += Math.floor(votes * split);
-                        post.poll.options[1].votes += Math.floor(votes * (1-split));
-                        updatePollDOM(post);
+                    // FIXED POLL LOGIC: Ensure votes happen for at least 7 days, with high probability early on
+                    if (post.poll && age < 7) {
+                        // Higher view threshold to ensure active polls get votes
+                        const voteChance = dailyViews > 5 ? 0.8 : 0.2; // 80% chance if getting views
+                        if(Math.random() < voteChance) {
+                            const votes = Math.max(1, Math.floor(dailyViews * 0.15)); // At least 1 vote
+                            post.poll.totalVotes += votes;
+                            const split = Math.random();
+                            post.poll.options[0].votes += Math.floor(votes * split);
+                            post.poll.options[1].votes += Math.floor(votes * (1-split));
+                            // Correction for rounding
+                            const totalCalc = post.poll.options[0].votes + post.poll.options[1].votes;
+                            if(totalCalc !== post.poll.totalVotes) post.poll.totalVotes = totalCalc;
+                            updatePollDOM(post);
+                        }
                     }
 
                     updatePostStatsDOM(post.id, post.views, post.likes, post.reposts);
@@ -800,7 +874,6 @@
             state.user.followers += Math.floor(totalNewViews * 0.001);
             
             updateGlobalStats();
-            // Force re-render of times
             const activeFeed = state.activeTab === 'notes' ? 'notes-feed' : 
                                state.activeTab === 'profile' ? 'profile-feed' : 'feed';
             renderFeed(activeFeed, true); 
@@ -880,6 +953,8 @@
             if (!user) { container.innerHTML = "User not found"; return; }
             const initials = user.name.substring(0,2).toUpperCase();
             
+            const badge = (user.followers >= 15000) ? getVerifiedBadge() : '';
+
             container.innerHTML = `
                 <div class="profile-header">
                     <div class="profile-top">
@@ -887,7 +962,7 @@
                         ${isMe ? `<button class="profile-action-btn" onclick="switchTab('notes')">My Notes</button>` : `<button class="profile-action-btn primary" onclick="this.innerText = this.innerText==='Follow'?'Following':'Follow'">Follow</button>`}
                     </div>
                     <div class="profile-info">
-                        <h2>${user.name}</h2>
+                        <h2>${user.name} ${badge}</h2>
                         <span class="profile-handle">${user.handle}</span>
                         <div class="profile-stats-row"><div class="profile-stat"><span>${formatNumber(user.followers)}</span> followers</div><div class="profile-stat"><span>${formatNumber(user.audience)}</span> audience</div></div>
                     </div>
@@ -898,14 +973,18 @@
 
         function createPostElement(post) {
             const div = document.createElement('div');
-            div.className = 'post';
+            div.className = 'post glass-shine';
             div.id = `post-${post.id}`;
             const timeStr = post.dayPosted === state.day ? "Today" : `${state.day - post.dayPosted}d ago`;
             
-            let handleHTML = `<span class="handle" onclick="switchTab('profile', 'me')">${state.user.name}</span>`;
-            if (post.collab) {
-                handleHTML += ` <span class="subtle">&</span> <span class="handle" onclick="switchTab('profile', '${post.collab.id}')">${post.collab.name}</span> <span class="collab-badge">Collab</span>`;
-            }
+            // Build Handle HTML
+            const badge = (state.user.followers >= 15000) ? getVerifiedBadge() : '';
+            let handleHTML = `
+                <div class="handle-group glass-shine" onclick="handleHandleClick(event, 'me', '${post.collab ? post.collab.id : ''}')">
+                    <span class="handle">${state.user.name} ${badge}</span>
+                    ${post.collab ? `<span class="collab-text">+1 collaborator</span>` : ''}
+                </div>
+            `;
 
             let pollHTML = '';
             if (post.poll) {
@@ -925,17 +1004,15 @@
                 <div class="avatar" onclick="switchTab('profile', 'me')">${state.user.name.substring(0,1)}</div>
                 <div class="post-content">
                     <div class="post-header">
-                        <div class="handle-group">${handleHTML}</div>
+                        ${handleHTML}
                         <div style="display:flex; align-items:center; gap:8px;">
-                            <span class="time" id="time-${post.id}">${timeStr}</span>
+                            <span class="time subtle" id="time-${post.id}">${timeStr}</span>
                             <div class="post-menu-container">
                                 <button class="post-menu-btn" onclick="togglePostMenu(event, ${post.id})">
                                     <svg viewBox="0 0 24 24" fill="currentColor" style="width:16px; height:16px;"><circle cx="12" cy="12" r="1.5"/><circle cx="6" cy="12" r="1.5"/><circle cx="18" cy="12" r="1.5"/></svg>
                                 </button>
                                 <div class="post-menu" id="menu-${post.id}">
-                                    <button class="menu-item" onclick="openNoteModal(${post.id})">
-                                        ${post.myNote ? 'Edit Note' : 'Add Note'}
-                                    </button>
+                                    <button class="menu-item" onclick="openNoteModal(${post.id})">${post.myNote ? 'Edit Note' : 'Add Note'}</button>
                                     <button class="menu-item" style="color:#e0245e;" onclick="alert('Delete feature coming soon')">Delete</button>
                                 </div>
                             </div>
