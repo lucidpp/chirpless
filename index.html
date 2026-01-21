@@ -143,8 +143,8 @@
         }
 
         .brand { font-size: 1.5rem; font-weight: 900; margin-bottom: 2rem; display: flex; align-items: center; gap: 12px; letter-spacing: -1px; }
-        .brand-icon { width: 28px; height: 28px; background: var(--text); border-radius: 8px; }
-
+        /* Icon Removed as requested */
+        
         .nav-btn {
             background: transparent; border: none; text-align: left; padding: 1rem 1.2rem; font-size: 1.05rem;
             color: var(--subtle); cursor: pointer; transition: color 0.2s, transform 0.2s;
@@ -221,6 +221,17 @@
         .avatar.bot { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
         textarea { width: 100%; border: none; resize: none; background: transparent; font-family: inherit; font-size: 1.1rem; color: var(--text); min-height: 50px; padding: 0.5rem 0; line-height: 1.4; }
         textarea::placeholder { color: var(--subtle); opacity: 0.7; }
+        
+        /* IMAGE PREVIEW */
+        .image-preview-container {
+            position: relative; margin-top: 10px; display: none; width: 100%; border-radius: 12px; overflow: hidden;
+        }
+        .image-preview-container.active { display: block; }
+        .image-preview { width: 100%; max-height: 300px; object-fit: cover; display: block; border-radius: 12px; border: 1px solid var(--border); }
+        .remove-image-btn {
+            position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.6); color: white; border: none;
+            border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; cursor: pointer;
+        }
 
         .composer-tools { display: flex; justify-content: space-between; align-items: center; padding-left: 60px; }
         .tools-left { display: flex; gap: 0.5rem; align-items: center; }
@@ -255,6 +266,11 @@
         .collab-text:hover { text-decoration: underline; color: var(--text); }
         
         .post-text { font-size: 1rem; line-height: 1.6; margin-bottom: 1rem; white-space: pre-wrap; font-weight: 400; }
+        
+        .post-image {
+            width: 100%; height: auto; border-radius: 12px; margin-bottom: 1rem; border: 1px solid var(--border);
+            display: block; max-height: 500px; object-fit: cover;
+        }
 
         /* POST MENU */
         .post-menu-container { position: relative; }
@@ -384,7 +400,7 @@
     <div id="app">
         <!-- Sidebar -->
         <aside class="sidebar">
-            <div class="brand"><div class="brand-icon"></div>Chirpless</div>
+            <div class="brand">Chirpless</div>
             <nav>
                 <button class="nav-btn active" onclick="switchTab('home')">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg> Home
@@ -425,11 +441,25 @@
                 <div class="composer">
                     <div class="composer-top">
                         <div class="avatar" id="user-avatar" onclick="switchTab('profile')">?</div>
-                        <div class="composer-area"><textarea id="post-input" placeholder="What's new?" oninput="checkInput()"></textarea></div>
+                        <div class="composer-area">
+                            <textarea id="post-input" placeholder="What's new?" oninput="checkInput()"></textarea>
+                            <div class="image-preview-container" id="image-preview-container">
+                                <img src="" id="image-preview" class="image-preview">
+                                <button class="remove-image-btn" onclick="removeImage()">✕</button>
+                            </div>
+                        </div>
                     </div>
                     <div class="composer-tools">
                         <div class="tools-left">
                             <select id="collab-select" class="collab-select"><option value="">No Collaborator</option></select>
+                            
+                            <!-- Image Upload Button -->
+                            <button class="btn-icon" onclick="triggerImageUpload()" title="Add Image">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                            </button>
+                            <input type="file" id="image-upload-input" accept="image/*" style="display: none;" onchange="handleImageFile(this)">
+
+                            <!-- Poll Button -->
                             <button class="btn-icon" onclick="togglePollCreator()" title="Create Poll">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 20v-6M6 20V10M18 20V4"></path></svg>
                             </button>
@@ -490,12 +520,19 @@
             activeTab: 'home',
             viewingProfile: null
         };
+        
+        let currentImageBase64 = null; // Temp holder for composer
 
         // --- PERSISTENCE ---
-        const DB_KEY = 'chirpless_save_v3';
+        const DB_KEY = 'chirpless_save_v4';
         
         function saveData() {
-            localStorage.setItem(DB_KEY, JSON.stringify(state));
+            try {
+                localStorage.setItem(DB_KEY, JSON.stringify(state));
+            } catch (e) {
+                alert("Storage full! Image might be too large. Try deleting old posts or using smaller images.");
+                console.error(e);
+            }
         }
 
         function loadData() {
@@ -510,14 +547,37 @@
             return false;
         }
 
+        // --- DEFAULTS ---
+        function populateDefaults() {
+            if(state.bots.length === 0) {
+                const defaults = [
+                    { name: "The Rock", handle: "@therock", audience: 300000000, followers: 80000000 },
+                    { name: "Juice WRLD", handle: "@juicewrld999", audience: 150000000, followers: 40000000 },
+                    { name: "Elon Musk", handle: "@elonmusk", audience: 500000000, followers: 160000000 },
+                    { name: "Taylor Swift", handle: "@taylorswift13", audience: 400000000, followers: 100000000 },
+                    { name: "Cristiano", handle: "@cristiano", audience: 600000000, followers: 200000000 },
+                    { name: "Kylie Jenner", handle: "@kyliejenner", audience: 250000000, followers: 60000000 },
+                    { name: "MrBeast", handle: "@mrbeast", audience: 200000000, followers: 50000000 },
+                    { name: "NASA", handle: "@nasa", audience: 100000000, followers: 30000000 },
+                    { name: "PlayStation", handle: "@playstation", audience: 80000000, followers: 25000000 },
+                    { name: "Nike", handle: "@nike", audience: 90000000, followers: 28000000 }
+                ];
+                state.bots = defaults.map((d, i) => ({ ...d, id: Date.now() + i }));
+                saveData();
+            }
+        }
+
         // --- APP INIT ---
         window.onload = function() {
             if(loadData()) {
                 document.getElementById('onboarding').classList.add('hidden');
                 document.getElementById('app').style.display = 'flex';
+                
                 const initials = state.user.name.substring(0,2).toUpperCase();
                 document.getElementById('user-avatar').innerText = initials;
                 document.getElementById('day-display').innerText = state.day;
+
+                populateDefaults();
                 updateGlobalStats(true);
                 updateBotList();
                 renderFeed('feed');
@@ -582,6 +642,15 @@
             if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
             return Math.floor(num).toString();
         }
+
+        function formatTime(dayPosted, currentDay) {
+            const diff = currentDay - dayPosted;
+            if (diff === 0) return "Today";
+            if (diff <= 6) return `${diff}d`;
+            if (diff < 30) return `${Math.floor(diff/7)}w`;
+            if (diff < 365) return `${Math.floor(diff/30)}m`;
+            return `${Math.floor(diff/365)}y`;
+        }
         
         // --- HELPERS ---
         function getVerifiedBadge() {
@@ -608,6 +677,7 @@
             const initials = name.substring(0,2).toUpperCase();
             document.getElementById('user-avatar').innerText = initials;
 
+            populateDefaults();
             saveData();
             updateGlobalStats(true);
             renderFeed('feed');
@@ -629,13 +699,43 @@
             el.classList.toggle('active');
         }
 
+        // --- IMAGE UPLOAD LOGIC ---
+        function triggerImageUpload() {
+            document.getElementById('image-upload-input').click();
+        }
+
+        function handleImageFile(input) {
+            if(input.files && input.files[0]) {
+                const file = input.files[0];
+                if (file.size > 2000000) { // 2MB Check
+                     alert("Image too large. Please use an image under 2MB.");
+                     return;
+                }
+
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    currentImageBase64 = e.target.result;
+                    document.getElementById('image-preview').src = currentImageBase64;
+                    document.getElementById('image-preview-container').classList.add('active');
+                }
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function removeImage() {
+            currentImageBase64 = null;
+            document.getElementById('image-preview').src = "";
+            document.getElementById('image-preview-container').classList.remove('active');
+            document.getElementById('image-upload-input').value = ""; // clear input
+        }
+
         function createPost() {
             const text = document.getElementById('post-input').value.trim();
             const pollOpt1 = document.getElementById('poll-opt-1').value.trim();
             const pollOpt2 = document.getElementById('poll-opt-2').value.trim();
             const hasPoll = document.getElementById('poll-creator').classList.contains('active') && pollOpt1 && pollOpt2;
 
-            if(!text && !hasPoll) return;
+            if(!text && !hasPoll && !currentImageBase64) return;
 
             const collabId = document.getElementById('collab-select').value;
             const bot = state.bots.find(b => b.id == collabId);
@@ -658,18 +758,21 @@
                     totalVotes: 0,
                     voted: false
                 } : null,
-                myNote: null
+                myNote: null,
+                image: currentImageBase64 // Store image
             };
 
             state.posts.unshift(newPost);
             state.lastPostDay = state.day;
             state.user.audience += Math.floor(state.user.audience * 0.02) + 50; 
             
+            // Reset UI
             document.getElementById('post-input').value = '';
             document.getElementById('poll-opt-1').value = '';
             document.getElementById('poll-opt-2').value = '';
             document.getElementById('poll-creator').classList.remove('active');
             document.getElementById('collab-select').value = "";
+            removeImage(); // Clears image state
             checkInput();
             
             if(state.activeTab === 'home') renderFeed('feed');
@@ -681,7 +784,7 @@
 
         function checkInput() {
             const val = document.getElementById('post-input').value.trim();
-            document.getElementById('post-btn').classList.toggle('active', val.length > 0 || document.getElementById('poll-creator').classList.contains('active'));
+            document.getElementById('post-btn').classList.toggle('active', val.length > 0 || document.getElementById('poll-creator').classList.contains('active') || currentImageBase64 !== null);
         }
 
         // --- NAVIGATION & VIEWS ---
@@ -723,11 +826,7 @@
             if(!collabId) {
                 switchTab('profile', authorId);
             } else {
-                // Show collab choice menu
                 closeAllMenus();
-                // We'll treat this simple: just prompt or show alert for simplicity in this version?
-                // Better: Reuse menu system but custom position
-                // Let's create a temporary menu
                 const menuId = `collab-menu-${Date.now()}`;
                 const div = document.createElement('div');
                 div.className = 'post-menu active';
@@ -745,7 +844,6 @@
                 `;
                 document.body.appendChild(div);
                 
-                // Remove on next click
                 const remover = () => { div.remove(); document.body.removeEventListener('click', remover); };
                 setTimeout(() => document.body.addEventListener('click', remover), 0);
             }
@@ -753,7 +851,7 @@
 
         function closeAllMenus(e) {
             document.querySelectorAll('.post-menu').forEach(el => {
-                if(el.style.position !== 'fixed') el.classList.remove('active'); // Don't kill fixed menus instantly
+                if(el.style.position !== 'fixed') el.classList.remove('active'); 
             });
         }
 
@@ -838,17 +936,14 @@
                     post.likes += Math.floor(dailyViews * 0.04);
                     post.reposts += Math.floor(dailyViews * 0.008);
                     
-                    // FIXED POLL LOGIC: Ensure votes happen for at least 7 days, with high probability early on
                     if (post.poll && age < 7) {
-                        // Higher view threshold to ensure active polls get votes
-                        const voteChance = dailyViews > 5 ? 0.8 : 0.2; // 80% chance if getting views
+                        const voteChance = dailyViews > 5 ? 0.8 : 0.2; 
                         if(Math.random() < voteChance) {
-                            const votes = Math.max(1, Math.floor(dailyViews * 0.15)); // At least 1 vote
+                            const votes = Math.max(1, Math.floor(dailyViews * 0.15));
                             post.poll.totalVotes += votes;
                             const split = Math.random();
                             post.poll.options[0].votes += Math.floor(votes * split);
                             post.poll.options[1].votes += Math.floor(votes * (1-split));
-                            // Correction for rounding
                             const totalCalc = post.poll.options[0].votes + post.poll.options[1].votes;
                             if(totalCalc !== post.poll.totalVotes) post.poll.totalVotes = totalCalc;
                             updatePollDOM(post);
@@ -930,7 +1025,7 @@
             if (updateTimesOnly) {
                 posts.forEach(p => {
                     const timeEl = document.getElementById(`time-${p.id}`);
-                    if(timeEl) timeEl.innerText = p.dayPosted === state.day ? "Today" : `${state.day - p.dayPosted}d ago`;
+                    if(timeEl) timeEl.innerText = formatTime(p.dayPosted, state.day);
                 });
                 return;
             }
@@ -975,7 +1070,7 @@
             const div = document.createElement('div');
             div.className = 'post glass-shine';
             div.id = `post-${post.id}`;
-            const timeStr = post.dayPosted === state.day ? "Today" : `${state.day - post.dayPosted}d ago`;
+            const timeStr = formatTime(post.dayPosted, state.day);
             
             // Build Handle HTML
             const badge = (state.user.followers >= 15000) ? getVerifiedBadge() : '';
@@ -1000,6 +1095,11 @@
                 </div>`;
             }
 
+            let imageHTML = '';
+            if (post.image) {
+                imageHTML = `<img src="${post.image}" class="post-image">`;
+            }
+
             div.innerHTML = `
                 <div class="avatar" onclick="switchTab('profile', 'me')">${state.user.name.substring(0,1)}</div>
                 <div class="post-content">
@@ -1019,6 +1119,7 @@
                         </div>
                     </div>
                     <div class="post-text">${post.content}</div>
+                    ${imageHTML}
                     ${pollHTML}
                     ${noteHTML}
                     <div class="post-stats">
