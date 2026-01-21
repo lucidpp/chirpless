@@ -743,6 +743,12 @@
             let mult = 1.0;
             if (bot) mult = 1 + (bot.audience / (state.user.audience + 1000)) * 0.5;
 
+            // Updated Stats Logic: Followers now contribute to potential reach
+            // Realism: Organic reach (Followers) is usually 10-30%, Algorithmic reach (Audience) is volatile but high.
+            const followerContribution = state.user.followers * (0.15 + Math.random() * 0.15);
+            const audienceContribution = state.user.audience * (0.8 + Math.random() * 0.4);
+            const combinedPotential = (followerContribution + audienceContribution) * mult;
+
             const newPost = {
                 id: Date.now(),
                 authorId: 'me',
@@ -751,7 +757,7 @@
                 views: 0, likes: 0, reposts: 0,
                 liked: false, reposted: false,
                 collab: bot ? { id: bot.id, name: bot.name, handle: bot.handle } : null,
-                potential: state.user.audience * (1 + Math.random()) * mult, 
+                potential: combinedPotential, 
                 decay: 1.0,
                 poll: hasPoll ? {
                     options: [{text: pollOpt1, votes: 0}, {text: pollOpt2, votes: 0}],
