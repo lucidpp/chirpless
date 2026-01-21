@@ -2,1411 +2,1023 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chirpless - Music Manager</title>
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- FontAwesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Chirpless</title>
+    
+    <!-- PWA Settings -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#ffffff">
+    <link rel="icon" href="siteicon.png" type="image/png">
+    <link rel="apple-touch-icon" href="siteicon.png">
+
     <style>
-        /* Custom Scrollbar */
-        ::-webkit-scrollbar {
-            width: 8px;
-        }
-        ::-webkit-scrollbar-track {
-            background: transparent; 
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #444; 
-            border-radius: 4px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #666; 
-        }
-
-        /* High Highlight Selection */
-        ::selection {
-            background: #22c55e;
-            color: #000;
+        /* --- RESET & VARS --- */
+        :root {
+            --bg: #ffffff;
+            --text: #000000;
+            --subtle: #888888;
+            --border: #f0f0f0;
+            --accent: #000000;
+            --glass: rgba(255, 255, 255, 0.9);
+            --glass-border: rgba(0, 0, 0, 0.05);
+            --sidebar-width: 260px;
+            --font-main: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            --anim-speed: 0.8s;
+            --anim-ease: cubic-bezier(0.25, 1, 0.5, 1);
+            
+            /* Interaction Colors */
+            --like-color: #e0245e; 
+            --repost-grad: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
         }
 
-        /* Animations */
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .animate-fade-in {
-            animation: fadeIn 0.4s ease-out forwards;
-        }
-        
-        @keyframes pulse-green {
-            0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7); }
-            70% { box-shadow: 0 0 0 10px rgba(34, 197, 94, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
-        }
-        .chart-hit {
-            animation: pulse-green 2s infinite;
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg: #000000;
+                --text: #ffffff;
+                --subtle: #666666;
+                --border: #1f1f1f;
+                --accent: #ffffff;
+                --glass: rgba(0, 0, 0, 0.9);
+                --glass-border: rgba(255, 255, 255, 0.1);
+            }
         }
 
-        /* Physical Number Animation - Refined */
-        .digit-container {
+        * { box-sizing: border-box; outline: none; -webkit-tap-highlight-color: transparent; }
+        body, html { margin: 0; padding: 0; font-family: var(--font-main); background: var(--bg); color: var(--text); height: 100%; overflow: hidden; }
+
+        /* --- TYPOGRAPHY --- */
+        h1, h2, h3 { margin: 0; font-weight: 700; letter-spacing: -0.02em; }
+        p { margin: 0; line-height: 1.5; }
+        .bold { font-weight: 600; }
+        .subtle { color: var(--subtle); font-size: 0.9rem; }
+        .pointer { cursor: pointer; }
+
+        /* --- ODOMETER ANIMATION --- */
+        .ticker-root {
             display: inline-flex;
+            flex-direction: row;
+            align-items: flex-start;
             overflow: hidden;
-            height: 1.1em;
-            line-height: 1.1;
+            height: 1.2em; 
+            line-height: 1.2em; 
             vertical-align: text-bottom;
             font-variant-numeric: tabular-nums;
+            position: relative;
+            mask-image: linear-gradient(to bottom, transparent 0%, black 10%, black 90%, transparent 100%);
+            -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 10%, black 90%, transparent 100%);
         }
-        
-        .digit-column {
+        .ticker-digit-col {
             display: flex;
             flex-direction: column;
-            transform: translateY(0);
+            transition: transform var(--anim-speed) var(--anim-ease);
             will-change: transform;
         }
-        
-        .digit-slide-up {
-            transform: translateY(-50%) !important;
-            transition: transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+        .ticker-digit {
+            height: 1.2em;
+            line-height: 1.2em;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
-        /* Glass Shine Effect for Sidebar */
-        .glass-btn {
-            position: relative;
-            overflow: hidden;
+        /* --- UI COMPONENTS --- */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--bg);
+            z-index: 999;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            text-align: center;
+            transition: opacity 0.3s ease;
         }
-        .glass-btn::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -150%;
+        .modal-overlay.hidden { opacity: 0; pointer-events: none; }
+        
+        #collab-modal, #note-modal { background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); }
+        .modal-card {
+            background: var(--bg);
+            padding: 2rem;
+            border-radius: 20px;
+            max-width: 400px;
             width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
-            transform: skewX(-20deg);
-            transition: left 0.5s;
-            pointer-events: none;
-        }
-        .glass-btn:hover::after {
-            left: 150%;
-            transition: left 0.7s ease-in-out;
+            border: 1px solid var(--border);
+            text-align: left;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+            max-height: 90vh;
+            overflow-y: auto;
         }
 
-        /* For Artists Theme Overrides */
-        .theme-artists {
-            background: #f0f2f5 !important;
-            color: #1a1a1a !important;
+        .input-group { margin: 1rem 0; width: 100%; text-align: left; }
+        .input-group label { display: block; font-size: 0.75rem; color: var(--subtle); margin-bottom: 0.4rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; }
+        input[type="text"], input[type="number"], textarea.modal-input {
+            width: 100%; padding: 0.8rem; background: var(--bg); border: 1px solid var(--border); border-radius: 10px; color: var(--text); font-size: 1rem; font-family: inherit;
         }
-        .theme-artists header {
-            background: rgba(255,255,255,0.9) !important;
-            border-bottom: 1px solid #e5e7eb !important;
-        }
-        .theme-artists .card {
-            background: #ffffff !important;
-            border: 1px solid #e5e7eb !important;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1) !important;
-            color: #1a1a1a !important;
-        }
-        .theme-artists .text-zinc-400 {
-            color: #6b7280 !important;
-        }
-        .theme-artists .text-white {
-            color: #111827 !important;
-        }
-    </style>
-    <link rel="icon" type="image/png" href="siteicon.png">
-</head>
-<body class="bg-black text-white font-sans h-screen flex flex-col overflow-hidden">
-
-    <!-- APP CONTAINER -->
-    <div class="flex flex-1 overflow-hidden">
+        textarea.modal-input { min-height: 100px; resize: none; }
+        input:focus, textarea.modal-input:focus { border-color: var(--text); }
         
-        <!-- DESKTOP SIDEBAR -->
-        <aside class="hidden md:flex flex-col w-64 bg-zinc-950 p-6 gap-6 border-r border-zinc-800 flex-shrink-0 z-20">
-            <div class="flex items-center gap-2 px-2 mb-4">
-                <i class="fa-solid fa-music text-green-500 text-3xl"></i>
-                <h1 class="text-2xl font-bold tracking-tight text-white">Chirpless</h1>
-            </div>
+        .btn-primary {
+            background: var(--text); color: var(--bg); border: none; padding: 1rem; border-radius: 12px; font-weight: 700; cursor: pointer; width: 100%; margin-top: 1rem;
+        }
+        .btn-primary:active { transform: scale(0.98); }
+        .btn-secondary {
+            background: transparent; color: var(--subtle); border: 1px solid var(--border); padding: 0.8rem; border-radius: 12px; font-weight: 600; cursor: pointer; width: 100%; margin-top: 0.5rem;
+        }
 
-            <nav class="flex flex-col gap-2">
-                <button onclick="router('home')" class="glass-btn flex items-center gap-4 text-zinc-300 hover:text-white hover:bg-zinc-900/50 p-3 rounded-md transition-all font-bold">
-                    <i class="fa-solid fa-house text-xl w-6 text-center"></i> Home
+        /* --- LAYOUT --- */
+        #app { display: none; flex-direction: row; height: 100%; }
+
+        /* SIDEBAR */
+        .sidebar {
+            width: var(--sidebar-width); height: 100%; padding: 2rem; display: flex; flex-direction: column;
+            border-right: 1px solid var(--border); position: relative; background: var(--glass); z-index: 10;
+        }
+
+        .brand { font-size: 1.5rem; font-weight: 900; margin-bottom: 2rem; display: flex; align-items: center; gap: 12px; letter-spacing: -1px; }
+        .brand-icon { width: 28px; height: 28px; background: var(--text); border-radius: 8px; }
+
+        .nav-btn {
+            background: transparent; border: none; text-align: left; padding: 1rem 1.2rem; font-size: 1.1rem;
+            color: var(--subtle); cursor: pointer; transition: color 0.2s, transform 0.2s;
+            display: flex; align-items: center; gap: 15px; font-weight: 600;
+            border-radius: 16px; margin-bottom: 0.5rem;
+            position: relative; overflow: hidden;
+        }
+        .nav-btn.active { color: var(--text); font-weight: 800; background: var(--border); }
+        .nav-btn:hover { color: var(--text); background: rgba(125,125,125,0.05); }
+        .nav-btn::after {
+            content: ''; position: absolute; top: 0; left: -100%; width: 50%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+            transform: skewX(-20deg); transition: 0.5s; pointer-events: none;
+        }
+        @media (prefers-color-scheme: dark) {
+            .nav-btn::after { background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent); }
+        }
+        .nav-btn:hover::after { left: 150%; transition: 0.7s; }
+        
+        .sidebar-stats { margin-top: auto; padding-top: 2rem; border-top: 1px solid var(--border); }
+        .stat-block { margin-bottom: 1.5rem; }
+        .stat-label { font-size: 0.75rem; color: var(--subtle); text-transform: uppercase; font-weight: 700; margin-bottom: 0.3rem;}
+        .stat-value { font-size: 1.3rem; font-weight: 800; }
+
+        /* MAIN CONTENT */
+        .main-content {
+            flex: 1; display: flex; flex-direction: column; position: relative; max-width: 650px; margin: 0 auto; width: 100%;
+        }
+
+        .top-bar {
+            padding: 1rem 1.5rem; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;
+            background: rgba(255,255,255,0.85); backdrop-filter: blur(12px); position: sticky; top: 0; z-index: 20;
+        }
+        @media (prefers-color-scheme: dark) { .top-bar { background: rgba(0,0,0,0.85); } }
+
+        .day-counter { font-weight: 800; font-size: 0.9rem; padding: 0.5rem 1rem; background: var(--border); border-radius: 20px; }
+        .btn-next-day {
+            background: var(--text); color: var(--bg); border: none; padding: 0.6rem 1.2rem; border-radius: 20px; font-weight: 700; font-size: 0.9rem; cursor: pointer; transition: transform 0.2s;
+        }
+        .btn-next-day:hover { transform: scale(1.05); }
+
+        .mobile-stats-bar {
+            display: none; padding: 0.8rem 1rem; background: var(--bg); border-bottom: 1px solid var(--border); gap: 1rem; justify-content: space-between; font-size: 0.9rem;
+            position: sticky; top: 61px; z-index: 15;
+        }
+
+        .view-section { display: none; flex-direction: column; flex: 1; overflow-y: auto; }
+        .view-section.active { display: flex; }
+
+        /* COMPOSER */
+        .composer { padding: 1.5rem; border-bottom: 1px solid var(--border); display: flex; gap: 1rem; flex-direction: column; }
+        .composer-top { display: flex; gap: 1rem; }
+        .avatar {
+            width: 44px; height: 44px; background: #333; color: #fff; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1.1rem; cursor: pointer;
+        }
+        .avatar.bot { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        textarea { width: 100%; border: none; resize: none; background: transparent; font-family: inherit; font-size: 1.1rem; color: var(--text); min-height: 50px; padding: 0.5rem 0; }
+        
+        .composer-tools { display: flex; justify-content: space-between; align-items: center; padding-left: 60px; }
+        .tools-left { display: flex; gap: 0.5rem; align-items: center; }
+        .collab-select { font-size: 0.85rem; padding: 0.4rem 0.8rem; border-radius: 15px; border: 1px solid var(--border); background: transparent; color: var(--text); cursor: pointer; }
+        .btn-icon { background: transparent; border: 1px solid var(--border); padding: 0.4rem; border-radius: 50%; color: var(--text); cursor: pointer; display: flex; align-items: center; justify-content: center;}
+        .btn-icon:hover { background: var(--border); }
+        .btn-post { background: var(--text); color: var(--bg); border: none; padding: 0.5rem 1.5rem; border-radius: 20px; font-weight: 700; cursor: pointer; opacity: 0.5; pointer-events: none; transition: 0.2s; }
+        .btn-post.active { opacity: 1; pointer-events: auto; }
+
+        /* POLL CREATOR */
+        .poll-creator { display: none; flex-direction: column; gap: 0.5rem; margin-top: 0.5rem; padding: 1rem; background: var(--border); border-radius: 12px; margin-left: 60px; }
+        .poll-creator.active { display: flex; }
+        .poll-creator input { padding: 0.5rem; font-size: 0.9rem; background: var(--bg); }
+
+        /* POSTS */
+        .post { padding: 1.5rem; border-bottom: 1px solid var(--border); display: flex; gap: 1rem; animation: slideIn 0.4s ease-out; position: relative; }
+        @keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .post-header { display: flex; justify-content: space-between; margin-bottom: 0.3rem; align-items: baseline; }
+        .handle-group { display: flex; gap: 6px; align-items: baseline; flex-wrap: wrap; cursor: pointer; }
+        .handle { font-weight: 800; color: var(--text); text-decoration: none; }
+        .handle:hover { text-decoration: underline; }
+        .collab-badge { font-size: 0.75rem; background: var(--border); padding: 1px 6px; border-radius: 4px; color: var(--text); }
+        .post-text { font-size: 1rem; line-height: 1.5; margin-bottom: 1rem; white-space: pre-wrap; }
+
+        /* POST MENU (3 DOTS) */
+        .post-menu-container { position: relative; }
+        .post-menu-btn { background: none; border: none; padding: 4px; cursor: pointer; color: var(--subtle); border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+        .post-menu-btn:hover { background: var(--border); color: var(--text); }
+        .post-menu { 
+            position: absolute; right: 0; top: 100%; background: var(--bg); border: 1px solid var(--border); 
+            border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); display: none; z-index: 100; min-width: 150px; overflow: hidden;
+            margin-top: 4px;
+        }
+        .post-menu.active { display: block; }
+        .menu-item { display: block; padding: 0.8rem 1rem; width: 100%; text-align: left; background: none; border: none; cursor: pointer; font-size: 0.9rem; color: var(--text); font-weight: 500; }
+        .menu-item:hover { background: var(--border); }
+
+        /* PRIVATE NOTE DISPLAY */
+        .private-note { 
+            background: #fdfdfd; padding: 1rem; border-radius: 8px; margin-bottom: 1rem; font-size: 0.9rem; 
+            color: var(--text); border-left: 3px solid var(--text); font-style: italic; display: flex; flex-direction: column; gap: 4px;
+        }
+        .private-note-label { font-size: 0.7rem; font-weight: 700; color: var(--subtle); text-transform: uppercase; }
+        @media (prefers-color-scheme: dark) { .private-note { background: #111; } }
+
+        /* POLL DISPLAY */
+        .poll-wrapper { margin-bottom: 1rem; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+        .poll-option {
+            padding: 0.8rem 1rem; background: var(--bg); border-bottom: 1px solid var(--border); cursor: pointer;
+            display: flex; justify-content: space-between; align-items: center; position: relative; height: 3rem;
+        }
+        .poll-option:last-child { border-bottom: none; }
+        .poll-option:hover { background: rgba(0,0,0,0.02); }
+        .poll-result-bg {
+            position: absolute; top:0; left:0; height:100%; background: rgba(0,0,0,0.08); z-index: 0; transition: width 0.8s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+        @media (prefers-color-scheme: dark) { .poll-result-bg { background: rgba(255,255,255,0.15); } }
+        .poll-text { z-index: 1; font-weight: 500; font-size: 0.95rem; }
+        .poll-percent { z-index: 1; font-weight: 700; display: flex; align-items: center; font-size: 0.9rem; }
+        
+        /* INTERACTIONS */
+        .post-stats { display: flex; gap: 1.5rem; font-size: 0.9rem; color: var(--subtle); align-items: center; }
+        .stat-item { display: flex; align-items: center; gap: 6px; cursor: pointer; transition: transform 0.1s; user-select: none; }
+        .stat-item:active { transform: scale(0.9); }
+        .stat-icon { stroke: currentColor; fill: transparent; transition: 0.3s; }
+        .stat-item.liked .stat-icon { fill: var(--text); stroke: var(--text); animation: bounce 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        @keyframes bounce { 0% { transform: scale(1); } 50% { transform: scale(1.4); } 100% { transform: scale(1); } }
+        .stat-item.reposted .stat-icon { stroke: orange; animation: spin 0.6s ease; }
+        .stat-item.reposted { color: orange; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .view-count-container { margin-top: 0.8rem; font-size: 0.8rem; color: var(--subtle); font-weight: 700; display: flex; align-items: center; gap: 4px; opacity: 0.8; }
+
+        /* PROFILE */
+        .profile-header { padding: 2rem 1.5rem; border-bottom: 1px solid var(--border); }
+        .profile-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem; }
+        .profile-info h2 { font-size: 1.8rem; margin-bottom: 0.2rem; }
+        .profile-handle { color: var(--subtle); margin-bottom: 1rem; display: block; }
+        .profile-stats-row { display: flex; gap: 1.5rem; font-size: 0.95rem; }
+        .profile-stat span { font-weight: 800; color: var(--text); }
+        .profile-action-btn { background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 0.5rem 1.2rem; border-radius: 12px; font-weight: 600; cursor: pointer; }
+        .profile-action-btn.primary { background: var(--text); color: var(--bg); border: none; }
+
+        /* MOBILE NAV */
+        .mobile-nav {
+            display: none; position: fixed; bottom: 0; left: 0; right: 0; height: 60px; background: var(--bg); border-top: 1px solid var(--border); justify-content: space-around; align-items: center; z-index: 50; padding-bottom: env(safe-area-inset-bottom);
+        }
+        
+        @media (max-width: 768px) {
+            .sidebar { display: none; }
+            .mobile-nav { display: flex; }
+            #app { flex-direction: column; }
+            .main-content { max-width: 100%; border-right: none; }
+            .composer { padding: 1rem; }
+            .composer-tools { padding-left: 0; }
+            .poll-creator { margin-left: 0; }
+            .post { padding: 1rem; }
+            .sidebar-stats { display: none; }
+            .mobile-stats-bar { display: flex; }
+        }
+        
+        svg { width: 20px; height: 20px; stroke-width: 2; }
+    </style>
+</head>
+<body onclick="closeAllMenus(event)">
+
+    <!-- Onboarding -->
+    <div id="onboarding" class="modal-overlay">
+        <div style="margin-bottom: 2rem;">
+            <h1>Welcome to Chirpless.</h1>
+            <p class="subtle">Simulation of fame.</p>
+        </div>
+        <div class="input-group"><label>DISPLAY NAME</label><input type="text" id="setup-name" placeholder="e.g. Jane Doe" autocomplete="off"></div>
+        <div class="input-group"><label>HANDLE</label><input type="text" id="setup-handle" placeholder="e.g. janedoe" autocomplete="off"></div>
+        <div class="input-group"><label>INITIAL MONTHLY AUDIENCE</label><input type="number" id="setup-audience" value="1200"></div>
+        <div class="input-group"><label>INITIAL FOLLOWERS</label><input type="number" id="setup-followers" value="450"></div>
+        <button class="btn-primary" onclick="startApp()">Enter Simulation</button>
+    </div>
+
+    <!-- Collaboration Modal -->
+    <div id="collab-modal" class="modal-overlay hidden">
+        <div class="modal-card">
+            <h2>Collaboration Hub</h2>
+            <p class="subtle" style="margin-bottom: 1.5rem;">Create bots to collaborate with. Higher stats = bigger boost.</p>
+            <div class="input-group"><label>BOT NAME</label><input type="text" id="bot-name" placeholder="e.g. Cool Brand"></div>
+            <div class="input-group"><label>BOT HANDLE</label><input type="text" id="bot-handle" placeholder="e.g. coolbrand"></div>
+            <div style="display: flex; gap: 1rem;">
+                <div class="input-group"><label>AUDIENCE</label><input type="number" id="bot-audience" value="50000"></div>
+                <div class="input-group"><label>FOLLOWERS</label><input type="number" id="bot-followers" value="2000"></div>
+            </div>
+            <button class="btn-primary" onclick="confirmAddBot()">Create Bot</button>
+            <button class="btn-secondary" onclick="closeCollabModal()">Close</button>
+            <div style="margin-top: 2rem; border-top: 1px solid var(--border); padding-top: 1rem;">
+                <label style="font-size: 0.8rem; color: var(--subtle); font-weight: 600;">EXISTING BOTS</label>
+                <div id="bot-list" style="margin-top: 0.5rem; font-size: 0.9rem; color: var(--subtle);">No bots yet.</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Note Modal -->
+    <div id="note-modal" class="modal-overlay hidden">
+        <div class="modal-card">
+            <h2>Private Note</h2>
+            <p class="subtle" style="margin-bottom: 1rem;">Add a private note to this post. Only you can see this.</p>
+            <textarea id="note-input" class="modal-input" placeholder="Type your thoughts..."></textarea>
+            <button class="btn-primary" onclick="saveNote()">Save Note</button>
+            <button class="btn-secondary" onclick="closeNoteModal()">Cancel</button>
+        </div>
+    </div>
+
+    <!-- Main App -->
+    <div id="app">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="brand"><div class="brand-icon"></div>Chirpless</div>
+            <nav>
+                <button class="nav-btn active" onclick="switchTab('home')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg> Home
                 </button>
-                <button onclick="router('charts')" class="glass-btn flex items-center gap-4 text-zinc-300 hover:text-white hover:bg-zinc-900/50 p-3 rounded-md transition-all font-bold">
-                    <i class="fa-solid fa-chart-line text-xl w-6 text-center"></i> Top Charts
+                <button class="nav-btn" onclick="switchTab('search')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg> Search
                 </button>
-                <button onclick="router('library')" class="glass-btn flex items-center gap-4 text-zinc-300 hover:text-white hover:bg-zinc-900/50 p-3 rounded-md transition-all font-bold">
-                    <i class="fa-solid fa-lines-leaning text-xl w-6 text-center"></i> Your Library
+                <button class="nav-btn" onclick="switchTab('profile')">
+                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg> Profile
+                </button>
+                <button class="nav-btn" onclick="switchTab('notes')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg> Notes
+                </button>
+                <button class="nav-btn" onclick="openCollabModal()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg> Collaborate
                 </button>
             </nav>
-
-            <div class="mt-4 pt-4 border-t border-zinc-800">
-                <p class="text-xs text-zinc-500 uppercase tracking-wider px-2 mb-2 font-bold">Management</p>
-                <div class="flex flex-col gap-2">
-                    <button onclick="router('createArtist')" class="glass-btn flex items-center gap-4 text-zinc-300 hover:text-white hover:bg-zinc-900/50 p-2 rounded-md transition-all font-semibold">
-                        <div class="bg-zinc-300 text-black p-1 rounded-sm w-6 h-6 flex items-center justify-center"><i class="fa-solid fa-plus text-xs"></i></div>
-                        Create Artist
-                    </button>
-                    <button onclick="router('createRelease')" class="glass-btn flex items-center gap-4 text-zinc-300 hover:text-white hover:bg-zinc-900/50 p-2 rounded-md transition-all font-semibold">
-                        <div class="bg-gradient-to-br from-indigo-500 to-purple-500 text-white p-1 rounded-sm w-6 h-6 flex items-center justify-center"><i class="fa-solid fa-record-vinyl text-xs"></i></div>
-                        New Release
-                    </button>
-                    <button onclick="router('createVideo')" class="glass-btn flex items-center gap-4 text-zinc-300 hover:text-white hover:bg-zinc-900/50 p-2 rounded-md transition-all font-semibold">
-                        <div class="bg-red-500 text-white p-1 rounded-sm w-6 h-6 flex items-center justify-center"><i class="fa-solid fa-video text-xs"></i></div>
-                        Create Music Video
-                    </button>
-                    <button onclick="router('forArtists')" class="glass-btn flex items-center gap-4 text-blue-400 hover:text-blue-300 hover:bg-blue-900/10 p-2 rounded-md transition-all font-semibold mt-2">
-                        <div class="bg-blue-600 text-white p-1 rounded-full w-6 h-6 flex items-center justify-center"><i class="fa-solid fa-chart-pie text-xs"></i></div>
-                        For Artists
-                    </button>
-                </div>
-            </div>
-            
-            <div class="mt-auto">
-                <div class="text-xs text-zinc-600 text-center">
-                    v2.2.0 • Chirpless
-                </div>
+            <div class="sidebar-stats">
+                <div class="stat-block"><div class="stat-label">Monthly Audience</div><div class="stat-value ticker-root" id="audience-count">0</div></div>
+                <div class="stat-block"><div class="stat-label">Followers</div><div class="stat-value ticker-root" id="follower-count">0</div></div>
             </div>
         </aside>
 
-        <!-- MAIN CONTENT -->
-        <main id="main-view" class="flex-1 bg-gradient-to-b from-zinc-900 to-black overflow-y-auto relative pb-32 md:pb-24 transition-colors duration-500">
-            <!-- Top Bar (Sticky) -->
-            <header class="sticky top-0 bg-black/80 backdrop-blur-md z-20 p-4 flex justify-between items-center px-8 border-b border-white/5 transition-colors duration-300">
-                <div class="flex gap-2">
-                    <button onclick="history.back()" class="w-8 h-8 rounded-full bg-black/50 flex items-center justify-center text-zinc-400 hover:text-white border border-transparent hover:border-zinc-700 transition-all"><i class="fa-solid fa-chevron-left"></i></button>
-                    <button onclick="history.forward()" class="w-8 h-8 rounded-full bg-black/50 flex items-center justify-center text-zinc-400 hover:text-white border border-transparent hover:border-zinc-700 transition-all"><i class="fa-solid fa-chevron-right"></i></button>
-                </div>
+        <!-- Content -->
+        <main class="main-content">
+            <div class="top-bar">
+                <div class="day-counter">Day <span id="day-display">1</span></div>
+                <button class="btn-next-day" onclick="nextDay()">Next Day &rarr;</button>
+            </div>
 
-                <!-- SIMULATION CONTROL -->
-                <div class="flex items-center gap-3 bg-zinc-900/80 px-4 py-1.5 rounded-full border border-zinc-800 shadow-lg">
-                    <div class="flex flex-col items-end leading-none mr-2">
-                        <span class="text-[9px] text-zinc-500 font-bold uppercase tracking-wider">Simulation Day</span>
-                        <span id="day-counter" class="text-lg font-black text-white">1</span>
+            <div class="mobile-stats-bar" id="mobile-stats">
+                <div style="display: flex; gap: 5px;">Audience: <span class="ticker-root bold" id="mob-audience-count">0</span></div>
+                <div style="display: flex; gap: 5px;">Followers: <span class="ticker-root bold" id="mob-follower-count">0</span></div>
+            </div>
+
+            <!-- HOME TAB -->
+            <div id="view-home" class="view-section active">
+                <div class="composer">
+                    <div class="composer-top">
+                        <div class="avatar" id="user-avatar" onclick="switchTab('profile')">?</div>
+                        <div class="composer-area"><textarea id="post-input" placeholder="What's new?" oninput="checkInput()"></textarea></div>
                     </div>
-                    <button onclick="advanceDay()" class="bg-green-500 hover:bg-green-400 text-black w-8 h-8 rounded-full flex items-center justify-center transition-all active:scale-95 shadow-lg shadow-green-900/20 group">
-                        <i class="fa-solid fa-forward text-xs group-hover:translate-x-0.5 transition-transform"></i>
-                    </button>
+                    <div class="composer-tools">
+                        <div class="tools-left">
+                            <select id="collab-select" class="collab-select"><option value="">No Collaborator</option></select>
+                            <button class="btn-icon" onclick="togglePollCreator()" title="Create Poll">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 20v-6M6 20V10M18 20V4"></path></svg>
+                            </button>
+                        </div>
+                        <button class="btn-post" id="post-btn" onclick="createPost()">Post</button>
+                    </div>
+                    <div class="poll-creator" id="poll-creator">
+                        <input type="text" id="poll-opt-1" placeholder="Option 1">
+                        <input type="text" id="poll-opt-2" placeholder="Option 2">
+                    </div>
                 </div>
+                <div id="feed"></div>
+            </div>
 
-                <div class="flex items-center gap-4">
-                     <button class="text-xs font-bold bg-white text-black px-4 py-2 rounded-full hover:scale-105 transition-transform uppercase tracking-wider shadow-lg">Upgrade</button>
-                     <div class="w-8 h-8 rounded-full bg-zinc-700 flex items-center justify-center border border-zinc-600"><i class="fa-regular fa-user"></i></div>
+            <!-- SEARCH TAB -->
+            <div id="view-search" class="view-section">
+                <div style="padding: 1rem 1.5rem; border-bottom: 1px solid var(--border);">
+                    <input type="text" id="search-input" placeholder="Search posts..." oninput="renderSearch()">
                 </div>
-            </header>
+                <div id="search-results"></div>
+            </div>
 
-            <!-- Dynamic Content Area -->
-            <div id="content" class="p-6 md:p-8 animate-fade-in">
-                <!-- Javascript renders content here -->
+            <!-- PROFILE TAB -->
+            <div id="view-profile" class="view-section">
+                <div id="profile-container"></div>
+                <div id="profile-feed"></div>
+            </div>
+
+            <!-- NOTES TAB -->
+            <div id="view-notes" class="view-section">
+                <div style="padding: 2rem 1.5rem; border-bottom: 1px solid var(--border);">
+                    <h2>My Notes</h2>
+                    <p class="subtle">Private thoughts on posts.</p>
+                </div>
+                <div id="notes-feed"></div>
             </div>
         </main>
 
+        <!-- Mobile Nav -->
+        <div class="mobile-nav">
+            <div class="nav-btn" onclick="switchTab('home')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg></div>
+            <div class="nav-btn" onclick="switchTab('search')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg></div>
+            <div class="nav-btn" onclick="switchTab('profile')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg></div>
+            <div class="nav-btn" onclick="switchTab('notes')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><line x1="16" y1="13" x2="8" y2="13"></line></svg></div>
+            <div class="nav-btn" onclick="openCollabModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle></svg></div>
+        </div>
+
     </div>
 
-    <!-- PLAYER BAR -->
-    <div class="fixed bottom-[60px] md:bottom-0 left-0 right-0 h-20 bg-zinc-950 border-t border-zinc-800 px-4 flex items-center justify-between z-30 shadow-[0_-5px_15px_rgba(0,0,0,0.5)]">
-        <div class="flex items-center gap-4 w-1/3">
-            <div id="player-img" class="w-14 h-14 bg-zinc-800 rounded shadow-lg overflow-hidden flex-shrink-0 relative group border border-zinc-800">
-                <i class="fa-solid fa-music text-zinc-600 w-full h-full flex items-center justify-center"></i>
-                <div onclick="router('release_' + currentPlayerReleaseId)" class="hidden group-hover:flex absolute inset-0 bg-black/50 items-center justify-center cursor-pointer">
-                    <i class="fa-solid fa-up-right-from-square text-white"></i>
-                </div>
-            </div>
-            <div class="hidden sm:block">
-                <h4 id="player-title" class="text-sm font-bold text-white hover:underline cursor-pointer" onclick="if(currentPlayerReleaseId) router('release_' + currentPlayerReleaseId)">No Song Playing</h4>
-                <p id="player-artist" class="text-xs text-zinc-400 hover:underline cursor-pointer font-medium">Select a song</p>
-            </div>
-        </div>
-        
-        <div class="flex flex-col items-center w-1/3">
-            <div class="flex items-center gap-6 text-zinc-400 text-lg mb-1">
-                <i class="fa-solid fa-shuffle hover:text-white cursor-pointer text-sm"></i>
-                <i class="fa-solid fa-backward-step hover:text-white cursor-pointer"></i>
-                <div class="w-8 h-8 bg-white rounded-full flex items-center justify-center text-black hover:scale-105 transition-transform cursor-pointer shadow-lg shadow-white/10">
-                    <i class="fa-solid fa-play ml-0.5"></i>
-                </div>
-                <i class="fa-solid fa-forward-step hover:text-white cursor-pointer"></i>
-                <i class="fa-solid fa-repeat hover:text-white cursor-pointer text-sm"></i>
-            </div>
-            <div class="w-full max-w-md h-1 bg-zinc-600 rounded-full overflow-hidden">
-                <div class="h-full w-1/3 bg-white rounded-full"></div>
-            </div>
-        </div>
-
-        <div class="w-1/3 flex justify-end items-center gap-2 text-zinc-400">
-             <i class="fa-solid fa-volume-high text-xs"></i>
-             <div class="w-24 h-1 bg-zinc-600 rounded-full">
-                 <div class="h-full w-2/3 bg-green-500 group-hover:bg-green-400 rounded-full"></div>
-             </div>
-        </div>
-    </div>
-
-    <!-- MOBILE NAV -->
-    <nav class="md:hidden fixed bottom-0 left-0 right-0 h-[60px] bg-zinc-950 border-t border-zinc-800 flex justify-around items-center z-40">
-        <button onclick="router('home')" class="flex flex-col items-center gap-1 text-zinc-400 hover:text-white">
-            <i class="fa-solid fa-house text-xl"></i>
-            <span class="text-[10px] font-bold">Home</span>
-        </button>
-        <button onclick="router('charts')" class="flex flex-col items-center gap-1 text-zinc-400 hover:text-white">
-            <i class="fa-solid fa-chart-line text-xl"></i>
-            <span class="text-[10px] font-bold">Charts</span>
-        </button>
-        <button onclick="router('createArtist')" class="flex flex-col items-center gap-1 text-zinc-400 hover:text-white">
-            <i class="fa-solid fa-plus-circle text-xl"></i>
-            <span class="text-[10px] font-bold">Create</span>
-        </button>
-    </nav>
-
-    <!-- SCRIPTS -->
     <script>
-        // --- DATA STATE ---
-        const state = {
-            artists: [],
-            releases: [],
-            tracks: [],
-            videos: [],
+        // --- GAME STATE ---
+        let state = {
+            user: { id: 'me', name: "", handle: "", audience: 0, followers: 0 },
             day: 1,
-            simulationActive: false, 
-            viewHistory: []
-        };
-        
-        let currentPlayerReleaseId = null;
-
-        // --- CONSTANTS ---
-        const MAX_ARTISTS = 10;
-        const CHART_SIZE = 50;
-        const COUNTRIES = ["United States", "United Kingdom", "Germany", "Brazil", "Japan", "Mexico", "France", "Canada", "Australia", "Netherlands"];
-
-        // --- UTILITIES ---
-        const generateId = () => Math.random().toString(36).substr(2, 9);
-        
-        // --- NUMBER FORMATTING (Updated for Billions) ---
-        const formatNumber = (num) => {
-            if (num >= 1000000000) return (num / 1000000000).toFixed(1) + 'B';
-            if (num >= 1000000) return Math.floor(num / 1000000) + 'M';
-            if (num >= 1000) return Math.floor(num / 1000) + 'k';
-            return Math.floor(num).toString();
+            posts: [],
+            bots: [],
+            lastPostDay: 0,
+            activeTab: 'home',
+            viewingProfile: null
         };
 
-        // --- ANIMATIONS & COMPONENTS ---
-        function animateNumber(elementId, newValueFormatted) {
-            const element = document.getElementById(elementId);
-            if (!element) return;
+        // --- PERSISTENCE ---
+        const DB_KEY = 'chirpless_save_v2';
+        
+        function saveData() {
+            localStorage.setItem(DB_KEY, JSON.stringify(state));
+        }
 
-            const newValStr = String(newValueFormatted);
-            const oldValStr = element.getAttribute('data-value') || element.innerText;
-            
-            if (newValStr === oldValStr) return;
+        function loadData() {
+            const saved = localStorage.getItem(DB_KEY);
+            if (saved) {
+                try {
+                    const parsed = JSON.parse(saved);
+                    // Merge cleanly to ensure new fields in future updates don't break
+                    state = { ...state, ...parsed };
+                    return true;
+                } catch(e) { console.error("Save data corrupted", e); return false; }
+            }
+            return false;
+        }
 
-            element.setAttribute('data-value', newValStr);
-            
-            let html = '<div class="digit-container">';
-            const maxLength = Math.max(oldValStr.length, newValStr.length);
-            
-            const paddedOld = oldValStr.padStart(maxLength, ' ');
-            const paddedNew = newValStr.padStart(maxLength, ' ');
-
-            for (let i = 0; i < maxLength; i++) {
-                const oldChar = paddedOld[i];
-                const newChar = paddedNew[i];
+        // --- APP INIT ---
+        window.onload = function() {
+            if(loadData()) {
+                // Restore UI from loaded state
+                document.getElementById('onboarding').classList.add('hidden');
+                document.getElementById('app').style.display = 'flex';
                 
-                if (oldChar === newChar && oldChar !== ' ') {
-                    html += `<span class="inline-block">${newChar}</span>`;
+                const initials = state.user.name.substring(0,2).toUpperCase();
+                document.getElementById('user-avatar').innerText = initials;
+                document.getElementById('day-display').innerText = state.day;
+
+                updateGlobalStats(true);
+                updateBotList();
+                renderFeed('feed');
+            } else {
+                // Show Onboarding
+                document.getElementById('onboarding').classList.remove('hidden');
+            }
+        };
+
+        // --- TICKER ENGINE ---
+        function createTicker(element, value) {
+            if(!element) return;
+            const strVal = formatNumber(value);
+            element.innerHTML = ''; 
+            element.dataset.value = value;
+            element.dataset.str = strVal;
+
+            strVal.split('').forEach(char => {
+                const wrapper = document.createElement('span');
+                if (/\d/.test(char)) {
+                    wrapper.className = 'ticker-digit-col';
+                    let html = '';
+                    for(let i=0; i<=9; i++) html += `<span class="ticker-digit">${i}</span>`;
+                    wrapper.innerHTML = html;
+                    wrapper.style.transform = `translateY(${-(parseInt(char) * 10)}%)`; 
                 } else {
-                    html += `
-                        <div class="digit-column" id="col-${elementId}-${i}">
-                            <span>${oldChar === ' ' ? '&nbsp;' : oldChar}</span>
-                            <span>${newChar === ' ' ? '&nbsp;' : newChar}</span>
-                        </div>
-                    `;
+                    wrapper.className = 'ticker-digit';
+                    wrapper.innerText = char;
                 }
-            }
-            html += '</div>';
-            element.innerHTML = html;
-            
-            element.offsetHeight; // Force Reflow
-
-            const cols = element.querySelectorAll('.digit-column');
-            cols.forEach((col, index) => {
-                setTimeout(() => {
-                    col.classList.add('digit-slide-up');
-                }, index * 40); 
+                element.appendChild(wrapper);
             });
-            
-            setTimeout(() => {
-                if (element.getAttribute('data-value') === newValStr) {
-                    element.innerHTML = newValStr;
-                }
-            }, 1200);
         }
 
-        const imageFileHandler = (fileInput, callback) => {
-            const file = fileInput.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = (e) => callback(e.target.result);
-                reader.readAsDataURL(file);
-            } else {
-                callback(null);
+        function updateTicker(element, newValue) {
+            if(!element) return;
+            const strVal = formatNumber(newValue);
+            if (element.dataset.str === strVal) return;
+            
+            const oldStr = element.dataset.str || "";
+            if (oldStr.length !== strVal.length || oldStr.replace(/\d/g,'') !== strVal.replace(/\d/g,'')) {
+                createTicker(element, newValue);
+                return;
             }
-        };
-
-        // --- SIMULATION ENGINE ---
-        function advanceDay() {
-            state.day++;
-            animateNumber('day-counter', state.day);
-            runSimulationStep();
-        }
-
-        function runSimulationStep() {
-            // TRACKS SIMULATION
-            state.tracks.forEach(track => {
-                const daysOld = state.day - track.releaseDate;
-                
-                let totalFollowers = 0;
-                let totalMonthly = 0;
-                track.artistIds.forEach(id => {
-                    const artist = state.artists.find(a => a.id === id);
-                    if (artist) {
-                        totalFollowers += artist.followers;
-                        totalMonthly += artist.monthlyListeners;
+            
+            element.dataset.value = newValue;
+            element.dataset.str = strVal;
+            
+            const cols = element.querySelectorAll('.ticker-digit-col');
+            let digitIndex = 0;
+            strVal.split('').forEach(char => {
+                if (/\d/.test(char)) {
+                    if(cols[digitIndex]) {
+                        cols[digitIndex].style.transform = `translateY(${-(parseInt(char) * 10)}%)`;
                     }
-                });
-                const avgFollowers = totalFollowers / track.artistIds.length;
-                
-                let organicFactor = 0.05; 
-                if (daysOld > 14) organicFactor = 0.02; 
-                if (daysOld > 60) organicFactor = 0.005; 
-                
-                const dailyVariance = 0.8 + Math.random() * 0.4;
-                let organicStreams = (avgFollowers * organicFactor) * dailyVariance;
-
-                let dailyTraction = track.tractionScore;
-                if (daysOld > 14) dailyTraction *= 0.90; 
-                else if (daysOld > 3) dailyTraction *= 0.98;
-                dailyTraction *= (0.9 + Math.random() * 0.2);
-
-                if (daysOld < 7 && track.potential === 'blowup') dailyTraction *= 1.1; 
-                if (track.streams > 1000000) dailyTraction *= 1.02; 
-
-                if (track.potential === 'blowup' && daysOld < 40) {
-                    let chance = 0.05;
-                    if (totalMonthly < totalFollowers * 0.5) chance = 0.10; 
-                    if (Math.random() < chance) { 
-                        dailyTraction *= 2.5; 
-                        organicStreams *= 2.0; 
-                        showNotification(`${track.title} is trending!`);
-                    }
-                }
-
-                if (dailyTraction < 5) dailyTraction = 2;
-
-                track.tractionScore = dailyTraction;
-                const totalDailyStreams = Math.floor((dailyTraction * 50) + organicStreams);
-                track.streams += totalDailyStreams;
-                
-                const streamShare = Math.floor(totalDailyStreams / track.artistIds.length);
-                track.artistIds.forEach(artistId => {
-                    const artist = state.artists.find(a => a.id === artistId);
-                    if (artist) {
-                        const impliedListeners = streamShare * 0.8; 
-                        const loyalBase = artist.followers * 0.2; 
-                        
-                        if (impliedListeners > artist.monthlyListeners) {
-                             artist.monthlyListeners += Math.ceil((impliedListeners - artist.monthlyListeners) * 0.2); 
-                        } else {
-                             let decayRate = 0.03; 
-                             if (artist.monthlyListeners < loyalBase * 1.5) decayRate = 0.01;
-                             artist.monthlyListeners -= Math.ceil((artist.monthlyListeners - impliedListeners) * decayRate);
-                        }
-                        
-                        if (artist.monthlyListeners < 0) artist.monthlyListeners = 0;
-                        const newFollowers = Math.floor(streamShare / 1000); 
-                        artist.followers += newFollowers;
-                        
-                        if (artist.monthlyListeners < artist.followers * 0.1 && Math.random() < 0.1) {
-                            artist.followers -= Math.ceil(artist.followers * 0.001); 
-                        }
-                    }
-                });
-            });
-
-            // VIDEOS SIMULATION
-            state.videos.forEach(video => {
-                const daysOld = state.day - video.date;
-                const artist = state.artists.find(a => a.id === video.artistId);
-                
-                if (artist) {
-                    // Videos have "evergreen" views but initial spike
-                    let baseViewRate = artist.followers * 0.02; // 2% of followers watch daily
-                    if (daysOld < 7) baseViewRate = artist.followers * 0.15; // 15% in first week
-                    
-                    const fluctuation = 0.8 + Math.random() * 0.4;
-                    const dailyViews = Math.floor(baseViewRate * fluctuation);
-                    
-                    video.views += dailyViews;
-                    
-                    // Likes approx 5-10% of views
-                    const newLikes = Math.floor(dailyViews * (0.05 + Math.random() * 0.05));
-                    video.likes += newLikes;
+                    digitIndex++;
                 }
             });
-
-            syncUI();
         }
 
-        function syncUI() {
-            if (currentView === 'charts') renderCharts(); 
-            if (currentView === 'forArtists') renderForArtists();
-            if (currentView.startsWith('artistDashboard_')) renderArtistDashboard(currentView.split('_')[1]);
-
-            if (currentView.startsWith('artist_')) {
-                const artistId = currentView.split('_')[1];
-                const artist = state.artists.find(a => a.id === artistId);
-                if (artist) {
-                    animateNumber(`stat-listeners-${artistId}`, formatNumber(artist.monthlyListeners));
-                    animateNumber(`stat-followers-${artistId}`, formatNumber(artist.followers));
-                    state.tracks.filter(t => t.artistIds.includes(artistId)).forEach(track => {
-                        animateNumber(`track-streams-${track.id}`, formatNumber(track.streams));
-                    });
-                    
-                    // Sync Videos
-                    state.videos.filter(v => v.artistId === artistId).forEach(video => {
-                         animateNumber(`video-views-${video.id}`, formatNumber(video.views));
-                         animateNumber(`video-likes-${video.id}`, formatNumber(video.likes));
-                    });
-                }
-            }
-            if (currentView.startsWith('release_')) {
-                const releaseId = currentView.split('_')[1];
-                const release = state.releases.find(r => r.id === releaseId);
-                if (release) {
-                    release.tracks.forEach(track => {
-                         animateNumber(`release-track-streams-${track.id}`, formatNumber(track.streams));
-                    });
-                }
-            }
+        function formatNumber(num) {
+            if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+            if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+            return Math.floor(num).toString();
         }
 
-        function showNotification(msg) {
-            const notif = document.createElement('div');
-            notif.className = 'fixed top-5 right-5 bg-green-500 text-black px-4 py-2 rounded shadow-xl z-50 animate-fade-in font-bold border-l-4 border-green-700';
-            notif.innerText = msg;
-            document.body.appendChild(notif);
-            setTimeout(() => notif.remove(), 3000);
-        }
+        // --- CORE LOGIC ---
+        function startApp() {
+            const name = document.getElementById('setup-name').value;
+            const handle = document.getElementById('setup-handle').value;
+            const audience = parseInt(document.getElementById('setup-audience').value) || 0;
+            const followers = parseInt(document.getElementById('setup-followers').value) || 0;
 
-        // --- ROUTING ---
-        let currentView = 'home';
+            if(!name || !handle) { alert("Name and handle required."); return; }
 
-        function router(view, param = null) {
-            currentView = view;
-            const content = document.getElementById('content');
-            const mainView = document.getElementById('main-view');
-            window.scrollTo(0,0);
+            state.user.name = name;
+            state.user.handle = handle.startsWith('@') ? handle : '@' + handle;
+            state.user.audience = audience;
+            state.user.followers = followers;
+
+            document.getElementById('onboarding').classList.add('hidden');
+            document.getElementById('app').style.display = 'flex';
             
-            // Theme Switching
-            if (view === 'forArtists' || view.startsWith('artistDashboard_')) {
-                mainView.classList.add('theme-artists');
-                mainView.classList.remove('bg-gradient-to-b', 'from-zinc-900', 'to-black');
-            } else {
-                mainView.classList.remove('theme-artists');
-                mainView.classList.add('bg-gradient-to-b', 'from-zinc-900', 'to-black');
-            }
+            const initials = name.substring(0,2).toUpperCase();
+            document.getElementById('user-avatar').innerText = initials;
 
-            if (view === 'home') renderHome();
-            else if (view === 'charts') renderCharts();
-            else if (view === 'library') renderLibrary();
-            else if (view === 'createArtist') renderCreateArtist();
-            else if (view === 'createRelease') renderCreateRelease();
-            else if (view === 'createVideo') renderCreateVideo();
-            else if (view === 'forArtists') renderForArtists();
-            else if (view.startsWith('artistDashboard_')) renderArtistDashboard(view.split('_')[1]);
-            else if (view.startsWith('artist_')) renderArtist(view.split('_')[1]);
-            else if (view.startsWith('release_')) renderRelease(view.split('_')[1]);
-            else if (view === 'editArtist') renderEditArtist(param);
-            else if (view === 'discography') renderDiscography(param);
+            saveData();
+            updateGlobalStats(true);
+            renderFeed('feed');
         }
 
-        // --- RENDER FUNCTIONS ---
-        function renderHome() {
-            const content = document.getElementById('content');
-            const greeting = new Date().getHours() < 12 ? 'Good morning' : 'Good evening';
-
-            let artistHTML = state.artists.map(artist => `
-                <div onclick="router('artist_${artist.id}')" class="bg-zinc-800/40 hover:bg-zinc-800 p-4 rounded-md transition duration-300 cursor-pointer group border border-transparent hover:border-zinc-700">
-                    <div class="relative mb-4">
-                        <img src="${artist.pfp || 'https://via.placeholder.com/150'}" class="w-full aspect-square object-cover rounded-full shadow-lg group-hover:shadow-green-500/20 transition-shadow" alt="${artist.name}">
-                        <div class="absolute bottom-2 right-2 bg-green-500 rounded-full w-10 h-10 flex items-center justify-center text-black opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 transition-all shadow-xl hover:scale-110">
-                            <i class="fa-solid fa-play"></i>
-                        </div>
-                    </div>
-                    <h3 class="font-bold text-white mb-1 truncate text-lg">${artist.name}</h3>
-                    <p class="text-sm text-zinc-400 font-medium">Artist</p>
-                </div>
-            `).join('');
-
-            if (state.artists.length === 0) {
-                artistHTML = `<div class="col-span-full text-center py-10 text-zinc-500 bg-zinc-900/50 rounded-lg border border-zinc-800/50">
-                    <i class="fa-regular fa-face-sad-tear text-4xl mb-3"></i>
-                    <p class="font-bold">No artists created yet. Start your label!</p>
-                </div>`;
-            }
-
-            content.innerHTML = `
-                <h2 class="text-4xl font-black mb-6 tracking-tight text-white">${greeting}</h2>
-                <h3 class="text-2xl font-bold mb-4 text-white">Your Artists</h3>
-                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
-                    ${artistHTML}
-                </div>
-            `;
+        function updateGlobalStats(force = false) {
+            ['audience-count', 'mob-audience-count'].forEach(id => {
+                const el = document.getElementById(id);
+                if(force) createTicker(el, state.user.audience); else updateTicker(el, state.user.audience);
+            });
+            ['follower-count', 'mob-follower-count'].forEach(id => {
+                const el = document.getElementById(id);
+                if(force) createTicker(el, state.user.followers); else updateTicker(el, state.user.followers);
+            });
         }
 
-        function renderArtist(artistId) {
-            const artist = state.artists.find(a => a.id === artistId);
-            if (!artist) return router('home');
+        function togglePollCreator() {
+            const el = document.getElementById('poll-creator');
+            el.classList.toggle('active');
+        }
 
-            const allArtistReleases = state.releases.filter(r => r.artistId === artistId || r.tracks.some(t => t.artistIds.includes(artistId))).sort((a,b) => b.date - a.date);
-            const latestRelease = allArtistReleases.length > 0 ? allArtistReleases[0] : null;
-            const popularTracks = state.tracks.filter(t => t.artistIds.includes(artistId)).sort((a,b) => b.streams - a.streams).slice(0, 5);
+        function createPost() {
+            const text = document.getElementById('post-input').value.trim();
+            const pollOpt1 = document.getElementById('poll-opt-1').value.trim();
+            const pollOpt2 = document.getElementById('poll-opt-2').value.trim();
+            const hasPoll = document.getElementById('poll-creator').classList.contains('active') && pollOpt1 && pollOpt2;
+
+            if(!text && !hasPoll) return;
+
+            const collabId = document.getElementById('collab-select').value;
+            const bot = state.bots.find(b => b.id == collabId);
             
-            const popularReleases = allArtistReleases.slice(1).sort((a,b) => {
-                const streamsA = a.tracks.reduce((acc, t) => acc + t.streams, 0);
-                const streamsB = b.tracks.reduce((acc, t) => acc + t.streams, 0);
-                return streamsB - streamsA;
-            }).slice(0, 4);
+            let mult = 1.0;
+            if (bot) mult = 1 + (bot.audience / (state.user.audience + 1000)) * 0.5;
 
-            const artistVideos = state.videos.filter(v => v.artistId === artistId).sort((a,b) => b.views - a.views);
-
-            const content = document.getElementById('content');
-            
-            const bannerStyle = artist.banner 
-                ? `background-image: linear-gradient(to bottom, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.8) 100%), url(${artist.banner}); background-size: cover; background-position: center;` 
-                : `background: linear-gradient(to bottom, #555, #000);`;
-
-            content.innerHTML = `
-                <div class="-mx-6 md:-mx-8 -mt-6 md:-mt-8 h-[45vh] min-h-[350px] flex flex-col justify-end p-8 relative shadow-2xl" style="${bannerStyle}">
-                    <div class="flex items-end gap-6 z-10">
-                         <img src="${artist.pfp || 'https://via.placeholder.com/200'}" class="w-32 h-32 md:w-56 md:h-56 rounded-full shadow-2xl object-cover ring-4 ring-black/30">
-                         <div class="mb-2">
-                             <div class="flex items-center gap-2 mb-2">
-                                <i class="fa-solid fa-certificate text-blue-400 text-lg"></i>
-                                <span class="text-sm font-bold uppercase tracking-widest drop-shadow-md">Verified Artist</span>
-                             </div>
-                             <h1 class="text-5xl md:text-8xl font-black text-white drop-shadow-lg mb-4 tracking-tighter">${artist.name}</h1>
-                             <p class="text-zinc-100 text-base md:text-lg mb-2 font-bold drop-shadow-md">
-                                <span id="stat-listeners-${artist.id}">${formatNumber(artist.monthlyListeners)}</span> monthly listeners
-                             </p>
-                         </div>
-                    </div>
-                </div>
-
-                <div class="flex items-center gap-6 py-6 sticky top-16 bg-gradient-to-b from-black to-transparent z-10 -mx-6 px-6 backdrop-blur-sm">
-                    <button class="w-14 h-14 bg-green-500 rounded-full flex items-center justify-center text-black hover:scale-105 transition-transform text-xl shadow-lg shadow-green-900/40"><i class="fa-solid fa-play ml-1"></i></button>
-                    <button class="px-6 py-2 border border-zinc-500 rounded-full text-sm hover:border-white uppercase tracking-wider font-bold hover:bg-white hover:text-black transition-colors text-white">Follow</button>
-                    <button onclick="router('discography', '${artist.id}')" class="px-6 py-2 border border-zinc-500 rounded-full text-sm hover:border-white uppercase tracking-wider font-bold transition-colors text-white">Discography</button>
-                    <button onclick="router('editArtist', '${artist.id}')" class="text-zinc-400 hover:text-white text-2xl ml-auto"><i class="fa-solid fa-ellipsis"></i></button>
-                </div>
-
-                <div class="flex flex-col lg:flex-row gap-10 mt-4">
-                    <div class="flex-1">
-                        <h3 class="text-xl font-bold mb-4 text-white">Popular</h3>
-                        <div class="flex flex-col mb-8">
-                            ${popularTracks.slice(0, 5).map((track, i) => `
-                                <div class="group flex items-center gap-4 p-3 hover:bg-zinc-800 rounded transition-colors cursor-pointer border border-transparent hover:border-zinc-700" onclick="router('release_${track.releaseId}')">
-                                    <span class="w-4 text-right text-zinc-400 font-mono font-bold">${i + 1}</span>
-                                    <div class="relative w-10 h-10">
-                                        <img src="${track.releaseCover}" class="w-full h-full object-cover rounded shadow">
-                                        <div class="absolute inset-0 bg-black/40 hidden group-hover:flex items-center justify-center text-white"><i class="fa-solid fa-eye text-xs"></i></div>
-                                    </div>
-                                    <div class="flex-1 text-white flex justify-between items-center">
-                                        <span class="font-bold text-sm">${track.title}</span>
-                                        <span class="text-zinc-400 text-sm font-mono"><span id="track-streams-${track.id}">${formatNumber(track.streams)}</span></span>
-                                    </div>
-                                </div>
-                            `).join('')}
-                            ${popularTracks.length === 0 ? '<p class="text-zinc-500 text-sm italic font-medium">No music released yet.</p>' : ''}
-                        </div>
-                        
-                        <!-- MUSIC VIDEOS SECTION -->
-                        <h3 class="text-xl font-bold mb-4 text-white">Music Videos</h3>
-                        ${artistVideos.length > 0 ? `
-                        <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-8">
-                            ${artistVideos.map(v => `
-                                <div class="group bg-zinc-900 rounded-lg overflow-hidden cursor-pointer hover:bg-zinc-800 transition">
-                                    <div class="relative aspect-video">
-                                        <img src="${v.thumbnail}" class="w-full h-full object-cover">
-                                        <div class="absolute inset-0 bg-black/30 group-hover:bg-black/10 flex items-center justify-center">
-                                            <div class="w-10 h-10 bg-red-600 rounded-full flex items-center justify-center text-white shadow-lg"><i class="fa-solid fa-play text-xs"></i></div>
-                                        </div>
-                                    </div>
-                                    <div class="p-3">
-                                        <p class="font-bold text-sm text-white truncate">${v.title}</p>
-                                        <div class="flex justify-between items-center text-xs text-zinc-400 mt-1">
-                                            <span id="video-views-${v.id}">${formatNumber(v.views)} views</span>
-                                            <span id="video-likes-${v.id}"><i class="fa-solid fa-thumbs-up mr-1"></i>${formatNumber(v.likes)}</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            `).join('')}
-                        </div>
-                        ` : '<p class="text-zinc-500 text-sm italic font-medium mb-8">No music videos available.</p>'}
-
-                        ${popularReleases.length > 0 ? `
-                            <h3 class="text-xl font-bold mb-4 text-white">Popular Releases</h3>
-                            <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
-                                ${popularReleases.map(r => `
-                                    <div onclick="router('release_${r.id}')" class="bg-zinc-900 p-3 rounded-md hover:bg-zinc-800 transition cursor-pointer group border border-zinc-800 hover:border-zinc-600">
-                                        <img src="${r.cover}" class="w-full aspect-square object-cover rounded shadow-lg mb-3 group-hover:shadow-green-900/20 transition-shadow">
-                                        <p class="font-bold truncate text-sm text-white">${r.title}</p>
-                                        <p class="text-xs text-zinc-400 font-medium">${r.date} days ago • ${r.type}</p>
-                                    </div>
-                                `).join('')}
-                            </div>
-                        ` : ''}
-                    </div>
-
-                    <div class="w-full lg:w-1/3 flex flex-col gap-8">
-                        ${latestRelease ? `
-                        <div>
-                            <h3 class="text-xl font-bold mb-4 text-white">Latest Release</h3>
-                            <div onclick="router('release_${latestRelease.id}')" class="flex items-center gap-4 bg-zinc-800/50 hover:bg-zinc-800 p-4 rounded-lg cursor-pointer transition-colors border border-zinc-700/50 hover:border-zinc-500">
-                                <img src="${latestRelease.cover}" class="w-20 h-20 object-cover rounded shadow-md">
-                                <div>
-                                    <p class="font-bold text-lg leading-tight mb-1 text-white">${latestRelease.title}</p>
-                                    <p class="text-zinc-400 text-sm mb-2 font-medium">${latestRelease.date} days ago</p>
-                                    <span class="bg-zinc-700 text-xs px-2 py-1 rounded uppercase tracking-wider font-bold text-white">New</span>
-                                </div>
-                            </div>
-                        </div>
-                        ` : ''}
-
-                        <div>
-                            <h3 class="text-xl font-bold mb-4 text-white">About</h3>
-                            <div class="bg-zinc-800 rounded-xl p-6 hover:bg-zinc-700 transition cursor-pointer relative overflow-hidden group h-80 shadow-lg border border-zinc-700">
-                                <div class="relative z-10 h-full flex flex-col">
-                                    <div class="mt-auto">
-                                        <p class="text-2xl font-bold mb-2 text-white"><span id="stat-followers-${artist.id}">${formatNumber(artist.followers)}</span> Followers</p>
-                                        <p class="text-zinc-300 line-clamp-4 leading-relaxed font-medium">${artist.bio || "No bio available."}</p>
-                                    </div>
-                                </div>
-                                ${artist.pfp ? `<img src="${artist.pfp}" class="absolute top-0 right-0 w-full h-full object-cover opacity-40 group-hover:scale-105 transition-transform duration-700 mask-image-linear-gradient">` : ''}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-
-        // ... [Previous code for renderCharts, renderRelease, renderDiscography, renderCreateArtist, etc.] ...
-        // Re-injecting standard functions to ensure file is complete
-        
-        function renderCharts() {
-            const content = document.getElementById('content');
-            const sortedTracks = [...state.tracks].sort((a, b) => b.tractionScore - a.tractionScore).slice(0, 50);
-
-            let chartItems = sortedTracks.map((track, index) => {
-                const mainArtist = state.artists.find(a => a.id === track.artistIds[0]);
-                return `
-                <div class="group flex items-center gap-4 p-3 hover:bg-zinc-800 rounded-md transition-colors cursor-pointer border border-transparent hover:border-zinc-700" onclick="router('release_${track.releaseId}')">
-                    <div class="w-6 text-right text-zinc-400 font-mono text-lg font-bold">${index + 1}</div>
-                    <div class="relative w-12 h-12 flex-shrink-0 group-hover:scale-105 transition-transform">
-                        <img src="${track.releaseCover || 'https://via.placeholder.com/50'}" class="w-full h-full object-cover rounded shadow">
-                        <div class="absolute inset-0 bg-black/40 hidden group-hover:flex items-center justify-center text-white backdrop-blur-[1px]">
-                            <i class="fa-solid fa-eye"></i>
-                        </div>
-                    </div>
-                    <div class="flex-1 min-w-0">
-                        <div class="text-white font-bold truncate text-base ${track.tractionScore > 5000 ? 'text-green-400' : ''}">${track.title}</div>
-                        <div class="text-sm text-zinc-400 truncate hover:underline font-medium" onclick="event.stopPropagation(); router('artist_${mainArtist.id}')">${mainArtist ? mainArtist.name : 'Unknown'}</div>
-                    </div>
-                    <div class="hidden md:block text-sm text-zinc-300 w-32 text-right font-mono">
-                        <span id="chart-streams-${track.id}">${formatNumber(track.streams)}</span>
-                    </div>
-                    <div class="text-sm text-zinc-400 w-16 text-right font-mono font-bold">
-                        ${Math.floor(track.tractionScore)} <i class="fa-solid fa-fire text-orange-500 text-xs ml-1"></i>
-                    </div>
-                </div>
-            `}).join('');
-
-            content.innerHTML = `
-                <div class="bg-gradient-to-b from-green-900/20 to-transparent p-6 -m-6 mb-4 rounded-b-2xl border-b border-green-900/10">
-                    <h2 class="text-5xl font-black mb-2 text-white tracking-tight">Top 50 <span class="text-green-500">Global</span></h2>
-                    <p class="text-zinc-400 font-medium">Updated daily based on real-time traction and virality.</p>
-                </div>
-                
-                <div class="flex flex-col mt-8">
-                    <div class="flex items-center gap-4 px-3 py-2 border-b border-zinc-800 text-sm text-zinc-400 uppercase tracking-wider mb-2 font-bold">
-                        <div class="w-6 text-right">#</div>
-                        <div class="ml-12 flex-1">Title</div>
-                        <div class="hidden md:block w-32 text-right">Streams</div>
-                        <div class="w-16 text-right">Hype</div>
-                    </div>
-                    ${chartItems || '<div class="p-8 text-center text-zinc-500 italic font-bold">No tracks released yet.</div>'}
-                </div>
-            `;
-        }
-
-        function renderRelease(releaseId) {
-            const release = state.releases.find(r => r.id === releaseId);
-            if (!release) return router('home');
-            
-            const collaboratorIds = new Set();
-            release.tracks.forEach(t => t.artistIds.forEach(id => collaboratorIds.add(id)));
-            const collaborators = Array.from(collaboratorIds).map(id => state.artists.find(a => a.id === id)).filter(a => a);
-            
-            const collabHTML = collaborators.map(artist => `
-                <div onclick="router('artist_${artist.id}')" class="flex items-center gap-3 bg-zinc-800 hover:bg-zinc-700 pr-4 rounded-full cursor-pointer transition-colors group border border-transparent hover:border-zinc-600">
-                    <img src="${artist.pfp || 'https://via.placeholder.com/50'}" class="w-10 h-10 rounded-full object-cover">
-                    <span class="font-bold text-sm group-hover:text-white text-zinc-200">${artist.name}</span>
-                </div>
-            `).join('');
-
-            const trackHTML = release.tracks.map((track, i) => `
-                <div class="group flex items-center gap-4 p-3 hover:bg-zinc-800 rounded-md transition-colors border-b border-zinc-800/50 hover:border-transparent">
-                    <div class="w-8 text-center text-zinc-400 text-lg group-hover:hidden font-mono font-bold">${i + 1}</div>
-                    <div class="w-8 text-center hidden group-hover:block text-green-500 cursor-pointer" onclick="playSong('${track.id}')"><i class="fa-solid fa-play"></i></div>
-                    
-                    <div class="flex-1">
-                        <div class="text-white font-bold text-lg ${track.id === currentPlayerReleaseId ? 'text-green-500' : ''}">${track.title}</div>
-                        <div class="text-sm text-zinc-400 font-medium">
-                             ${track.artistIds.map(id => {
-                                 const a = state.artists.find(art => art.id === id);
-                                 return `<span class="hover:underline cursor-pointer hover:text-white" onclick="router('artist_${id}')">${a.name}</span>`;
-                             }).join(', ')}
-                        </div>
-                    </div>
-                    <div class="text-zinc-400 text-sm font-mono w-32 text-right font-bold">
-                        <span id="release-track-streams-${track.id}">${formatNumber(track.streams)}</span>
-                    </div>
-                </div>
-            `).join('');
-
-            const content = document.getElementById('content');
-            content.innerHTML = `
-                <div class="flex flex-col md:flex-row gap-8 items-end mb-8 animate-fade-in">
-                    <img src="${release.cover}" class="w-52 h-52 md:w-64 md:h-64 shadow-2xl rounded-lg object-cover ring-1 ring-zinc-700">
-                    <div class="flex flex-col gap-2">
-                        <span class="text-xs font-bold uppercase tracking-wider text-zinc-400">${release.type}</span>
-                        <h1 class="text-4xl md:text-6xl font-black text-white leading-tight tracking-tight">${release.title}</h1>
-                        <div class="flex items-center gap-2 text-zinc-300 text-sm mt-2 font-medium">
-                             <img src="${collaborators[0].pfp}" class="w-6 h-6 rounded-full object-cover">
-                             <span class="font-bold hover:underline cursor-pointer text-white" onclick="router('artist_${collaborators[0].id}')">${collaborators[0].name}</span>
-                             <span>• ${release.date} days ago • ${release.tracks.length} songs</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="flex flex-wrap gap-4 mb-8">
-                    <button onclick="playSong('${release.tracks[0].id}')" class="w-14 h-14 bg-green-500 rounded-full flex items-center justify-center text-black hover:scale-105 transition-transform text-xl shadow-lg shadow-green-900/40"><i class="fa-solid fa-play ml-1"></i></button>
-                    <button class="w-10 h-10 rounded-full border-2 border-zinc-500 flex items-center justify-center text-zinc-400 hover:text-white hover:border-white transition-colors"><i class="fa-regular fa-heart"></i></button>
-                </div>
-
-                ${collaborators.length > 0 ? `
-                <div class="mb-8">
-                    <h3 class="text-sm uppercase tracking-wider text-zinc-500 font-bold mb-3">Presented By</h3>
-                    <div class="flex flex-wrap gap-3">
-                        ${collabHTML}
-                    </div>
-                </div>
-                ` : ''}
-
-                <div class="flex flex-col">
-                    <div class="flex items-center gap-4 px-3 py-2 border-b border-zinc-800 text-sm text-zinc-500 uppercase tracking-wider mb-2 font-bold">
-                        <div class="w-8 text-center">#</div>
-                        <div class="flex-1">Title</div>
-                        <div class="w-32 text-right">Streams</div>
-                    </div>
-                    ${trackHTML}
-                </div>
-            `;
-        }
-        
-        function renderDiscography(artistId) {
-            const artist = state.artists.find(a => a.id === artistId);
-            if (!artist) return;
-            const releases = state.releases.filter(r => r.artistId === artistId || r.tracks.some(t => t.artistIds.includes(artistId))).sort((a,b) => b.date - a.date);
-            const content = document.getElementById('content');
-            content.innerHTML = `
-                <div class="mb-6">
-                    <span class="text-sm text-zinc-400 hover:underline cursor-pointer font-bold" onclick="router('artist_${artist.id}')"> < Back to ${artist.name}</span>
-                    <h1 class="text-4xl font-black mt-2 text-white">Discography</h1>
-                </div>
-                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
-                    ${releases.map(r => `
-                        <div onclick="router('release_${r.id}')" class="bg-zinc-900 p-4 rounded-lg hover:bg-zinc-800 transition cursor-pointer group border border-zinc-800 hover:border-zinc-600">
-                            <img src="${r.cover}" class="w-full aspect-square object-cover rounded shadow-lg mb-4 group-hover:shadow-green-900/20 transition-shadow">
-                            <p class="font-bold truncate text-white">${r.title}</p>
-                            <div class="flex justify-between items-center text-xs text-zinc-400 mt-1 font-medium">
-                                <span>${r.date} days ago</span>
-                                <span class="bg-zinc-800 px-2 py-0.5 rounded border border-zinc-700">${r.type}</span>
-                            </div>
-                        </div>
-                    `).join('')}
-                </div>
-            `;
-        }
-
-        // --- NEW: RENDER CREATE VIDEO ---
-        function renderCreateVideo() {
-             if (state.artists.length === 0) {
-                showNotification("Create an artist first!");
-                return router('createArtist');
-            }
-
-            const content = document.getElementById('content');
-            const artistOptions = state.artists.map(a => `<option value="${a.id}">${a.name}</option>`).join('');
-
-            content.innerHTML = `
-                <div class="max-w-2xl mx-auto">
-                    <h2 class="text-3xl font-black mb-8 text-white">Upload Music Video</h2>
-                    <form onsubmit="handleCreateVideo(event)" class="flex flex-col gap-6 bg-zinc-900 p-6 rounded-lg border border-zinc-800">
-                        <div>
-                            <label class="block text-sm font-bold mb-2 text-zinc-300">Artist</label>
-                            <select name="artistId" class="w-full bg-zinc-800 border border-zinc-700 rounded p-3 text-white focus:outline-none focus:border-red-500 font-bold">
-                                ${artistOptions}
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-bold mb-2 text-zinc-300">Video Title</label>
-                            <input type="text" name="title" required class="w-full bg-zinc-800 border border-zinc-700 rounded p-3 text-white focus:outline-none focus:border-red-500 placeholder-zinc-500 font-bold" placeholder="e.g. Official Music Video">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-bold mb-2 text-zinc-300">Thumbnail Image</label>
-                            <input type="file" id="thumbInput" accept="image/*" class="block w-full text-sm text-zinc-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-bold file:bg-zinc-700 file:text-white hover:file:bg-zinc-600 cursor-pointer"/>
-                        </div>
-                        <button type="submit" class="bg-red-600 text-white font-black py-3 rounded-full hover:scale-105 transition-transform mt-4 shadow-lg shadow-red-900/20">Publish Video</button>
-                    </form>
-                </div>
-            `;
-        }
-
-        async function handleCreateVideo(e) {
-            e.preventDefault();
-            const form = e.target;
-            const thumbInput = document.getElementById('thumbInput');
-            const readFile = (input) => new Promise(resolve => imageFileHandler(input, resolve));
-            let thumbData = await readFile(thumbInput);
-
-            // Generate fallback thumbnail if none provided
-            if (!thumbData) {
-                const colors = ['#ef4444', '#7f1d1d', '#b91c1c'];
-                const randomColor = colors[Math.floor(Math.random() * colors.length)];
-                thumbData = `https://placehold.co/600x400/${randomColor.replace('#','')}/ffffff?text=${encodeURIComponent(form.title.value)}`;
-            }
-            
-            // Calculate initial views based on artist followers
-            const artist = state.artists.find(a => a.id === form.artistId.value);
-            let initialViews = 0;
-            if (artist) {
-                initialViews = Math.floor(artist.followers * (0.2 + Math.random() * 0.3));
-            }
-
-            const newVideo = {
-                id: generateId(),
-                artistId: form.artistId.value,
-                title: form.title.value,
-                thumbnail: thumbData,
-                views: initialViews,
-                likes: Math.floor(initialViews * 0.08),
-                date: state.day
+            const newPost = {
+                id: Date.now(),
+                authorId: 'me',
+                content: text,
+                dayPosted: state.day,
+                views: 0, likes: 0, reposts: 0,
+                liked: false, reposted: false,
+                collab: bot ? { id: bot.id, name: bot.name, handle: bot.handle } : null,
+                potential: state.user.audience * (1 + Math.random()) * mult, 
+                decay: 1.0,
+                poll: hasPoll ? {
+                    options: [{text: pollOpt1, votes: 0}, {text: pollOpt2, votes: 0}],
+                    totalVotes: 0,
+                    voted: false
+                } : null,
+                myNote: null
             };
 
-            state.videos.push(newVideo);
-            showNotification(`Music Video Published!`);
-            router('artist_' + form.artistId.value);
+            state.posts.unshift(newPost);
+            state.lastPostDay = state.day;
+            state.user.audience += Math.floor(state.user.audience * 0.02) + 50; 
+            
+            document.getElementById('post-input').value = '';
+            document.getElementById('poll-opt-1').value = '';
+            document.getElementById('poll-opt-2').value = '';
+            document.getElementById('poll-creator').classList.remove('active');
+            document.getElementById('collab-select').value = "";
+            checkInput();
+            
+            if(state.activeTab === 'home') renderFeed('feed');
+            else if(state.activeTab === 'profile' && state.viewingProfile === 'me') renderProfile('me');
+            
+            updateGlobalStats();
+            saveData();
         }
 
-        function renderCreateArtist() {
-            if (state.artists.length >= MAX_ARTISTS) {
-                document.getElementById('content').innerHTML = `
-                    <div class="flex flex-col items-center justify-center h-full text-center">
-                        <i class="fa-solid fa-ban text-red-500 text-5xl mb-4"></i>
-                        <h2 class="text-2xl font-bold text-white">Artist Limit Reached</h2>
-                        <p class="text-zinc-400 mt-2 font-medium">You can only manage 10 artists on the free plan.</p>
-                        <button onclick="router('home')" class="mt-6 bg-white text-black px-6 py-2 rounded-full font-bold hover:scale-105 transition">Go Back</button>
-                    </div>
-                `;
+        function checkInput() {
+            const val = document.getElementById('post-input').value.trim();
+            document.getElementById('post-btn').classList.toggle('active', val.length > 0 || document.getElementById('poll-creator').classList.contains('active'));
+        }
+
+        // --- NAVIGATION & VIEWS ---
+        function switchTab(tab, profileId = null) {
+            state.activeTab = tab;
+            document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
+            
+            const navIndex = {'home':0, 'search':1, 'profile':2, 'notes': 3}[tab];
+            if(navIndex !== undefined) document.querySelectorAll('.sidebar .nav-btn')[navIndex].classList.add('active');
+
+            if(tab === 'home') {
+                document.getElementById('view-home').classList.add('active');
+                renderFeed('feed');
+            } else if(tab === 'search') {
+                document.getElementById('view-search').classList.add('active');
+                renderSearch();
+            } else if(tab === 'profile') {
+                document.getElementById('view-profile').classList.add('active');
+                renderProfile(profileId || 'me');
+            } else if(tab === 'notes') {
+                document.getElementById('view-notes').classList.add('active');
+                renderFeed('notes-feed');
+            }
+        }
+
+        // --- NOTES SYSTEM ---
+        let currentNotePostId = null;
+
+        function togglePostMenu(event, postId) {
+            event.stopPropagation();
+            closeAllMenus();
+            const menu = document.getElementById(`menu-${postId}`);
+            if(menu) menu.classList.add('active');
+        }
+
+        function closeAllMenus(e) {
+            document.querySelectorAll('.post-menu').forEach(el => el.classList.remove('active'));
+        }
+
+        function openNoteModal(postId) {
+            currentNotePostId = postId;
+            const post = state.posts.find(p => p.id === postId);
+            if(!post) return;
+            
+            document.getElementById('note-input').value = post.myNote || "";
+            document.getElementById('note-modal').classList.remove('hidden');
+            document.getElementById('note-modal').style.opacity = '1';
+        }
+
+        function closeNoteModal() {
+            document.getElementById('note-modal').style.opacity = '0';
+            setTimeout(() => document.getElementById('note-modal').classList.add('hidden'), 300);
+            currentNotePostId = null;
+        }
+
+        function saveNote() {
+            if(!currentNotePostId) return;
+            const text = document.getElementById('note-input').value.trim();
+            const post = state.posts.find(p => p.id === currentNotePostId);
+            
+            if(post) {
+                post.myNote = text;
+                // Re-render to show note indicator or updated view
+                const currentContainer = state.activeTab === 'notes' ? 'notes-feed' : 
+                                         state.activeTab === 'profile' ? 'profile-feed' : 'feed';
+                renderFeed(currentContainer);
+                saveData();
+            }
+            closeNoteModal();
+        }
+
+        // --- COLLAB MODAL ---
+        function openCollabModal() {
+            document.getElementById('collab-modal').classList.remove('hidden');
+            document.getElementById('collab-modal').style.opacity = '1';
+        }
+        function closeCollabModal() {
+            document.getElementById('collab-modal').style.opacity = '0';
+            setTimeout(() => document.getElementById('collab-modal').classList.add('hidden'), 300);
+        }
+        function confirmAddBot() {
+            const name = document.getElementById('bot-name').value;
+            let handle = document.getElementById('bot-handle').value;
+            const aud = parseInt(document.getElementById('bot-audience').value) || 0;
+            const fol = parseInt(document.getElementById('bot-followers').value) || 0;
+            if(!name || !handle) return;
+            if(!handle.startsWith('@')) handle = '@' + handle;
+            const bot = { id: Date.now(), name, handle, audience: aud, followers: fol };
+            state.bots.push(bot);
+            updateBotList();
+            closeCollabModal();
+            saveData();
+        }
+        function updateBotList() {
+            const list = document.getElementById('bot-list');
+            const select = document.getElementById('collab-select');
+            list.innerHTML = state.bots.length ? state.bots.map(b => 
+                `<div><b>${b.name}</b> <span class="subtle">${b.handle}</span><br><span style="font-size:0.8rem">Aud: ${formatNumber(b.audience)} | Fol: ${formatNumber(b.followers)}</span></div>`
+            ).join('<hr style="border:0; border-top:1px solid var(--border); margin:0.5rem 0;">') : "No bots yet.";
+            select.innerHTML = `<option value="">No Collaborator</option>` + state.bots.map(b => `<option value="${b.id}">${b.name}</option>`).join('');
+        }
+
+        // --- SIMULATION ---
+        function nextDay() {
+            state.day++;
+            document.getElementById('day-display').innerText = state.day;
+            const daysSincePost = state.day - state.lastPostDay;
+            let totalNewViews = 0;
+
+            // 1. Process Posts
+            state.posts.forEach(post => {
+                const age = state.day - post.dayPosted;
+                let dailyDecay = Math.exp(-0.15 * age); 
+                
+                if (dailyDecay > 0.01) {
+                    let dailyViews = Math.floor(post.potential * dailyDecay * (Math.random() * 0.4 + 0.1));
+                    if(dailyViews < 0) dailyViews = 0;
+                    
+                    post.views += dailyViews;
+                    totalNewViews += dailyViews;
+                    post.likes += Math.floor(dailyViews * 0.04);
+                    post.reposts += Math.floor(dailyViews * 0.008);
+                    
+                    if(post.poll && age < 3 && Math.random() > 0.5) {
+                        const votes = Math.floor(dailyViews * 0.1);
+                        post.poll.totalVotes += votes;
+                        const split = Math.random();
+                        post.poll.options[0].votes += Math.floor(votes * split);
+                        post.poll.options[1].votes += Math.floor(votes * (1-split));
+                        updatePollDOM(post);
+                    }
+
+                    updatePostStatsDOM(post.id, post.views, post.likes, post.reposts);
+                }
+            });
+
+            // 2. Audience Fall Off
+            let audChange = 0;
+            if (daysSincePost < 4) {
+                audChange = Math.floor(totalNewViews * 0.015) + Math.floor(Math.random() * 100);
+            } else if (daysSincePost >= 4 && daysSincePost < 23) {
+                const slideFactor = 0.005 * (daysSincePost - 3);
+                audChange = -Math.floor(state.user.audience * slideFactor);
+            } else {
+                audChange = -Math.floor(state.user.audience * 0.10);
+            }
+            
+            state.user.audience = Math.max(0, state.user.audience + audChange);
+            state.user.followers += Math.floor(totalNewViews * 0.001);
+            
+            updateGlobalStats();
+            // Force re-render of times
+            const activeFeed = state.activeTab === 'notes' ? 'notes-feed' : 
+                               state.activeTab === 'profile' ? 'profile-feed' : 'feed';
+            renderFeed(activeFeed, true); 
+            saveData();
+        }
+
+        // --- INTERACTION ---
+        function toggleLike(postId) {
+            const post = state.posts.find(p => p.id === postId);
+            if(!post) return;
+            post.liked = !post.liked;
+            post.likes += post.liked ? 1 : -1;
+            const btn = document.getElementById(`like-btn-${postId}`);
+            if(post.liked) btn.classList.add('liked'); else btn.classList.remove('liked');
+            updateTicker(document.getElementById(`like-${postId}`), post.likes);
+            saveData();
+        }
+        function toggleRepost(postId) {
+            const post = state.posts.find(p => p.id === postId);
+            if(!post) return;
+            post.reposted = !post.reposted;
+            post.reposts += post.reposted ? 1 : -1;
+            const btn = document.getElementById(`repost-btn-${postId}`);
+            if(post.reposted) btn.classList.add('reposted'); else btn.classList.remove('reposted');
+            updateTicker(document.getElementById(`repost-${postId}`), post.reposts);
+            saveData();
+        }
+        function votePoll(postId, optIdx) {
+            const post = state.posts.find(p => p.id === postId);
+            if(!post || post.poll.voted) return;
+            post.poll.voted = true;
+            post.poll.totalVotes++;
+            post.poll.options[optIdx].votes++;
+            updatePollDOM(post);
+            saveData();
+        }
+
+        // --- RENDERING ---
+        function renderFeed(containerId, updateTimesOnly = false) {
+            const container = document.getElementById(containerId);
+            if(!container) return;
+            
+            let posts = state.posts;
+            if (containerId === 'profile-feed') {
+                if(state.viewingProfile === 'me') posts = state.posts.filter(p => p.authorId === 'me');
+                else posts = state.posts.filter(p => p.collab && p.collab.id == state.viewingProfile);
+            } else if (containerId === 'search-results') {
+                const query = document.getElementById('search-input').value.toLowerCase();
+                posts = state.posts.filter(p => p.content.toLowerCase().includes(query));
+            } else if (containerId === 'notes-feed') {
+                posts = state.posts.filter(p => p.myNote && p.myNote.trim().length > 0);
+            }
+
+            if (updateTimesOnly) {
+                posts.forEach(p => {
+                    const timeEl = document.getElementById(`time-${p.id}`);
+                    if(timeEl) timeEl.innerText = p.dayPosted === state.day ? "Today" : `${state.day - p.dayPosted}d ago`;
+                });
                 return;
             }
 
-            const content = document.getElementById('content');
-            content.innerHTML = `
-                <div class="max-w-2xl mx-auto">
-                    <h2 class="text-3xl font-black mb-8 text-white">Create New Artist</h2>
-                    <form onsubmit="handleCreateArtist(event)" class="flex flex-col gap-6">
-                        <div>
-                            <label class="block text-sm font-bold mb-2 text-zinc-300">Artist Name</label>
-                            <input type="text" name="name" required class="w-full bg-zinc-800 border border-zinc-700 rounded p-3 text-white focus:outline-none focus:border-green-500 placeholder-zinc-500 font-bold" placeholder="e.g. Lil Algorithm">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-bold mb-2 text-zinc-300">Bio</label>
-                            <textarea name="bio" rows="4" class="w-full bg-zinc-800 border border-zinc-700 rounded p-3 text-white focus:outline-none focus:border-green-500 placeholder-zinc-500 font-medium" placeholder="Tell their story..."></textarea>
-                        </div>
-                        <div class="grid grid-cols-2 gap-4">
-                            <div>
-                                <label class="block text-sm font-bold mb-2 text-zinc-300">Profile Picture</label>
-                                <input type="file" id="pfpInput" accept="image/*" class="block w-full text-sm text-zinc-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-bold file:bg-zinc-700 file:text-white hover:file:bg-zinc-600 cursor-pointer"/>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-bold mb-2 text-zinc-300">Banner Image</label>
-                                <input type="file" id="bannerInput" accept="image/*" class="block w-full text-sm text-zinc-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-bold file:bg-zinc-700 file:text-white hover:file:bg-zinc-600 cursor-pointer"/>
-                            </div>
-                        </div>
-                        <div class="grid grid-cols-2 gap-4">
-                            <div>
-                                <label class="block text-sm font-bold mb-2 text-zinc-300">Starting Listeners</label>
-                                <input type="number" name="listeners" value="0" class="w-full bg-zinc-800 border border-zinc-700 rounded p-3 text-white focus:outline-none focus:border-green-500 font-bold">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-bold mb-2 text-zinc-300">Starting Followers</label>
-                                <input type="number" name="followers" value="0" class="w-full bg-zinc-800 border border-zinc-700 rounded p-3 text-white focus:outline-none focus:border-green-500 font-bold">
-                            </div>
-                        </div>
-                        <button type="submit" class="bg-green-500 text-black font-black py-3 rounded-full hover:scale-105 transition-transform mt-4 shadow-lg shadow-green-900/20">Create Artist</button>
-                    </form>
+            container.innerHTML = '';
+            if (posts.length === 0) {
+                container.innerHTML = `<div style="padding:3rem; text-align:center; color:var(--subtle);">No posts found.</div>`;
+                return;
+            }
+            posts.forEach(p => container.appendChild(createPostElement(p)));
+        }
+
+        function renderSearch() { renderFeed('search-results'); }
+
+        function renderProfile(profileId) {
+            state.viewingProfile = profileId;
+            const container = document.getElementById('profile-container');
+            const isMe = profileId === 'me';
+            const user = isMe ? state.user : state.bots.find(b => b.id == profileId);
+            if (!user) { container.innerHTML = "User not found"; return; }
+            const initials = user.name.substring(0,2).toUpperCase();
+            
+            container.innerHTML = `
+                <div class="profile-header">
+                    <div class="profile-top">
+                        <div class="avatar" style="width:80px; height:80px; font-size:2rem; ${!isMe ? 'background:linear-gradient(135deg, #667eea 0%, #764ba2 100%);' : ''}">${initials}</div>
+                        ${isMe ? `<button class="profile-action-btn" onclick="switchTab('notes')">My Notes</button>` : `<button class="profile-action-btn primary" onclick="this.innerText = this.innerText==='Follow'?'Following':'Follow'">Follow</button>`}
+                    </div>
+                    <div class="profile-info">
+                        <h2>${user.name}</h2>
+                        <span class="profile-handle">${user.handle}</span>
+                        <div class="profile-stats-row"><div class="profile-stat"><span>${formatNumber(user.followers)}</span> followers</div><div class="profile-stat"><span>${formatNumber(user.audience)}</span> audience</div></div>
+                    </div>
                 </div>
             `;
+            renderFeed('profile-feed');
         }
 
-        async function handleCreateArtist(e) {
-            e.preventDefault();
-            const form = e.target;
-            const pfpFile = document.getElementById('pfpInput');
-            const bannerFile = document.getElementById('bannerInput');
-            const readFile = (input) => new Promise(resolve => imageFileHandler(input, resolve));
-
-            const pfpData = await readFile(pfpFile);
-            const bannerData = await readFile(bannerFile);
-
-            const newArtist = {
-                id: generateId(),
-                name: form.name.value,
-                bio: form.bio.value,
-                monthlyListeners: parseInt(form.listeners.value) || 0,
-                followers: parseInt(form.followers.value) || 0,
-                pfp: pfpData,
-                banner: bannerData
-            };
-
-            state.artists.push(newArtist);
-            showNotification(`Artist ${newArtist.name} created!`);
-            router('home');
-        }
-
-        function renderEditArtist(artistId) {
-             const artist = state.artists.find(a => a.id === artistId);
-             if (!artist) return;
-
-             const content = document.getElementById('content');
-             content.innerHTML = `
-                <div class="max-w-2xl mx-auto">
-                    <h2 class="text-3xl font-black mb-8 text-white">Edit ${artist.name}</h2>
-                    <form onsubmit="handleUpdateArtist(event, '${artist.id}')" class="flex flex-col gap-6">
-                        <div>
-                            <label class="block text-sm font-bold mb-2 text-zinc-300">Bio</label>
-                            <textarea name="bio" rows="4" class="w-full bg-zinc-800 border border-zinc-700 rounded p-3 text-white focus:outline-none focus:border-green-500 font-medium">${artist.bio}</textarea>
-                        </div>
-                        <div class="grid grid-cols-2 gap-4">
-                            <div>
-                                <label class="block text-sm font-bold mb-2 text-zinc-300">Monthly Listeners</label>
-                                <input type="number" name="listeners" value="${artist.monthlyListeners}" class="w-full bg-zinc-800 border border-zinc-700 rounded p-3 text-white focus:outline-none focus:border-green-500 font-bold">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-bold mb-2 text-zinc-300">Followers</label>
-                                <input type="number" name="followers" value="${artist.followers}" class="w-full bg-zinc-800 border border-zinc-700 rounded p-3 text-white focus:outline-none focus:border-green-500 font-bold">
-                            </div>
-                        </div>
-                        <button type="submit" class="bg-white text-black font-black py-3 rounded-full hover:scale-105 transition-transform mt-4">Save Changes</button>
-                    </form>
-                </div>
-            `;
-        }
-
-        function handleUpdateArtist(e, id) {
-            e.preventDefault();
-            const artist = state.artists.find(a => a.id === id);
-            artist.bio = e.target.bio.value;
-            artist.monthlyListeners = parseInt(e.target.listeners.value);
-            artist.followers = parseInt(e.target.followers.value);
-            showNotification('Artist updated!');
-            router('artist_' + id);
-        }
-
-        function renderCreateRelease() {
-            if (state.artists.length === 0) {
-                showNotification("Create an artist first!");
-                return router('createArtist');
+        function createPostElement(post) {
+            const div = document.createElement('div');
+            div.className = 'post';
+            div.id = `post-${post.id}`;
+            const timeStr = post.dayPosted === state.day ? "Today" : `${state.day - post.dayPosted}d ago`;
+            
+            let handleHTML = `<span class="handle" onclick="switchTab('profile', 'me')">${state.user.name}</span>`;
+            if (post.collab) {
+                handleHTML += ` <span class="subtle">&</span> <span class="handle" onclick="switchTab('profile', '${post.collab.id}')">${post.collab.name}</span> <span class="collab-badge">Collab</span>`;
             }
 
-            const content = document.getElementById('content');
-            const artistOptions = state.artists.map(a => `<option value="${a.id}">${a.name}</option>`).join('');
+            let pollHTML = '';
+            if (post.poll) {
+                pollHTML = `<div class="poll-wrapper" id="poll-${post.id}"></div>`;
+            }
 
-            content.innerHTML = `
-                <div class="max-w-3xl mx-auto pb-20">
-                    <h2 class="text-3xl font-black mb-8 text-white">New Release</h2>
-                    
-                    <div class="bg-zinc-900 border border-zinc-800 p-6 rounded-lg mb-6 shadow-inner">
-                        <div class="grid grid-cols-2 gap-6 mb-6">
-                            <div>
-                                <label class="block text-sm font-bold mb-2 text-zinc-300">Primary Artist</label>
-                                <select id="releaseArtist" class="w-full bg-zinc-800 border border-zinc-700 rounded p-3 text-white focus:outline-none focus:border-green-500 font-bold">
-                                    ${artistOptions}
-                                </select>
+            let noteHTML = '';
+            if (post.myNote && post.myNote.trim().length > 0) {
+                noteHTML = `
+                <div class="private-note">
+                    <span class="private-note-label">Private Note</span>
+                    ${post.myNote}
+                </div>`;
+            }
+
+            div.innerHTML = `
+                <div class="avatar" onclick="switchTab('profile', 'me')">${state.user.name.substring(0,1)}</div>
+                <div class="post-content">
+                    <div class="post-header">
+                        <div class="handle-group">${handleHTML}</div>
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <span class="time" id="time-${post.id}">${timeStr}</span>
+                            <div class="post-menu-container">
+                                <button class="post-menu-btn" onclick="togglePostMenu(event, ${post.id})">
+                                    <svg viewBox="0 0 24 24" fill="currentColor" style="width:16px; height:16px;"><circle cx="12" cy="12" r="1.5"/><circle cx="6" cy="12" r="1.5"/><circle cx="18" cy="12" r="1.5"/></svg>
+                                </button>
+                                <div class="post-menu" id="menu-${post.id}">
+                                    <button class="menu-item" onclick="openNoteModal(${post.id})">
+                                        ${post.myNote ? 'Edit Note' : 'Add Note'}
+                                    </button>
+                                    <button class="menu-item" style="color:#e0245e;" onclick="alert('Delete feature coming soon')">Delete</button>
+                                </div>
                             </div>
-                            <div>
-                                <label class="block text-sm font-bold mb-2 text-zinc-300">Release Type</label>
-                                <select id="releaseType" onchange="updateTrackInputs()" class="w-full bg-zinc-800 border border-zinc-700 rounded p-3 text-white focus:outline-none focus:border-green-500 font-bold">
-                                    <option value="single">Single (1 Track)</option>
-                                    <option value="ep">EP (Max 3 Tracks)</option>
-                                    <option value="album">Album (Max 10 Tracks)</option>
-                                </select>
-                            </div>
-                        </div>
-                        
-                        <div>
-                             <label class="block text-sm font-bold mb-2 text-zinc-300">Release Title</label>
-                             <input type="text" id="releaseTitle" class="w-full bg-zinc-800 border border-zinc-700 rounded p-3 text-white focus:outline-none focus:border-green-500 font-bold" placeholder="Album/Single Name">
                         </div>
                     </div>
-
-                    <div id="trackListContainer" class="flex flex-col gap-4"></div>
-
-                    <button onclick="submitRelease()" class="w-full bg-green-500 text-black font-black py-4 rounded-full mt-8 hover:scale-105 transition-transform shadow-lg shadow-green-900/20">Distribute Release</button>
-                </div>
-            `;
-            updateTrackInputs();
-        }
-
-        function updateTrackInputs() {
-            const type = document.getElementById('releaseType').value;
-            const container = document.getElementById('trackListContainer');
-            let count = 1;
-            if (type === 'ep') count = 3;
-            if (type === 'album') count = 10;
-
-            const otherArtists = state.artists; 
-
-            let html = '<h3 class="text-xl font-bold mt-4 mb-2 text-white">Tracklist</h3>';
-            
-            for(let i=0; i<count; i++) {
-                let collabOptions = `<option value="">None</option>` + otherArtists.map(a => `<option value="${a.id}">${a.name}</option>`).join('');
-
-                html += `
-                    <div class="bg-zinc-800 p-4 rounded border border-zinc-700 flex flex-col md:flex-row gap-4 items-start md:items-end hover:border-zinc-500 transition-colors">
-                        <div class="flex items-center justify-center w-8 h-8 bg-zinc-700 rounded-full font-bold text-sm text-zinc-300 shrink-0">
-                            ${i+1}
+                    <div class="post-text">${post.content}</div>
+                    ${pollHTML}
+                    ${noteHTML}
+                    <div class="post-stats">
+                        <div class="stat-item ${post.liked ? 'liked' : ''}" id="like-btn-${post.id}" onclick="toggleLike(${post.id})">
+                            <svg class="stat-icon" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+                            <span class="ticker-root" id="like-${post.id}"></span>
                         </div>
-                        <div class="flex-1 w-full">
-                            <label class="text-xs text-zinc-400 block mb-1 font-bold">Title</label>
-                            <input type="text" class="track-title w-full bg-zinc-900 rounded p-2 text-sm border border-zinc-700 focus:border-green-500 text-white font-medium" placeholder="Track Name">
-                        </div>
-                         <div class="w-full md:w-1/4">
-                            <label class="text-xs text-zinc-400 block mb-1 font-bold">Feature</label>
-                            <select class="track-collab w-full bg-zinc-900 rounded p-2 text-sm border border-zinc-700 text-white font-medium">
-                                ${collabOptions}
-                            </select>
-                        </div>
-                        <div class="w-full md:w-1/4">
-                            <label class="text-xs text-zinc-400 block mb-1 font-bold">Strategy</label>
-                            <select class="track-strategy w-full bg-zinc-900 rounded p-2 text-sm border border-zinc-700 text-white font-medium">
-                                <option value="normal">Standard</option>
-                                <option value="blowup">Viral Campaign (High Risk)</option>
-                            </select>
+                        <div class="stat-item ${post.reposted ? 'reposted' : ''}" id="repost-btn-${post.id}" onclick="toggleRepost(${post.id})">
+                            <svg class="stat-icon" viewBox="0 0 24 24"><path d="M17 1l4 4-4 4"></path><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><path d="M7 23l-4-4 4-4"></path><path d="M21 13v2a4 4 0 0 1-4 4H3"></path></svg>
+                            <span class="ticker-root" id="repost-${post.id}"></span>
                         </div>
                     </div>
-                `;
-            }
-            container.innerHTML = html;
+                    <div class="view-count-container"><span class="ticker-root" id="view-${post.id}"></span> views</div>
+                </div>
+            `;
+            
+            setTimeout(() => {
+                createTicker(div.querySelector(`#like-${post.id}`), post.likes);
+                createTicker(div.querySelector(`#repost-${post.id}`), post.reposts);
+                createTicker(div.querySelector(`#view-${post.id}`), post.views);
+                if(post.poll) updatePollDOM(post, div.querySelector(`#poll-${post.id}`));
+            }, 0);
+
+            return div;
         }
 
-        function submitRelease() {
-            const mainArtistId = document.getElementById('releaseArtist').value;
-            const releaseType = document.getElementById('releaseType').value;
-            const releaseTitle = document.getElementById('releaseTitle').value;
+        function updatePollDOM(post, element) {
+            const el = element || document.getElementById(`poll-${post.id}`);
+            if(!el) return;
             
-            if (!releaseTitle) return showNotification("Release needs a title!");
-
-            const titles = document.querySelectorAll('.track-title');
-            const collabs = document.querySelectorAll('.track-collab');
-            const strategies = document.querySelectorAll('.track-strategy');
+            const total = post.poll.totalVotes || 1; 
+            const showResults = post.poll.voted || post.authorId === 'me';
             
-            const tracksData = [];
-            const releaseId = generateId();
-
-            const colors = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#3b82f6', '#a855f7', '#ec4899'];
-            const randomColor1 = colors[Math.floor(Math.random() * colors.length)];
-            const randomColor2 = colors[Math.floor(Math.random() * colors.length)];
-            const releaseCover = `https://placehold.co/400x400/${randomColor1.replace('#','')}/${randomColor2.replace('#','')}?text=${encodeURIComponent(releaseTitle)}`;
-
-            let hasTracks = false;
-
-            const mainArtist = state.artists.find(a => a.id === mainArtistId);
-            let baseHype = 1000;
-            if (mainArtist) {
-                baseHype += Math.sqrt(mainArtist.monthlyListeners) * 3;
-                if (baseHype > 20000) baseHype = 20000;
-            }
-
-            titles.forEach((input, index) => {
-                if (input.value.trim() !== "") {
-                    hasTracks = true;
-                    const collabId = collabs[index].value;
-                    const artistIds = [mainArtistId];
-                    if (collabId && collabId !== mainArtistId) artistIds.push(collabId);
-
-                    const strategy = strategies[index].value;
-                    
-                    let positionMultiplier = 1.0;
-                    if (releaseType === 'album') {
-                        if (index > 2) positionMultiplier = 0.85;
-                        if (index > 6) positionMultiplier = 0.65;
-                    }
-
-                    let initialTraction = baseHype * positionMultiplier; 
-                    
-                    if (releaseType === 'album') initialTraction *= 0.8; 
-                    if (releaseType === 'single') initialTraction *= 1.3; 
-
-                    if (strategy === 'blowup') {
-                        initialTraction = Math.random() > 0.6 ? (initialTraction * 2.5) : (initialTraction * 0.4); 
-                    }
-
-                    const track = {
-                        id: generateId(),
-                        title: input.value,
-                        artistIds: artistIds,
-                        releaseId: releaseId,
-                        releaseDate: state.day,
-                        streams: 0,
-                        tractionScore: initialTraction,
-                        potential: strategy,
-                        releaseCover: releaseCover
-                    };
-                    state.tracks.push(track);
-                    tracksData.push(track);
+            let html = '';
+            post.poll.options.forEach((opt, idx) => {
+                if(showResults) {
+                    const pct = Math.round((opt.votes / total) * 100);
+                    html += `
+                        <div class="poll-option" style="cursor: default;">
+                            <div class="poll-result-bg" style="width: ${pct}%"></div>
+                            <span class="poll-text">${opt.text}</span>
+                            <span class="poll-percent"><span class="ticker-root" id="poll-${post.id}-opt-${idx}">${pct}</span>%</span>
+                        </div>
+                    `;
+                } else {
+                    html += `
+                        <div class="poll-option" onclick="votePoll(${post.id}, ${idx})">
+                            <span class="poll-text">${opt.text}</span>
+                        </div>
+                    `;
                 }
             });
-
-            if (!hasTracks) return showNotification("Name at least one track.");
-
-            const release = {
-                id: releaseId,
-                title: releaseTitle,
-                type: releaseType,
-                artistId: mainArtistId,
-                tracks: tracksData,
-                cover: releaseCover,
-                date: state.day
-            };
-
-            state.releases.push(release);
-            showNotification(`${releaseType.toUpperCase()} Released!`);
-            router('release_' + releaseId);
-        }
-
-        // --- PLAYER LOGIC ---
-        function playSong(trackId) {
-            const track = state.tracks.find(t => t.id === trackId);
-            if (!track) return;
             
-            currentPlayerReleaseId = track.releaseId;
-            const artist = state.artists.find(a => a.id === track.artistIds[0]);
-            
-            document.getElementById('player-title').innerText = track.title;
-            document.getElementById('player-artist').innerText = artist.name;
-            document.getElementById('player-img').innerHTML = `
-                <img src="${track.releaseCover}" class="w-full h-full object-cover">
-                <div onclick="router('release_' + currentPlayerReleaseId)" class="hidden group-hover:flex absolute inset-0 bg-black/50 items-center justify-center cursor-pointer">
-                    <i class="fa-solid fa-up-right-from-square text-white"></i>
-                </div>
-            `;
-
-            showNotification(`Now Playing: ${track.title}`);
-        }
-
-        function renderLibrary() {
-             const content = document.getElementById('content');
-             content.innerHTML = `
-                <div class="flex flex-col items-center justify-center h-[60vh] text-zinc-500">
-                    <i class="fa-solid fa-layer-group text-6xl mb-4"></i>
-                    <h2 class="text-2xl font-bold text-white">Your Library</h2>
-                    <p class="font-medium">Save songs and create playlists here (Coming Soon).</p>
-                </div>
-             `;
-        }
-        
-        // --- ADD FOR ARTISTS RENDER FUNCTIONS FOR COMPLETENESS ---
-         function renderForArtists() {
-            const content = document.getElementById('content');
-            
-            if (state.artists.length === 0) {
-                 content.innerHTML = `<div class="flex flex-col items-center justify-center h-[60vh] text-center">
-                    <h1 class="text-4xl font-black text-blue-900 mb-4">Chirpless for Artists</h1>
-                    <p class="text-gray-500">Create an artist to view analytics.</p>
-                 </div>`;
-                 return;
+            if(showResults) {
+                html += `<div style="padding: 0.5rem 1rem; font-size: 0.8rem; color: var(--subtle); border-top: 1px solid var(--border);">
+                    <span class="ticker-root" id="poll-${post.id}-total">${post.poll.totalVotes}</span> votes
+                </div>`;
             }
 
-            let listHTML = state.artists.map(artist => `
-                <div onclick="router('artistDashboard_${artist.id}')" class="card bg-white p-6 rounded-lg cursor-pointer hover:shadow-lg transition-all flex items-center gap-4">
-                    <img src="${artist.pfp || 'https://via.placeholder.com/150'}" class="w-16 h-16 rounded-full object-cover border-2 border-blue-100">
-                    <div>
-                        <h3 class="text-xl font-bold text-gray-900">${artist.name}</h3>
-                        <p class="text-sm text-blue-600 font-bold">${formatNumber(artist.monthlyListeners)} Listeners</p>
-                    </div>
-                    <i class="fa-solid fa-chevron-right ml-auto text-gray-300"></i>
-                </div>
-            `).join('');
+            el.innerHTML = html;
 
-            content.innerHTML = `
-                <div class="max-w-4xl mx-auto py-10">
-                    <div class="flex items-center gap-3 mb-8">
-                        <div class="bg-blue-600 text-white p-2 rounded-lg"><i class="fa-solid fa-chart-pie text-xl"></i></div>
-                        <h1 class="text-4xl font-black text-gray-900 tracking-tight">Chirpless for Artists</h1>
-                    </div>
-                    <p class="text-gray-500 mb-8 text-lg">Select an artist to view deep analytics, audience insights, and release performance.</p>
-                    <div class="grid gap-4">
-                        ${listHTML}
-                    </div>
-                </div>
-            `;
-        }
-
-        function renderArtistDashboard(artistId) {
-            const artist = state.artists.find(a => a.id === artistId);
-            if (!artist) return router('forArtists');
-            
-            const releases = state.releases.filter(r => r.artistId === artistId).sort((a,b) => b.date - a.date);
-            const latestRelease = releases[0];
-            
-            const totalStreams = state.tracks.filter(t => t.artistIds.includes(artistId)).reduce((acc, t) => acc + t.streams, 0);
-            
-            let conversionRate = 0;
-            let latestReleaseStreams = 0;
-            if (latestRelease) {
-                latestReleaseStreams = latestRelease.tracks.reduce((acc, t) => acc + t.streams, 0);
-                if (artist.monthlyListeners > 0) {
-                    conversionRate = ((latestReleaseStreams / artist.monthlyListeners) * 100).toFixed(1);
-                    if (conversionRate > 100) conversionRate = 99.9;
-                }
+            if(showResults) {
+                setTimeout(() => {
+                    post.poll.options.forEach((opt, idx) => {
+                        const pct = Math.round((opt.votes / total) * 100);
+                        createTicker(el.querySelector(`#poll-${post.id}-opt-${idx}`), pct);
+                    });
+                    createTicker(el.querySelector(`#poll-${post.id}-total`), post.poll.totalVotes);
+                }, 0);
             }
-
-            const seed = artistId.charCodeAt(0);
-            const countriesData = COUNTRIES.map((c, i) => {
-                const val = (seed + i * 17) % 100;
-                return { name: c, val: val };
-            }).sort((a,b) => b.val - a.val).slice(0, 5);
-            
-            const totalVal = countriesData.reduce((acc, c) => acc + c.val, 0);
-            countriesData.forEach(c => c.count = Math.floor((c.val / totalVal) * artist.monthlyListeners * 0.8));
-
-            content.innerHTML = `
-                <div class="max-w-6xl mx-auto text-gray-900">
-                    <div class="mb-8 flex items-center gap-4">
-                        <button onclick="router('forArtists')" class="text-gray-400 hover:text-blue-600 font-bold">< Back</button>
-                        <h1 class="text-3xl font-black">${artist.name} <span class="text-gray-300 font-normal">/ Dashboard</span></h1>
-                    </div>
-
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-                        <div class="card p-6 rounded-xl">
-                            <p class="text-sm font-bold text-gray-500 uppercase tracking-wider mb-1">Listeners (28 Days)</p>
-                            <h2 class="text-4xl font-black text-blue-600">${formatNumber(artist.monthlyListeners)}</h2>
-                        </div>
-                        <div class="card p-6 rounded-xl">
-                            <p class="text-sm font-bold text-gray-500 uppercase tracking-wider mb-1">All-Time Streams</p>
-                            <h2 class="text-4xl font-black text-blue-600">${formatNumber(totalStreams)}</h2>
-                        </div>
-                        <div class="card p-6 rounded-xl">
-                            <p class="text-sm font-bold text-gray-500 uppercase tracking-wider mb-1">Followers</p>
-                            <h2 class="text-4xl font-black text-blue-600">${formatNumber(artist.followers)}</h2>
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                        <div class="lg:col-span-2 flex flex-col gap-8">
-                            ${latestRelease ? `
-                            <div class="card p-8 rounded-xl bg-gradient-to-br from-blue-600 to-blue-800 text-white border-none shadow-xl">
-                                <div class="flex justify-between items-start mb-6">
-                                    <div>
-                                        <span class="bg-blue-500/30 px-2 py-1 rounded text-xs font-bold uppercase tracking-wider">Latest Release</span>
-                                        <h2 class="text-3xl font-black mt-2">${latestRelease.title}</h2>
-                                        <p class="text-blue-100">${latestRelease.type} • Released ${latestRelease.date} days ago</p>
-                                    </div>
-                                    <img src="${latestRelease.cover}" class="w-24 h-24 rounded shadow-lg border-2 border-white/20">
-                                </div>
-                                <div class="grid grid-cols-2 gap-8 border-t border-white/10 pt-6">
-                                    <div>
-                                        <p class="text-4xl font-black mb-1">${conversionRate}%</p>
-                                        <p class="text-sm font-medium text-blue-100">of audience have listened</p>
-                                    </div>
-                                    <div>
-                                        <p class="text-4xl font-black mb-1">${formatNumber(latestReleaseStreams)}</p>
-                                        <p class="text-sm font-medium text-blue-100">Streams since release</p>
-                                    </div>
-                                </div>
-                            </div>
-                            ` : ''}
-
-                            <div class="card p-6 rounded-xl">
-                                <h3 class="text-xl font-bold mb-4">Catalog Performance</h3>
-                                <div class="overflow-x-auto">
-                                    <table class="w-full text-left">
-                                        <thead class="text-xs text-gray-400 uppercase border-b border-gray-100">
-                                            <tr>
-                                                <th class="pb-3 pl-2">Release</th>
-                                                <th class="pb-3">Type</th>
-                                                <th class="pb-3 text-right">Streams</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody class="text-sm">
-                                            ${releases.map(r => {
-                                                const rStreams = r.tracks.reduce((acc, t) => acc + t.streams, 0);
-                                                return `
-                                                <tr class="border-b border-gray-50 last:border-0 hover:bg-gray-50 transition">
-                                                    <td class="py-3 pl-2 flex items-center gap-3 font-bold text-gray-800">
-                                                        <img src="${r.cover}" class="w-8 h-8 rounded">
-                                                        ${r.title}
-                                                    </td>
-                                                    <td class="py-3 text-gray-500">${r.type}</td>
-                                                    <td class="py-3 text-right font-mono font-medium">${formatNumber(rStreams)}</td>
-                                                </tr>
-                                                `;
-                                            }).join('')}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="flex flex-col gap-6">
-                            <div class="card p-6 rounded-xl">
-                                <h3 class="text-xl font-bold mb-4">Top Locations</h3>
-                                <p class="text-xs text-gray-400 mb-4">Where your listeners are (Estimated)</p>
-                                <div class="flex flex-col gap-3">
-                                    ${countriesData.map((c, i) => `
-                                        <div class="flex items-center justify-between">
-                                            <div class="flex items-center gap-3">
-                                                <span class="text-gray-300 font-bold w-4">${i+1}</span>
-                                                <span class="font-bold text-gray-700">${c.name}</span>
-                                            </div>
-                                            <span class="text-sm font-mono text-blue-600 font-bold">${formatNumber(c.count)}</span>
-                                        </div>
-                                        <div class="w-full bg-gray-100 h-1.5 rounded-full overflow-hidden">
-                                            <div class="bg-blue-500 h-full rounded-full" style="width: ${(c.val / totalVal) * 100}%"></div>
-                                        </div>
-                                    `).join('')}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
         }
 
-        // --- INITIALIZATION ---
-        router('home');
-
+        function updatePostStatsDOM(pid, v, l, r) {
+            updateTicker(document.getElementById(`view-${pid}`), v);
+            updateTicker(document.getElementById(`like-${pid}`), l);
+            updateTicker(document.getElementById(`repost-${pid}`), r);
+        }
     </script>
 </body>
 </html>
