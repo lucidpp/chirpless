@@ -1,1266 +1,304 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="scroll-smooth">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Chirpless</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Chirpless - Experience the sound of silence. A minimalistic communication tool for the modern era.">
+    <meta name="keywords" content="Chirpless, app, android, ios, minimal, communication, silent, podcast">
+    <meta name="author" content="Chirpless Team">
+    <meta name="theme-color" content="#262626">
     
-    <!-- PWA Settings -->
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="theme-color" content="#ffffff">
+    <title>Chirpless</title>
     <link rel="icon" href="siteicon.png" type="image/png">
-    <link rel="apple-touch-icon" href="siteicon.png">
 
-    <!-- Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
 
     <style>
-        /* --- RESET & VARS --- */
-        :root {
-            --bg: #ffffff;
-            --text: #000000;
-            --subtle: #6e6e6e;
-            --border: #e8e8e8;
-            --accent: #000000;
-            --link: #0095f6;
-            --glass: rgba(255, 255, 255, 0.95);
-            --sidebar-width: 260px;
-            --font-main: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            --anim-speed: 0.8s;
-            --anim-ease: cubic-bezier(0.25, 1, 0.5, 1);
-            --like-color: #e0245e; 
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #262626; /* Neutral Dark Grey */
+            color: #f3f4f6;
+            overflow-x: hidden;
         }
 
-        html.dark {
-            --bg: #050505;
-            --text: #ffffff;
-            --subtle: #888888;
-            --border: #222222;
-            --accent: #ffffff;
-            --link: #3fabf3;
-            --glass: rgba(5, 5, 5, 0.95);
-        }
-
-        @media (prefers-color-scheme: dark) {
-            :root:not(.light) {
-                --bg: #050505;
-                --text: #ffffff;
-                --subtle: #888888;
-                --border: #222222;
-                --accent: #ffffff;
-                --link: #3fabf3;
-                --glass: rgba(5, 5, 5, 0.95);
+        /* Custom Animations */
+        @keyframes fadeUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
             }
         }
 
-        * { box-sizing: border-box; outline: none; -webkit-tap-highlight-color: transparent; }
-        body, html { margin: 0; padding: 0; font-family: var(--font-main); background: var(--bg); color: var(--text); height: 100%; overflow: hidden; letter-spacing: -0.015em; transition: background 0.3s, color 0.3s; }
-
-        h1, h2, h3 { margin: 0; font-weight: 800; letter-spacing: -0.03em; }
-        p { margin: 0; line-height: 1.6; }
-        .bold { font-weight: 700; }
-        .subtle { color: var(--subtle); font-size: 0.9rem; }
-        .pointer { cursor: pointer; }
-
-        /* --- ODOMETER --- */
-        .ticker-root {
-            display: inline-flex; flex-direction: row; align-items: flex-start; overflow: hidden;
-            height: 1.2em; line-height: 1.2em; vertical-align: text-bottom;
-            font-variant-numeric: tabular-nums; position: relative;
-            mask-image: linear-gradient(to bottom, transparent 0%, black 10%, black 90%, transparent 100%);
-            -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 10%, black 90%, transparent 100%);
+        .animate-fade-up {
+            animation: fadeUp 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+            opacity: 0; /* Start hidden */
         }
-        .ticker-digit-col { display: flex; flex-direction: column; transition: transform var(--anim-speed) var(--anim-ease); will-change: transform; }
-        .ticker-digit { height: 1.2em; line-height: 1.2em; display: flex; align-items: center; justify-content: center; }
 
-        /* --- LAYOUT --- */
-        .modal-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); backdrop-filter: blur(5px);
-            z-index: 999; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2rem;
-            text-align: center; transition: opacity 0.3s ease;
+        .delay-100 { animation-delay: 0.1s; }
+        .delay-200 { animation-delay: 0.2s; }
+        .delay-300 { animation-delay: 0.3s; }
+        .delay-500 { animation-delay: 0.5s; }
+
+        /* Floating Animation for background elements */
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+            100% { transform: translateY(0px); }
         }
-        .modal-overlay.hidden { opacity: 0; pointer-events: none; }
-        #onboarding { background: var(--bg); }
-        .modal-card { background: var(--bg); padding: 2rem; border-radius: 24px; max-width: 400px; width: 100%; border: 1px solid var(--border); text-align: left; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); max-height: 90vh; overflow-y: auto; }
-        .input-group { margin: 1rem 0; width: 100%; text-align: left; }
-        .input-group label { display: block; font-size: 0.75rem; color: var(--subtle); margin-bottom: 0.5rem; font-weight: 700; letter-spacing: 0.02em; text-transform: uppercase; }
-        input[type="text"], input[type="number"], textarea.modal-input { width: 100%; padding: 1rem; background: var(--bg); border: 1px solid var(--border); border-radius: 14px; color: var(--text); font-size: 1rem; font-family: inherit; transition: border-color 0.2s; }
-        textarea.modal-input { min-height: 100px; resize: none; }
-        input:focus, textarea.modal-input:focus { border-color: var(--text); }
-        .btn-primary { background: var(--text); color: var(--bg); border: none; padding: 1rem; border-radius: 14px; font-weight: 700; cursor: pointer; width: 100%; margin-top: 1rem; transition: transform 0.1s; }
-        .btn-primary:active { transform: scale(0.98); }
-        .btn-secondary { background: transparent; color: var(--subtle); border: 1px solid var(--border); padding: 0.8rem; border-radius: 14px; font-weight: 600; cursor: pointer; width: 100%; margin-top: 0.5rem; }
+        .floating-shape {
+            animation: float 6s ease-in-out infinite;
+        }
 
-        #app { display: none; flex-direction: row; height: 100%; }
-        .sidebar { width: var(--sidebar-width); height: 100%; padding: 2rem; display: flex; flex-direction: column; border-right: 1px solid var(--border); position: relative; background: var(--glass); z-index: 10; }
-        .brand { font-size: 1.5rem; font-weight: 900; margin-bottom: 2rem; display: flex; align-items: center; gap: 12px; letter-spacing: -1px; }
-        .nav-btn { background: transparent; border: none; text-align: left; padding: 1rem 1.2rem; font-size: 1.05rem; color: var(--subtle); cursor: pointer; transition: color 0.2s, transform 0.2s; display: flex; align-items: center; gap: 15px; font-weight: 600; border-radius: 16px; margin-bottom: 0.5rem; position: relative; overflow: hidden; }
-        .nav-btn.active { color: var(--text); font-weight: 800; background: var(--border); }
-        .nav-btn:hover { color: var(--text); background: rgba(125,125,125,0.05); }
-        @keyframes shine { 0% { left: -100%; opacity: 0.5; } 50% { opacity: 1; } 100% { left: 150%; opacity: 0.5; } }
-        .nav-btn::after, .glass-shine::after { content: ''; position: absolute; top: 0; left: -100%; width: 50%; height: 100%; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent); transform: skewX(-20deg); pointer-events: none; transition: 0.5s; }
-        html.dark .nav-btn::after, html.dark .glass-shine::after { background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent); }
-        .nav-btn:hover::after, .glass-shine:hover::after { animation: shine 1.2s cubic-bezier(0.25, 1, 0.5, 1); }
-        .sidebar-stats { margin-top: auto; padding-top: 2rem; border-top: 1px solid var(--border); }
-        .stat-block { margin-bottom: 1.5rem; }
-        .stat-label { font-size: 0.75rem; color: var(--subtle); text-transform: uppercase; font-weight: 700; margin-bottom: 0.3rem; letter-spacing: 0.05em; }
-        .stat-value { font-size: 1.3rem; font-weight: 800; letter-spacing: -0.02em; }
-
-        .main-content { flex: 1; display: flex; flex-direction: column; position: relative; max-width: 650px; margin: 0 auto; width: 100%; height: 100%; }
-        .top-bar { padding: 1rem 1.5rem; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.85); backdrop-filter: blur(12px); position: sticky; top: 0; z-index: 20; flex-shrink: 0; }
-        html.dark .top-bar { background: rgba(5,5,5,0.85); }
-        .day-counter { font-weight: 800; font-size: 0.9rem; padding: 0.5rem 1rem; background: var(--border); border-radius: 20px; }
-        .btn-next-day { background: var(--text); color: var(--bg); border: none; padding: 0.6rem 1.4rem; border-radius: 20px; font-weight: 700; font-size: 0.9rem; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-        .btn-next-day:hover { transform: translateY(-1px); box-shadow: 0 6px 15px rgba(0,0,0,0.15); }
-        .btn-next-day:active { transform: scale(0.96); }
-        .mobile-stats-bar { display: none; padding: 0.8rem 1rem; background: var(--bg); border-bottom: 1px solid var(--border); gap: 1rem; justify-content: space-between; font-size: 0.9rem; position: sticky; top: 61px; z-index: 15; flex-shrink: 0; }
-        .view-section { display: none; flex-direction: column; flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding-bottom: 80px; }
-        .view-section.active { display: flex; }
-
-        /* COMPOSER & MENTIONS */
-        .composer { padding: 1.5rem; border-bottom: 1px solid var(--border); display: flex; gap: 1rem; flex-direction: column; flex-shrink: 0; position: relative; }
-        .composer-top { display: flex; gap: 1rem; }
-        .avatar { width: 44px; height: 44px; background: #333; color: #fff; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1.1rem; cursor: pointer; overflow: hidden; position: relative; }
-        .avatar img { width: 100%; height: 100%; object-fit: cover; }
-        textarea { width: 100%; border: none; resize: none; background: transparent; font-family: inherit; font-size: 1.1rem; color: var(--text); min-height: 50px; padding: 0.5rem 0; line-height: 1.4; }
-        .image-preview-container { position: relative; margin-top: 10px; display: none; width: 100%; border-radius: 12px; overflow: hidden; }
-        .image-preview-container.active { display: block; }
-        .image-preview, .video-preview { width: 100%; max-height: 300px; object-fit: cover; display: block; border-radius: 12px; border: 1px solid var(--border); }
-        .remove-media-btn { position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.6); color: white; border: none; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 5; }
+        /* iOS Button Hover Effect */
+        .ios-btn {
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
         
-        .composer-tools { display: flex; justify-content: space-between; align-items: center; padding-left: 60px; }
-        .tools-left { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
-        .collab-select { font-size: 0.85rem; padding: 0.4rem 0.8rem; border-radius: 15px; border: 1px solid var(--border); background: transparent; color: var(--text); cursor: pointer; max-width: 120px; }
-        .btn-icon { background: transparent; border: 1px solid var(--border); padding: 0.4rem; border-radius: 50%; color: var(--text); cursor: pointer; display: flex; align-items: center; justify-content: center;}
-        .btn-icon:hover { background: var(--border); }
-        .btn-post { background: var(--text); color: var(--bg); border: none; padding: 0.6rem 1.6rem; border-radius: 24px; font-weight: 700; cursor: pointer; opacity: 0.5; pointer-events: none; transition: 0.2s; }
-        .btn-post.active { opacity: 1; pointer-events: auto; }
-        .poll-creator { display: none; flex-direction: column; gap: 0.5rem; margin-top: 0.5rem; padding: 1rem; background: var(--border); border-radius: 16px; margin-left: 60px; }
-        .poll-creator.active { display: flex; }
-        .poll-creator input { padding: 0.6rem; font-size: 0.9rem; background: var(--bg); border-radius: 10px; }
-
-        /* MENTION SUGGESTIONS */
-        #mention-suggestions {
-            position: absolute; background: var(--bg); border: 1px solid var(--border); border-radius: 12px;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.15); width: 250px; z-index: 100; display: none; max-height: 200px; overflow-y: auto;
+        .ios-btn .original-text {
+            display: inline-block;
+            transition: transform 0.3s ease, opacity 0.3s ease;
         }
-        .mention-item { padding: 0.8rem; cursor: pointer; display: flex; align-items: center; gap: 10px; font-size: 0.9rem; }
-        .mention-item:hover { background: var(--border); }
-        .mention-item img { width: 24px; height: 24px; border-radius: 50%; object-fit: cover; }
-
-        /* POSTS */
-        .post { padding: 1.5rem; border-bottom: 1px solid var(--border); display: flex; gap: 1rem; animation: slideIn 0.4s ease-out; position: relative; flex-shrink: 0; overflow: hidden; cursor: pointer; }
-        .post:hover { background: rgba(125,125,125,0.02); }
-        @keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .post-header { display: flex; justify-content: space-between; margin-bottom: 0.4rem; align-items: flex-start; }
-        .handle-group { display: flex; align-items: center; flex-wrap: wrap; cursor: pointer; gap: 4px; transition: opacity 0.2s; }
-        .handle-group:hover { opacity: 0.8; }
-        .handle { font-weight: 800; color: var(--text); text-decoration: none; display: flex; align-items: center; gap: 3px; }
-        .verified-badge { width: 14px; height: 14px; fill: var(--text); flex-shrink: 0; }
-        .collab-text { font-size: 0.9rem; color: var(--subtle); margin-left: 4px; }
-        .post-text { font-size: 1rem; line-height: 1.6; margin-bottom: 1rem; white-space: pre-wrap; font-weight: 400; }
-        .post-text a, .post-text .handle-link { color: var(--link); text-decoration: none; font-weight: 500; }
-        .post-text a:hover, .post-text .handle-link:hover { text-decoration: underline; }
-        .post-image, .post-video { width: 100%; height: auto; border-radius: 12px; margin-bottom: 1rem; border: 1px solid var(--border); display: block; max-height: 500px; object-fit: cover; }
         
-        .post-menu-container { position: relative; }
-        .post-menu-btn { background: none; border: none; padding: 4px; cursor: pointer; color: var(--subtle); border-radius: 50%; display: flex; align-items: center; justify-content: center; }
-        .post-menu-btn:hover { background: var(--border); color: var(--text); }
-        .post-menu { position: absolute; right: 0; top: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.15); display: none; z-index: 100; min-width: 160px; overflow: hidden; margin-top: 4px; padding: 0.5rem 0; }
-        .post-menu.active { display: block; }
-        .menu-item { display: block; padding: 0.8rem 1.2rem; width: 100%; text-align: left; background: none; border: none; cursor: pointer; font-size: 0.9rem; color: var(--text); font-weight: 500; font-family: inherit; }
-        .menu-item:hover { background: var(--border); }
-        
-        .private-note { background: rgba(0,0,0,0.03); padding: 1rem; border-radius: 12px; margin-bottom: 1rem; font-size: 0.9rem; color: var(--text); border-left: 3px solid var(--text); font-style: italic; display: flex; flex-direction: column; gap: 4px; }
-        .private-note-label { font-size: 0.7rem; font-weight: 800; color: var(--subtle); text-transform: uppercase; letter-spacing: 0.05em; }
-
-        .poll-wrapper { margin-bottom: 1rem; border: 1px solid var(--border); border-radius: 16px; overflow: hidden; }
-        .poll-option { padding: 0.8rem 1rem; background: var(--bg); border-bottom: 1px solid var(--border); cursor: pointer; display: flex; justify-content: space-between; align-items: center; position: relative; height: 3.2rem; }
-        .poll-option:last-child { border-bottom: none; }
-        .poll-option:hover { background: rgba(0,0,0,0.02); }
-        .poll-result-bg { position: absolute; top:0; left:0; height:100%; background: rgba(0,0,0,0.06); z-index: 0; transition: width 0.8s cubic-bezier(0.25, 1, 0.5, 1); }
-        html.dark .poll-result-bg { background: rgba(255,255,255,0.1); }
-        .poll-text { z-index: 1; font-weight: 600; font-size: 0.95rem; }
-        .poll-percent { z-index: 1; font-weight: 700; display: flex; align-items: center; font-size: 0.9rem; }
-        
-        .post-stats { display: flex; gap: 1.5rem; font-size: 0.9rem; color: var(--subtle); align-items: center; flex-wrap: wrap; }
-        .stat-item { display: flex; align-items: center; gap: 6px; cursor: pointer; transition: transform 0.1s; user-select: none; }
-        .stat-item:active { transform: scale(0.9); }
-        .stat-icon { stroke: currentColor; fill: transparent; transition: 0.3s; width: 19px; height: 19px; }
-        .stat-item.liked .stat-icon { fill: var(--text); stroke: var(--text); animation: bounce 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-        @keyframes bounce { 0% { transform: scale(1); } 50% { transform: scale(1.4); } 100% { transform: scale(1); } }
-        .stat-item.reposted .stat-icon { stroke: orange; animation: spin 0.6s ease; }
-        .stat-item.reposted { color: orange; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        .view-count-container { margin-top: 1rem; font-size: 0.85rem; color: var(--subtle); font-weight: 700; display: flex; align-items: center; gap: 4px; opacity: 0.9; }
-
-        /* POST DETAIL VIEW */
-        .post-detail-header {
-            padding: 1rem 1.5rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 1rem;
-            position: sticky; top: 0; background: rgba(255,255,255,0.85); backdrop-filter: blur(12px); z-index: 20; flex-shrink: 0;
+        .ios-btn .hover-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, 150%);
+            transition: transform 0.3s ease, opacity 0.3s ease;
+            opacity: 0;
+            width: 100%;
+            text-align: center;
         }
-        html.dark .post-detail-header { background: rgba(5,5,5,0.85); }
-        .post-detail-content { padding: 1.5rem; }
-        .post-detail-text { font-size: 1.4rem; line-height: 1.4; margin: 1rem 0; white-space: pre-wrap; font-weight: 500; }
-        .post-detail-stats { display: flex; gap: 2rem; padding: 1rem 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); margin-top: 1.5rem; }
-        .detail-stat-item { display: flex; flex-direction: column; }
-        .detail-stat-label { font-size: 0.75rem; color: var(--subtle); text-transform: uppercase; font-weight: 700; margin-top: 4px; }
-        .detail-stat-value { font-size: 1.2rem; font-weight: 800; }
-        .post-detail-actions { display: flex; justify-content: space-around; padding: 1rem 0; border-bottom: 1px solid var(--border); }
-        .post-detail-actions .stat-item { transform: scale(1.2); }
 
-        .profile-header { padding: 2rem 1.5rem; border-bottom: 1px solid var(--border); flex-shrink: 0; }
-        .profile-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem; }
-        .profile-info h2 { font-size: 1.8rem; margin-bottom: 0.2rem; display: flex; align-items: center; gap: 6px; cursor: pointer; }
-        .profile-handle { color: var(--subtle); margin-bottom: 1rem; display: block; }
-        .profile-stats-row { display: flex; gap: 1.5rem; font-size: 0.95rem; }
-        .profile-stat span { font-weight: 800; color: var(--text); }
-        .profile-action-btn { background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 0.5rem 1.2rem; border-radius: 12px; font-weight: 600; cursor: pointer; }
-        .profile-action-btn.primary { background: var(--text); color: var(--bg); border: none; }
-        @keyframes bounce-click { 0% { transform: scale(1); } 50% { transform: scale(0.9); } 100% { transform: scale(1); } }
-        .bounce-active { animation: bounce-click 0.3s ease; }
-
-        .mobile-nav { display: none; position: fixed; bottom: 0; left: 0; right: 0; height: 60px; background: var(--bg); border-top: 1px solid var(--border); justify-content: space-around; align-items: center; z-index: 50; padding-bottom: env(safe-area-inset-bottom); }
-        @media (max-width: 768px) {
-            .sidebar { display: none; } .mobile-nav { display: flex; } #app { flex-direction: column; }
-            .main-content { max-width: 100%; border-right: none; } .composer { padding: 1rem; } .composer-tools { padding-left: 0; }
-            .poll-creator { margin-left: 0; } .post { padding: 1rem; } .sidebar-stats { display: none; } .mobile-stats-bar { display: flex; }
+        .ios-btn:hover {
+            background-color: #525252;
+            border-color: #737373;
         }
-        svg { width: 20px; height: 20px; stroke-width: 2; }
+
+        .ios-btn:hover .original-text {
+            transform: translateY(-150%);
+            opacity: 0;
+        }
+
+        .ios-btn:hover .hover-text {
+            transform: translate(-50%, -50%);
+            opacity: 1;
+        }
+
+        /* Glow effect for main button - White/Grey Glow */
+        .glow-btn:hover {
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
+        }
+
+        /* Podcast Card Hover */
+        .podcast-card:hover {
+            transform: translateY(-5px);
+            background-color: rgba(255, 255, 255, 0.05);
+        }
     </style>
 </head>
-<body onclick="closeAllMenus(event)">
+<body class="flex flex-col min-h-screen selection:bg-gray-500 selection:text-white">
 
-    <!-- Mentions Dropdown -->
-    <div id="mention-suggestions"></div>
-
-    <!-- Onboarding -->
-    <div id="onboarding" class="modal-overlay">
-        <div style="margin-bottom: 2rem;">
-            <h1>Welcome to Chirpless.</h1>
-            <p class="subtle">Simulation of fame.</p>
+    <!-- Navigation -->
+    <nav class="w-full py-6 px-6 md:px-12 flex justify-between items-center animate-fade-up">
+        <div class="flex items-center gap-3">
+            <!-- Monochrome Icon -->
+            <div class="w-8 h-8 rounded-full bg-white flex items-center justify-center">
+                <i class="fa-solid fa-feather text-[#262626] text-xs"></i>
+            </div>
+            <span class="text-xl font-bold tracking-tight text-white">Chirpless</span>
         </div>
-        <div class="input-group"><label>DISPLAY NAME</label><input type="text" id="setup-name" placeholder="e.g. Jane Doe" autocomplete="off"></div>
-        <div class="input-group"><label>HANDLE</label><input type="text" id="setup-handle" placeholder="e.g. janedoe" autocomplete="off"></div>
-        <div class="input-group"><label>INITIAL MONTHLY AUDIENCE</label><input type="number" id="setup-audience" value="1200"></div>
-        <div class="input-group"><label>INITIAL FOLLOWERS</label><input type="number" id="setup-followers" value="450"></div>
-        <button class="btn-primary" onclick="startApp()">Enter Simulation</button>
-    </div>
-
-    <!-- Collaboration Modal -->
-    <div id="collab-modal" class="modal-overlay hidden">
-        <div class="modal-card">
-            <h2>Collaboration Hub</h2>
-            <p class="subtle" style="margin-bottom: 1.5rem;">Create bots to collaborate with. Enable "Custom Bot" to control them.</p>
-            <div class="input-group"><label>BOT NAME</label><input type="text" id="bot-name" placeholder="e.g. Cool Brand"></div>
-            <div class="input-group"><label>BOT HANDLE</label><input type="text" id="bot-handle" placeholder="e.g. coolbrand"></div>
-            <div style="display: flex; gap: 1rem;">
-                <div class="input-group"><label>AUDIENCE</label><input type="number" id="bot-audience" value="50000"></div>
-                <div class="input-group"><label>FOLLOWERS</label><input type="number" id="bot-followers" value="2000"></div>
-            </div>
-            <div style="margin-bottom:1rem; display:flex; align-items:center; gap:8px;">
-                <input type="checkbox" id="bot-custom" style="width:auto;">
-                <label for="bot-custom" style="margin:0; font-size:0.9rem; font-weight:600; cursor:pointer;">Enable Control (Custom Bot)</label>
-            </div>
-            <button class="btn-primary" onclick="confirmAddBot()">Create Bot</button>
-            <button class="btn-secondary" onclick="closeCollabModal()">Close</button>
-            <div style="margin-top: 2rem; border-top: 1px solid var(--border); padding-top: 1rem;">
-                <label style="font-size: 0.8rem; color: var(--subtle); font-weight: 600;">EXISTING BOTS</label>
-                <div id="bot-list" style="margin-top: 0.5rem; font-size: 0.9rem; color: var(--subtle);">No bots yet.</div>
-            </div>
+        <div class="hidden md:flex gap-8 text-sm font-medium text-gray-400">
+            <a href="#features" class="hover:text-white transition-colors">Features</a>
+            <a href="#featured" class="hover:text-white transition-colors">Podcasts</a>
+            <a href="#contact" class="hover:text-white transition-colors">Contact</a>
         </div>
-    </div>
+    </nav>
 
-    <!-- Note Modal -->
-    <div id="note-modal" class="modal-overlay hidden">
-        <div class="modal-card">
-            <h2>Private Note</h2>
-            <p class="subtle" style="margin-bottom: 1rem;">Add a private note to this post. Only you can see this.</p>
-            <textarea id="note-input" class="modal-input" placeholder="Type your thoughts..."></textarea>
-            <button class="btn-primary" onclick="saveNote()">Save Note</button>
-            <button class="btn-secondary" onclick="closeNoteModal()">Cancel</button>
-        </div>
-    </div>
+    <!-- Hero Section -->
+    <main class="flex-grow flex flex-col items-center justify-center px-6 relative py-20">
+        
+        <!-- Abstract Background Shapes (Monochrome) -->
+        <div class="absolute top-20 left-10 w-64 h-64 bg-white/5 rounded-full blur-3xl -z-10 floating-shape"></div>
+        <div class="absolute bottom-20 right-10 w-96 h-96 bg-gray-500/10 rounded-full blur-3xl -z-10 floating-shape" style="animation-delay: 2s;"></div>
 
-    <!-- Main App -->
-    <div id="app">
-        <!-- Sidebar -->
-        <aside class="sidebar">
-            <div class="brand">Chirpless</div>
-            <nav>
-                <button class="nav-btn active" onclick="switchTab('home')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg> Home</button>
-                <button class="nav-btn" onclick="switchTab('search')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg> Search</button>
-                <button class="nav-btn" onclick="switchTab('profile')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg> Profile</button>
-                <button class="nav-btn" onclick="switchTab('notes')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg> Notes</button>
-                <button class="nav-btn" onclick="openCollabModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg> Collaborate</button>
-                <button class="nav-btn" onclick="toggleTheme()"><svg id="theme-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg> Theme</button>
-            </nav>
-            <div class="sidebar-stats">
-                <div class="stat-block"><div class="stat-label">Monthly Audience</div><div class="stat-value ticker-root" id="audience-count">0</div></div>
-                <div class="stat-block"><div class="stat-label">Followers</div><div class="stat-value ticker-root" id="follower-count">0</div></div>
-            </div>
-        </aside>
+            
+            <h1 class="text-5xl md:text-7xl font-bold mb-6 text-white animate-fade-up delay-200">
+                Silence the noise.
+            </h1>
+            
+            <p class="text-lg text-gray-400 mb-10 max-w-xl mx-auto leading-relaxed animate-fade-up delay-300">
+                Chirpless is the minimalistic communication tool designed for focus. 
+                No clutter, no distractions. Just connection.
+            </p>
 
-        <!-- Content -->
-        <main class="main-content">
-            <div class="top-bar">
-                <div class="day-counter">Day <span id="day-display">1</span></div>
-                <button class="btn-next-day" onclick="nextDay()">Next Day &rarr;</button>
-            </div>
+            <!-- Buttons -->
+            <div class="flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-up delay-500">
+                <!-- Android Download (White Theme) -->
+                <a href="com_chirpless.apk" download class="group relative w-full sm:w-auto flex items-center justify-center gap-3 bg-white hover:bg-gray-200 text-black px-8 py-3.5 rounded-xl font-medium transition-all duration-300 transform hover:-translate-y-1 glow-btn">
+                    <i class="fa-brands fa-android text-lg"></i>
+                    <span>Download APK</span>
+                </a>
 
-            <div class="mobile-stats-bar" id="mobile-stats">
-                <div style="display: flex; gap: 5px;">Audience: <span class="ticker-root bold" id="mob-audience-count">0</span></div>
-                <div style="display: flex; gap: 5px;">Followers: <span class="ticker-root bold" id="mob-follower-count">0</span></div>
+                <!-- iOS Placeholder -->
+                <button class="ios-btn w-full sm:w-auto relative border border-gray-600 bg-transparent backdrop-blur-sm text-gray-300 px-8 py-3.5 rounded-xl font-medium">
+                    <span class="original-text flex items-center gap-3">
+                        <i class="fa-brands fa-apple text-lg"></i>
+                        <span>App Store</span>
+                    </span>
+                    <span class="hover-text text-sm font-semibold text-white">
+                        Coming Soon
+                    </span>
+                </button>
             </div>
 
-            <!-- HOME TAB -->
-            <div id="view-home" class="view-section active">
-                <div class="composer">
-                    <div class="composer-top">
-                        <div class="avatar" id="user-avatar" onclick="switchTab('profile')">?</div>
-                        <div class="composer-area">
-                            <textarea id="post-input" placeholder="What's new? (@ to mention)" oninput="handleInput(this)"></textarea>
-                            <div class="image-preview-container" id="image-preview-container">
-                                <img src="" id="image-preview" class="image-preview" style="display:none;">
-                                <video src="" id="video-preview" class="video-preview" controls style="display:none;"></video>
-                                <button class="remove-media-btn" onclick="removeMedia()">✕</button>
-                            </div>
-                        </div>
+            <!-- Stats -->
+            <div class="mt-12 flex items-center justify-center gap-2 text-gray-500 animate-fade-up" style="animation-delay: 0.7s;">
+                <div class="flex -space-x-2">
+                    <div class="w-8 h-8 rounded-full bg-gray-600 border-2 border-[#262626] flex items-center justify-center text-[10px] text-white overflow-hidden grayscale">
+                        <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" alt="User">
                     </div>
-                    <div class="composer-tools">
-                        <div class="tools-left">
-                            <select id="collab-select-1" class="collab-select"><option value="">+ Collab 1</option></select>
-                            <select id="collab-select-2" class="collab-select"><option value="">+ Collab 2</option></select>
-                            
-                            <button class="btn-icon" onclick="triggerImageUpload()" title="Add Image">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
-                            </button>
-                            <input type="file" id="image-upload-input" accept="image/*" style="display: none;" onchange="handleFile(this, 'image')">
-
-                            <button class="btn-icon" onclick="triggerVideoUpload()" title="Add Video">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"></rect><line x1="7" y1="2" x2="7" y2="22"></line><line x1="17" y1="2" x2="17" y2="22"></line><line x1="2" y1="12" x2="22" y2="12"></line><line x1="2" y1="7" x2="7" y2="7"></line><line x1="2" y1="17" x2="7" y2="17"></line><line x1="17" y1="17" x2="22" y2="17"></line><line x1="17" y1="7" x2="22" y2="7"></line></svg>
-                            </button>
-                            <input type="file" id="video-upload-input" accept="video/*" style="display: none;" onchange="handleFile(this, 'video')">
-
-                            <button class="btn-icon" onclick="togglePollCreator()" title="Create Poll">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 20v-6M6 20V10M18 20V4"></path></svg>
-                            </button>
-                        </div>
-                        <button class="btn-post" id="post-btn" onclick="createPost()">Post</button>
+                    <div class="w-8 h-8 rounded-full bg-gray-600 border-2 border-[#262626] flex items-center justify-center text-[10px] text-white overflow-hidden grayscale">
+                        <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Aneka" alt="User">
                     </div>
-                    <div class="poll-creator" id="poll-creator">
-                        <input type="text" id="poll-opt-1" placeholder="Option 1">
-                        <input type="text" id="poll-opt-2" placeholder="Option 2">
+                    <div class="w-8 h-8 rounded-full bg-gray-600 border-2 border-[#262626] flex items-center justify-center text-[10px] text-white overflow-hidden grayscale">
+                        <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Zack" alt="User">
                     </div>
                 </div>
-                <div id="feed"></div>
-            </div>
-
-            <!-- SEARCH TAB -->
-            <div id="view-search" class="view-section">
-                <div style="padding: 1rem 1.5rem; border-bottom: 1px solid var(--border); flex-shrink: 0;">
-                    <input type="text" id="search-input" placeholder="Search posts..." oninput="renderSearch()">
+                <div class="flex flex-col items-start ml-2">
+                    <span class="text-white font-bold text-sm leading-none" id="download-count">1.2K</span>
+                    <span class="text-xs">downloads total</span>
                 </div>
-                <div id="search-results"></div>
             </div>
-
-            <!-- PROFILE TAB -->
-            <div id="view-profile" class="view-section">
-                <div id="profile-container"></div>
-                <div id="profile-feed"></div>
-            </div>
-
-            <!-- NOTES TAB -->
-            <div id="view-notes" class="view-section">
-                <div style="padding: 2rem 1.5rem; border-bottom: 1px solid var(--border); flex-shrink: 0;">
-                    <h2>My Notes</h2>
-                    <p class="subtle">Private thoughts on posts.</p>
-                </div>
-                <div id="notes-feed"></div>
-            </div>
-
-            <!-- POST DETAIL TAB -->
-            <div id="view-post-detail" class="view-section">
-                <div class="post-detail-header">
-                    <button class="btn-icon" onclick="goBackFromPost()">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-                    </button>
-                    <span class="bold">Post</span>
-                </div>
-                <div id="post-detail-container"></div>
-            </div>
-        </main>
-
-        <!-- Mobile Nav -->
-        <div class="mobile-nav">
-            <div class="nav-btn" onclick="switchTab('home')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg></div>
-            <div class="nav-btn" onclick="switchTab('search')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg></div>
-            <div class="nav-btn" onclick="switchTab('profile')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg></div>
-            <div class="nav-btn" onclick="toggleTheme()"><svg id="mob-theme-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg></div>
-            <div class="nav-btn" onclick="openCollabModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle></svg></div>
         </div>
 
-    </div>
+        <!-- Featured Section -->
+        <section id="featured" class="w-full max-w-5xl mt-32 mb-16 animate-fade-up" style="animation-delay: 0.8s;">
+            <div class="flex items-center gap-4 mb-10 justify-center">
+                <div class="h-[1px] w-12 bg-gray-700"></div>
+                <h2 class="text-2xl font-bold text-white tracking-wide uppercase text-sm">Featured Audio</h2>
+                <div class="h-[1px] w-12 bg-gray-700"></div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- C@shXan -->
+                <div class="podcast-card p-6 rounded-2xl border border-gray-700 bg-gray-800/30 transition-all duration-300 cursor-pointer group">
+                    <div class="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center mb-4 group-hover:bg-white/20 transition-colors">
+                        <i class="fa-solid fa-microphone-lines text-white"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-white mb-1">C@shXan</h3>
+                    <p class="text-xs text-gray-400 uppercase tracking-wider mb-3">Finance & Lifestyle</p>
+                    <div class="flex items-center gap-2 text-sm text-gray-400 group-hover:text-white transition-colors">
+                        <i class="fa-solid fa-play-circle"></i>
+                        <span>Latest Episode</span>
+                    </div>
+                </div>
+
+                <!-- LucidPP -->
+                <div class="podcast-card p-6 rounded-2xl border border-gray-700 bg-gray-800/30 transition-all duration-300 cursor-pointer group">
+                    <div class="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center mb-4 group-hover:bg-white/20 transition-colors">
+                        <i class="fa-solid fa-wave-square text-white"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-white mb-1">LucidPP</h3>
+                    <p class="text-xs text-gray-400 uppercase tracking-wider mb-3">Tech & Future</p>
+                    <div class="flex items-center gap-2 text-sm text-gray-400 group-hover:text-white transition-colors">
+                        <i class="fa-solid fa-play-circle"></i>
+                        <span>Latest Episode</span>
+                    </div>
+                </div>
+
+                <!-- The Peyto Show -->
+                <div class="podcast-card p-6 rounded-2xl border border-gray-700 bg-gray-800/30 transition-all duration-300 cursor-pointer group">
+                    <div class="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center mb-4 group-hover:bg-white/20 transition-colors">
+                        <i class="fa-solid fa-podcast text-white"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-white mb-1">The Peyto Show</h3>
+                    <p class="text-xs text-gray-400 uppercase tracking-wider mb-3">Culture & Talk</p>
+                    <div class="flex items-center gap-2 text-sm text-gray-400 group-hover:text-white transition-colors">
+                        <i class="fa-solid fa-play-circle"></i>
+                        <span>Latest Episode</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Minimal Features Grid -->
+        <div id="features" class="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-5xl animate-fade-up" style="animation-delay: 0.9s;">
+            <div class="p-6 rounded-2xl bg-gray-800/20 border border-gray-800 hover:border-gray-600 transition-colors">
+                <div class="w-10 h-10 rounded-lg bg-gray-800 flex items-center justify-center mb-4 text-white">
+                    <i class="fa-solid fa-shield-halved"></i>
+                </div>
+                <h3 class="text-white font-semibold mb-2">Secure Core</h3>
+                <p class="text-sm text-gray-400">End-to-end encryption built into the minimalist architecture.</p>
+            </div>
+            <div class="p-6 rounded-2xl bg-gray-800/20 border border-gray-800 hover:border-gray-600 transition-colors">
+                <div class="w-10 h-10 rounded-lg bg-gray-800 flex items-center justify-center mb-4 text-white">
+                    <i class="fa-solid fa-bolt"></i>
+                </div>
+                <h3 class="text-white font-semibold mb-2">Lightning Fast</h3>
+                <p class="text-sm text-gray-400">Optimized for speed. No bloatware, just pure performance.</p>
+            </div>
+            <div class="p-6 rounded-2xl bg-gray-800/20 border border-gray-800 hover:border-gray-600 transition-colors">
+                <div class="w-10 h-10 rounded-lg bg-gray-800 flex items-center justify-center mb-4 text-white">
+                    <i class="fa-solid fa-moon"></i>
+                </div>
+                <h3 class="text-white font-semibold mb-2">True Dark Mode</h3>
+                <p class="text-sm text-gray-400">Designed for OLED screens. Saves battery and your eyes.</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer id="contact" class="py-8 text-center text-gray-500 text-sm border-t border-gray-800/50 bg-[#262626]">
+        <p>&copy; 2026 Chirpless Inc. All rights reserved.</p>
+        <div class="flex justify-center gap-4 mt-2">
+            <a href="#" class="hover:text-white transition-colors">Privacy</a>
+            <a href="#" class="hover:text-white transition-colors">Terms</a>
+        </div>
+    </footer>
 
     <script>
-        // --- GAME STATE ---
-        let state = {
-            user: { id: 'me', name: "", handle: "", audience: 0, followers: 0, pfp: null },
-            day: 1,
-            posts: [],
-            bots: [],
-            lastPostDay: 0,
-            activeTab: 'home',
-            previousTab: 'home',
-            viewingProfile: null,
-            activeAccountId: 'me',
-            theme: 'light'
-        };
-        
-        let currentMedia = { type: null, data: null }; // Temp holder
-        let currentNotePostId = null;
-
-        // --- PERSISTENCE ---
-        const DB_KEY = 'chirpless_save_v9';
-        
-        function saveData() {
-            try {
-                localStorage.setItem(DB_KEY, JSON.stringify(state));
-            } catch (e) {
-                console.error("Storage limit reached");
-            }
-        }
-
-        function loadData() {
-            const saved = localStorage.getItem(DB_KEY);
-            if (saved) {
-                try {
-                    const parsed = JSON.parse(saved);
-                    state = { ...state, ...parsed };
-                    if(!state.user.pfp) state.user.pfp = null;
-                    if(!state.activeAccountId) state.activeAccountId = 'me';
-                    if(!state.theme) state.theme = 'light';
-                    state.bots.forEach(b => { if(typeof b.following === 'undefined') b.following = false; });
-                    return true;
-                } catch(e) { console.error("Save data corrupted", e); return false; }
-            }
-            return false;
-        }
-
-        // --- GLOBAL FUNCTIONS (Must be top level) ---
-        function updateGlobalStats(force = false) {
-            const currentUser = getCurrentUser();
-            ['audience-count', 'mob-audience-count'].forEach(id => {
-                const el = document.getElementById(id);
-                if(force) createTicker(el, currentUser.audience); else updateTicker(el, currentUser.audience);
-            });
-            ['follower-count', 'mob-follower-count'].forEach(id => {
-                const el = document.getElementById(id);
-                if(force) createTicker(el, currentUser.followers); else updateTicker(el, currentUser.followers);
-            });
-        }
-
-        function renderFeed(containerId, updateTimesOnly = false) {
-            const container = document.getElementById(containerId);
-            if(!container) return;
+        // Simple counter animation for the downloads
+        document.addEventListener('DOMContentLoaded', () => {
+            const counterElement = document.getElementById('download-count');
+            const target = 1200; // 1.2K
+            const duration = 2000; // 2 seconds
+            const start = 0;
+            const increment = target / (duration / 16); // 60fps
             
-            let posts = state.posts;
-            // No filtering for main feed, handled inside if logic
-            if (containerId === 'profile-feed') {
-                const targetId = state.viewingProfile;
-                posts = state.posts.filter(p => {
-                    const isAuthor = p.authorId == targetId;
-                    const isCollab = p.collabs ? p.collabs.some(c => c.id == targetId) : (p.collab && p.collab.id == targetId);
-                    return isAuthor || isCollab;
-                });
-            } else if (containerId === 'search-results') {
-                const query = document.getElementById('search-input').value.toLowerCase();
-                posts = state.posts.filter(p => p.content.toLowerCase().includes(query));
-            } else if (containerId === 'notes-feed') {
-                posts = state.posts.filter(p => p.myNote && p.myNote.trim().length > 0);
-            }
-
-            if (updateTimesOnly) {
-                posts.forEach(p => {
-                    const timeEl = document.getElementById(`time-${p.id}`);
-                    if(timeEl) timeEl.innerText = formatTime(p.dayPosted, state.day);
-                });
-                return;
-            }
-
-            container.innerHTML = '';
-            if (posts.length === 0) {
-                container.innerHTML = `<div style="padding:3rem; text-align:center; color:var(--subtle);">No posts found.</div>`;
-                return;
-            }
-            posts.forEach(p => container.appendChild(createPostElement(p)));
-        }
-
-        function renderProfile(id) { 
-            state.viewingProfile = id;
-            const container = document.getElementById('profile-container');
-            const isMe = id == state.activeAccountId; 
-            let user;
-            if (id === 'me') user = state.user;
-            else user = state.bots.find(b => b.id == id);
+            let current = start;
             
-            // Handle edge case where we view 'me' (main) while logged in as bot
-            if (id === 'me' && state.activeAccountId !== 'me') user = state.user;
-            else if (id == state.activeAccountId && state.activeAccountId !== 'me') user = state.bots.find(b => b.id == state.activeAccountId);
-
-            if (!user) { container.innerHTML = "User not found"; return; }
-            
-            const badge = (user.followers >= 15000) ? getVerifiedBadge() : '';
-            const avatarHTML = getAvatarContent(user, id !== 'me' && id !== state.user.id);
-            
-            let nameHTML = `<h2>${user.name} ${badge}</h2>`;
-            if (isMe) nameHTML = `<h2 onclick="toggleAccountMenu(event)">${user.name} ${badge} <span style="font-size:0.8em; opacity:0.5; margin-left:4px;">▼</span></h2>`;
-
-            let actionButton = '';
-            if (isMe) {
-                actionButton = `<div style="display:flex; gap:8px;"><button class="profile-action-btn" onclick="switchTab('notes')">My Notes</button><button class="profile-action-btn" onclick="triggerPfpUpload()">Edit Profile</button></div><input type="file" id="pfp-upload-input" accept="image/*" style="display: none;" onchange="handlePfpFile(this)">`;
-            } else {
-                const text = user.following ? 'Following' : 'Follow';
-                const cls = user.following ? 'profile-action-btn' : 'profile-action-btn primary';
-                actionButton = `<button class="${cls}" onclick="toggleFollow('${user.id}'); this.classList.add('bounce-active'); setTimeout(()=>this.classList.remove('bounce-active'),300);">${text}</button>`;
-            }
-
-            container.innerHTML = `<div class="profile-header"><div class="profile-top"><div class="avatar" style="width:80px; height:80px; font-size:2rem; cursor:default; background:#eee;">${avatarHTML}</div>${actionButton}</div><div class="profile-info">${nameHTML}<span class="profile-handle">${user.handle}</span><div class="profile-stats-row"><div class="profile-stat"><span>${formatNumber(user.followers)}</span> followers</div><div class="profile-stat"><span>${formatNumber(user.audience)}</span> audience</div></div></div></div>`;
-            renderFeed('profile-feed');
-        }
-
-        function renderSearch() { renderFeed('search-results'); }
-
-        function renderPostDetail(postId) {
-            const container = document.getElementById('post-detail-container');
-            const post = state.posts.find(p => p.id === postId);
-            if(!post) { container.innerHTML = "Post not found"; return; }
-            const timeStr = formatTime(post.dayPosted, state.day);
-            let author = post.authorId === 'me' ? state.user : state.bots.find(b => b.id == post.authorId);
-            if(!author) author = {name:'Unknown', handle:'@unknown', followers:0};
-            const badge = (author.followers >= 15000) ? getVerifiedBadge() : '';
-            const avatarContent = getAvatarContent(author, post.authorId !== 'me');
-
-            let collabText = '';
-            if(post.collabs && post.collabs.length > 0) collabText = `<span class="collab-text">with ${post.collabs.map(c=>c.name).join(' & ')}</span>`;
-            else if (post.collab) collabText = `<span class="collab-text">with ${post.collab.name}</span>`;
-
-            let mediaHTML = '';
-            if (post.media) {
-                if (post.media.type === 'image') mediaHTML = `<img src="${post.media.data}" class="post-image" style="max-height:600px;">`;
-                else if (post.media.type === 'video') mediaHTML = `<video src="${post.media.data}" class="post-video" controls style="max-height:600px;"></video>`;
-                else if (post.image) mediaHTML = `<img src="${post.image}" class="post-image" style="max-height:600px;">`;
-            } else if (post.image) mediaHTML = `<img src="${post.image}" class="post-image" style="max-height:600px;">`;
-
-            let pollHTML = post.poll ? `<div class="poll-wrapper" id="poll-${post.id}"></div>` : '';
-            let clicksStats = post.hasLink ? `<div class="detail-stat-item"><div class="detail-stat-label">Clicks</div><div class="detail-stat-value ticker-root" id="detail-clicks-${post.id}">0</div></div>` : '';
-
-            container.innerHTML = `
-                <div class="post-detail-content">
-                    <div style="display:flex; justify-content:space-between; align-items:center;">
-                        <div class="handle-group" onclick="handleHandleClick(event, '${post.authorId}', '${post.collab ? post.collab.id : ''}')"><div class="avatar" style="width:48px;height:48px;margin-right:10px;">${avatarContent}</div><div><div class="handle" style="font-size:1.1rem;">${author.name} ${badge}</div>${collabText}</div></div>
-                        <div class="post-menu-container"><button class="post-menu-btn" onclick="togglePostMenu(event, ${post.id})"><svg viewBox="0 0 24 24" fill="currentColor" style="width:20px; height:20px;"><circle cx="12" cy="12" r="1.5"/><circle cx="6" cy="12" r="1.5"/><circle cx="18" cy="12" r="1.5"/></svg></button><div class="post-menu" id="menu-${post.id}"><button class="menu-item" onclick="openNoteModal(${post.id})">${post.myNote ? 'Edit Note' : 'Add Note'}</button><button class="menu-item" style="color:#e0245e;" onclick="alert('Delete feature coming soon')">Delete</button></div></div>
-                    </div>
-                    <div class="post-detail-text">${formatContent(post.content)}</div>
-                    ${mediaHTML} ${pollHTML}
-                    <div style="color:var(--subtle); font-size:0.95rem; margin-top:1rem;">${timeStr}</div>
-                    <div class="post-detail-stats">
-                        <div class="detail-stat-item"><div class="detail-stat-label">Views</div><div class="detail-stat-value ticker-root" id="detail-view-${post.id}">0</div></div>
-                        <div class="detail-stat-item"><div class="detail-stat-label">Likes</div><div class="detail-stat-value ticker-root" id="detail-like-${post.id}">0</div></div>
-                        <div class="detail-stat-item"><div class="detail-stat-label">Reposts</div><div class="detail-stat-value ticker-root" id="detail-repost-${post.id}">0</div></div>
-                        ${clicksStats}
-                    </div>
-                    <div class="post-detail-actions">
-                        <div class="stat-item ${post.liked ? 'liked' : ''}" id="detail-like-btn-${post.id}" onclick="toggleLike(${post.id})"><svg class="stat-icon" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg></div>
-                        <div class="stat-item ${post.reposted ? 'reposted' : ''}" id="detail-repost-btn-${post.id}" onclick="toggleRepost(${post.id})"><svg class="stat-icon" viewBox="0 0 24 24"><path d="M17 1l4 4-4 4"></path><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><path d="M7 23l-4-4 4-4"></path><path d="M21 13v2a4 4 0 0 1-4 4H3"></path></svg></div>
-                    </div>
-                </div>
-            `;
-            setTimeout(() => {
-                createTicker(container.querySelector(`#detail-view-${post.id}`), post.views);
-                createTicker(container.querySelector(`#detail-like-${post.id}`), post.likes);
-                createTicker(container.querySelector(`#detail-repost-${post.id}`), post.reposts);
-                if(post.hasLink) createTicker(container.querySelector(`#detail-clicks-${post.id}`), post.clicks);
-                if(post.poll) updatePollDOM(post, container.querySelector(`#poll-${post.id}`));
-            }, 0);
-        }
-
-        // --- APP INIT ---
-        window.onload = function() {
-            if(loadData()) {
-                applyTheme();
-                document.getElementById('onboarding').classList.add('hidden');
-                document.getElementById('app').style.display = 'flex';
-                updateUserAvatarDisplay();
-                document.getElementById('day-display').innerText = state.day;
-                populateDefaults();
-                updateGlobalStats(true);
-                updateBotList();
-                renderFeed('feed');
-            } else {
-                document.getElementById('onboarding').classList.remove('hidden');
-            }
-        };
-
-        function startApp() {
-            const name = document.getElementById('setup-name').value;
-            const handle = document.getElementById('setup-handle').value;
-            const audience = parseInt(document.getElementById('setup-audience').value) || 0;
-            const followers = parseInt(document.getElementById('setup-followers').value) || 0;
-
-            if(!name || !handle) { alert("Name and handle required."); return; }
-
-            state.user.name = name;
-            state.user.handle = handle.startsWith('@') ? handle : '@' + handle;
-            state.user.audience = audience;
-            state.user.followers = followers;
-
-            document.getElementById('onboarding').classList.add('hidden');
-            document.getElementById('app').style.display = 'flex';
-            updateUserAvatarDisplay();
-            
-            populateDefaults();
-            saveData();
-            updateGlobalStats(true);
-            renderFeed('feed');
-        }
-
-        // --- HELPERS ---
-        function applyTheme() {
-            if (state.theme === 'dark') document.documentElement.classList.add('dark');
-            else document.documentElement.classList.remove('dark');
-        }
-        function toggleTheme() {
-            state.theme = state.theme === 'light' ? 'dark' : 'light';
-            applyTheme();
-            saveData();
-        }
-
-        function getCurrentUser() {
-            if (state.activeAccountId === 'me') return state.user;
-            return state.bots.find(b => b.id == state.activeAccountId) || state.user;
-        }
-
-        function switchAccount(id) {
-            state.activeAccountId = id;
-            updateUserAvatarDisplay();
-            updateGlobalStats(true);
-            saveData();
-            if(state.activeTab === 'profile') renderProfile(id);
-            else if(state.activeTab === 'home') renderFeed('feed');
-            closeAllMenus();
-        }
-
-        function toggleAccountMenu(event) {
-            event.stopPropagation();
-            closeAllMenus();
-            
-            const accounts = [{id: 'me', name: state.user.name, handle: state.user.handle, pfp: state.user.pfp}];
-            state.bots.filter(b => b.isCustom).forEach(b => accounts.push(b));
-            
-            const div = document.createElement('div');
-            div.className = 'post-menu active';
-            div.style.position = 'absolute';
-            div.style.top = '100%'; div.style.left = '0'; div.style.minWidth = '200px'; div.style.zIndex = 1000;
-            
-            let html = '';
-            accounts.forEach(acc => {
-                const isMe = acc.id === 'me';
-                const avatar = isMe ? (acc.pfp ? `<img src="${acc.pfp}" style="width:24px;height:24px;border-radius:50%;object-fit:cover;margin-right:8px;">` : `<div style="width:24px;height:24px;border-radius:50%;background:#eee;margin-right:8px;display:flex;align-items:center;justify-content:center;font-size:0.8rem;font-weight:700;">${acc.name.substring(0,1)}</div>`) 
-                                    : `<img src="https://api.dicebear.com/9.x/thumbs/svg?seed=${acc.handle}" style="width:24px;height:24px;border-radius:50%;object-fit:cover;margin-right:8px;">`;
-                
-                const check = state.activeAccountId == acc.id ? ' ✓' : '';
-                html += `<button class="menu-item" onclick="switchAccount('${acc.id}')" style="display:flex;align-items:center;">${avatar} ${acc.name}${check}</button>`;
-            });
-            div.innerHTML = html;
-            
-            const h2 = event.currentTarget.parentElement;
-            if(h2) { h2.style.position = 'relative'; h2.appendChild(div); }
-            
-            const remover = (e) => { if(!div.contains(e.target)) { div.remove(); document.body.removeEventListener('click', remover); }};
-            setTimeout(() => document.body.addEventListener('click', remover), 0);
-        }
-
-        function populateDefaults() {
-            if(state.bots.length === 0) {
-                const defaults = [
-                    { name: "The Rock", handle: "@therock", audience: 300000000, followers: 80000000 },
-                    { name: "Juice WRLD", handle: "@juicewrld999", audience: 150000000, followers: 40000000 },
-                    { name: "Elon Musk", handle: "@elonmusk", audience: 500000000, followers: 160000000 },
-                    { name: "Taylor Swift", handle: "@taylorswift13", audience: 400000000, followers: 100000000 },
-                    { name: "Cristiano", handle: "@cristiano", audience: 600000000, followers: 200000000 },
-                    { name: "Kylie Jenner", handle: "@kyliejenner", audience: 250000000, followers: 60000000 },
-                    { name: "MrBeast", handle: "@mrbeast", audience: 200000000, followers: 50000000 },
-                    { name: "NASA", handle: "@nasa", audience: 100000000, followers: 30000000 },
-                    { name: "PlayStation", handle: "@playstation", audience: 80000000, followers: 25000000 },
-                    { name: "Nike", handle: "@nike", audience: 90000000, followers: 28000000 }
-                ];
-                state.bots = defaults.map((d, i) => ({ ...d, id: Date.now() + i, following: false, isCustom: false }));
-                saveData();
-            }
-        }
-
-        function getAvatarContent(user, isBot) {
-            if (isBot || user.isCustom) return `<img src="https://api.dicebear.com/9.x/thumbs/svg?seed=${user.handle}" style="width:100%; height:100%; object-fit:cover;">`;
-            if (user.pfp) return `<img src="${user.pfp}" style="width:100%; height:100%; object-fit:cover;">`;
-            return user.name.substring(0,2).toUpperCase();
-        }
-
-        // --- TICKER & FORMATTING ---
-        function createTicker(element, value) {
-            if(!element) return;
-            const strVal = formatNumber(value);
-            element.innerHTML = ''; element.dataset.value = value; element.dataset.str = strVal;
-            strVal.split('').forEach(char => {
-                const wrapper = document.createElement('span');
-                if (/\d/.test(char) || char === '.') {
-                    wrapper.className = 'ticker-digit-col';
-                    let html = char === '.' ? '<span class="ticker-digit">.</span>' : '';
-                    if(char !== '.') for(let i=0; i<=9; i++) html += `<span class="ticker-digit">${i}</span>`;
-                    wrapper.innerHTML = html;
-                    if(char !== '.') wrapper.style.transform = `translateY(${-(parseInt(char) * 10)}%)`; 
-                } else { wrapper.className = 'ticker-digit'; wrapper.innerText = char; }
-                element.appendChild(wrapper);
-            });
-        }
-
-        function updateTicker(element, newValue) {
-            if(!element) return;
-            const strVal = formatNumber(newValue);
-            if (element.dataset.str === strVal) return;
-            const oldStr = element.dataset.str || "";
-            if (oldStr.length !== strVal.length || oldStr.replace(/[\d.]/g,'') !== strVal.replace(/[\d.]/g,'')) {
-                createTicker(element, newValue); return;
-            }
-            element.dataset.value = newValue; element.dataset.str = strVal;
-            const cols = element.querySelectorAll('.ticker-digit-col');
-            let digitIndex = 0;
-            strVal.split('').forEach(char => {
-                if (/\d/.test(char)) {
-                    if(cols[digitIndex]) cols[digitIndex].style.transform = `translateY(${-(parseInt(char) * 10)}%)`;
-                    digitIndex++;
-                } else if(char === '.') digitIndex++;
-            });
-        }
-
-        function formatNumber(num) {
-            if (num >= 1000000000) return (num / 1000000000).toFixed(1).replace(/\.0$/, '') + 'b';
-            if (num >= 1000000) return (num / 1000000).toFixed(1).replace(/\.0$/, '') + 'm';
-            if (num >= 1000) return (num / 1000).toFixed(1).replace(/\.0$/, '') + 'k';
-            return Math.floor(num).toString();
-        }
-
-        function formatTime(dayPosted, currentDay) {
-            const diff = currentDay - dayPosted;
-            if (diff === 0) return "Today";
-            if (diff <= 6) return `${diff}d`;
-            if (diff < 30) return `${Math.floor(diff/7)}w`;
-            if (diff < 365) return `${Math.floor(diff/30)}m`;
-            return `${Math.floor(diff/365)}y`;
-        }
-        
-        function getVerifiedBadge() {
-            return `<svg class="verified-badge" viewBox="0 0 24 24"><path d="M22.5 12.5c0-1.58-.875-2.95-2.148-3.6.154-.435.238-.905.238-1.4 0-2.21-1.71-3.998-3.818-3.998-.47 0-.92.114-1.32.325C14.808 2.65 13.447 1.77 11.875 1.77c-1.558 0-2.908.866-3.55 2.025-.404-.2-.848-.31-1.325-.31-2.11 0-3.818 1.79-3.818 4 0 .47.076.914.215 1.332-1.295.64-2.197 2.016-2.197 3.633 0 1.565.86 2.9 2.095 3.56-.16.447-.254.936-.254 1.44 0 2.21 1.71 4 3.818 4 .47 0 .914-.11 1.314-.316.646 1.18 2.01 1.996 3.577 1.996 1.564 0 2.93-.816 3.577-1.996.4.206.843.316 1.314.316 2.11 0 3.818-1.79 3.818-4 0-.53-.105-1.04-.282-1.507 1.185-.68 1.982-2.035 1.982-3.623zM9.52 16.29l-3.328-3.326 1.414-1.416 1.914 1.913 5.414-5.414 1.414 1.414-6.828 6.828z"></path></svg>`;
-        }
-
-        // --- MEDIA LOGIC ---
-        function triggerImageUpload() { document.getElementById('image-upload-input').click(); }
-        function triggerVideoUpload() { document.getElementById('video-upload-input').click(); }
-        function triggerPfpUpload() { document.getElementById('pfp-upload-input').click(); }
-
-        function handleFile(input, type) {
-            if(input.files && input.files[0]) {
-                const file = input.files[0];
-                if (file.size > 2500000) { alert("File too large (max 2.5MB)."); return; } 
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    currentMedia = { type: type, data: e.target.result };
-                    const imgPreview = document.getElementById('image-preview');
-                    const vidPreview = document.getElementById('video-preview');
-                    const container = document.getElementById('image-preview-container');
-                    
-                    if (type === 'image') {
-                        imgPreview.src = currentMedia.data; imgPreview.style.display = 'block'; vidPreview.style.display = 'none';
+            const animateCounter = () => {
+                current += increment;
+                if (current < target) {
+                    // Format number: if > 1000, show as 1.X K
+                    if (current > 1000) {
+                        counterElement.innerText = (current / 1000).toFixed(1) + 'K';
                     } else {
-                        vidPreview.src = currentMedia.data; vidPreview.style.display = 'block'; imgPreview.style.display = 'none';
+                        counterElement.innerText = Math.floor(current);
                     }
-                    container.classList.add('active');
-                    checkInput();
+                    requestAnimationFrame(animateCounter);
+                } else {
+                    counterElement.innerText = '1.2K';
                 }
-                reader.readAsDataURL(file);
-            }
-        }
-
-        function handlePfpFile(input) {
-            if(input.files && input.files[0]) {
-                const file = input.files[0];
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    state.user.pfp = e.target.result;
-                    updateUserAvatarDisplay();
-                    saveData();
-                    if(state.activeTab === 'profile' && state.viewingProfile === 'me') renderProfile('me');
-                    renderFeed('feed');
-                }
-                reader.readAsDataURL(file);
-            }
-        }
-
-        function removeMedia() {
-            currentMedia = { type: null, data: null };
-            document.getElementById('image-preview').src = "";
-            document.getElementById('video-preview').src = "";
-            document.getElementById('image-preview-container').classList.remove('active');
-            document.getElementById('image-upload-input').value = ""; 
-            document.getElementById('video-upload-input').value = ""; 
-            checkInput();
-        }
-
-        // --- MENTIONS ---
-        function handleInput(textarea) {
-            checkInput();
-            const val = textarea.value;
-            const cursor = textarea.selectionStart;
-            const textBefore = val.substring(0, cursor);
-            const words = textBefore.split(/\s/);
-            const currentWord = words[words.length - 1];
-
-            const dropdown = document.getElementById('mention-suggestions');
-            if (currentWord.startsWith('@')) {
-                const query = currentWord.substring(1).toLowerCase();
-                const matches = state.bots.filter(b => b.handle.toLowerCase().includes(query) || b.name.toLowerCase().includes(query));
-                if (state.user.handle.toLowerCase().includes(query)) matches.unshift(state.user);
-
-                if (matches.length > 0) {
-                    dropdown.style.display = 'block';
-                    dropdown.style.top = (textarea.offsetTop + textarea.offsetHeight) + 'px'; 
-                    dropdown.style.left = '20px';
-                    let html = '';
-                    matches.slice(0, 5).forEach(u => {
-                        const av = getAvatarContent(u, u.id !== 'me');
-                        let img = `<div style="width:24px;height:24px;border-radius:50%;background:#eee;display:flex;align-items:center;justify-content:center;">${u.name[0]}</div>`;
-                        if(u.id !== 'me' || u.pfp) {
-                             const src = u.pfp || `https://api.dicebear.com/9.x/thumbs/svg?seed=${u.handle}`;
-                             img = `<img src="${src}">`;
-                        }
-                        html += `<div class="mention-item" onclick="insertMention('${u.handle}')">${img}<div><b>${u.name}</b> <span class="subtle">${u.handle}</span></div></div>`;
-                    });
-                    dropdown.innerHTML = html;
-                } else { dropdown.style.display = 'none'; }
-            } else {
-                dropdown.style.display = 'none';
-            }
-        }
-
-        function insertMention(handle) {
-            const textarea = document.getElementById('post-input');
-            const cursor = textarea.selectionStart;
-            const text = textarea.value;
-            const before = text.substring(0, cursor);
-            const after = text.substring(cursor);
-            const words = before.split(/\s/);
-            words.pop();
-            const newText = words.join(' ') + (words.length > 0 ? ' ' : '') + handle + ' ' + after;
-            textarea.value = newText;
-            document.getElementById('mention-suggestions').style.display = 'none';
-            textarea.focus();
-        }
-
-        // --- POST CREATION ---
-        function createPost() {
-            const text = document.getElementById('post-input').value.trim();
-            const pollOpt1 = document.getElementById('poll-opt-1').value.trim();
-            const pollOpt2 = document.getElementById('poll-opt-2').value.trim();
-            const hasPoll = document.getElementById('poll-creator').classList.contains('active') && pollOpt1 && pollOpt2;
-
-            if(!text && !hasPoll && !currentMedia.data) return;
-
-            const currentUser = getCurrentUser();
-            const c1 = document.getElementById('collab-select-1').value;
-            const c2 = document.getElementById('collab-select-2').value;
-            const collabs = [];
-            if(c1) { const b = state.bots.find(x => x.id == c1); if(b) collabs.push({id: b.id, name: b.name, handle: b.handle}); }
-            if(c2 && c2 !== c1) { const b = state.bots.find(x => x.id == c2); if(b) collabs.push({id: b.id, name: b.name, handle: b.handle}); }
-
-            let mult = 1.0;
-            let collabAudience = 0;
-            collabs.forEach(c => { const b = state.bots.find(x => x.id == c.id); if(b) collabAudience += b.audience; });
-            if (collabAudience > 0) mult = 1 + (collabAudience / (currentUser.audience + 1000)) * 0.4;
-
-            const followerContribution = currentUser.followers * (0.15 + Math.random() * 0.15);
-            const audienceContribution = currentUser.audience * (0.8 + Math.random() * 0.4);
-            const combinedPotential = (followerContribution + audienceContribution) * mult;
-
-            const hasLink = /https?:\/\/[^\s]+/.test(text);
-
-            const newPost = {
-                id: Date.now(),
-                authorId: state.activeAccountId,
-                content: text,
-                dayPosted: state.day,
-                views: 0, likes: 0, reposts: 0, clicks: 0,
-                liked: false, reposted: false,
-                collabs: collabs,
-                potential: combinedPotential, decay: 1.0,
-                poll: hasPoll ? { options: [{text: pollOpt1, votes: 0}, {text: pollOpt2, votes: 0}], totalVotes: 0, voted: false } : null,
-                myNote: null,
-                media: currentMedia.data ? { type: currentMedia.type, data: currentMedia.data } : null,
-                hasLink: hasLink
             };
-
-            state.posts.unshift(newPost);
-            state.lastPostDay = state.day;
-            currentUser.audience += Math.floor(currentUser.audience * 0.02) + 50; 
             
-            document.getElementById('post-input').value = '';
-            document.getElementById('poll-opt-1').value = ''; document.getElementById('poll-opt-2').value = '';
-            document.getElementById('poll-creator').classList.remove('active');
-            document.getElementById('collab-select-1').value = ""; document.getElementById('collab-select-2').value = "";
-            removeMedia();
-            checkInput();
-            
-            if(state.activeTab === 'home') renderFeed('feed');
-            else if(state.activeTab === 'profile') renderProfile(state.activeAccountId);
-            
-            updateGlobalStats();
-            saveData();
-        }
-
-        function checkInput() {
-            const val = document.getElementById('post-input').value.trim();
-            document.getElementById('post-btn').classList.toggle('active', val.length > 0 || document.getElementById('poll-creator').classList.contains('active') || currentMedia.data !== null);
-        }
-
-        // --- VIEWS & NAVIGATION ---
-        function switchTab(tab, profileId = null) {
-            if (tab !== 'post-detail' && state.activeTab !== 'post-detail') state.previousTab = state.activeTab;
-            state.activeTab = tab;
-            document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
-            document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
-            const navIndex = {'home':0, 'search':1, 'profile':2, 'notes': 3}[tab];
-            if(navIndex !== undefined) document.querySelectorAll('.sidebar .nav-btn')[navIndex].classList.add('active');
-
-            if(tab === 'home') { document.getElementById('view-home').classList.add('active'); renderFeed('feed'); }
-            else if(tab === 'search') { document.getElementById('view-search').classList.add('active'); renderSearch(); }
-            else if(tab === 'profile') { document.getElementById('view-profile').classList.add('active'); renderProfile(profileId || state.activeAccountId); }
-            else if(tab === 'notes') { document.getElementById('view-notes').classList.add('active'); renderFeed('notes-feed'); }
-            else if (tab === 'post-detail') { document.getElementById('view-post-detail').classList.add('active'); }
-        }
-
-        function openPostDetail(postId) {
-            state.previousTab = state.activeTab;
-            switchTab('post-detail');
-            renderPostDetail(postId);
-        }
-        function goBackFromPost() { switchTab(state.previousTab || 'home'); }
-
-        // --- SIMULATION ---
-        function nextDay() {
-            state.day++;
-            document.getElementById('day-display').innerText = state.day;
-            const daysSincePost = state.day - state.lastPostDay;
-            let totalNewViews = 0;
-
-            state.posts.forEach(post => {
-                const age = state.day - post.dayPosted;
-                let dailyDecay = Math.exp(-0.15 * age); 
-                if (dailyDecay > 0.01) {
-                    let dailyViews = Math.floor(post.potential * dailyDecay * (Math.random() * 0.4 + 0.1));
-                    if(dailyViews < 0) dailyViews = 0;
-                    post.views += dailyViews;
-                    totalNewViews += dailyViews;
-                    post.likes += Math.floor(dailyViews * 0.04);
-                    post.reposts += Math.floor(dailyViews * 0.008);
-                    
-                    if (post.hasLink) {
-                        const clickRate = 0.02 + Math.random() * 0.03; 
-                        post.clicks += Math.floor(dailyViews * clickRate);
-                    }
-
-                    if (post.poll && age < 7) {
-                        const voteChance = dailyViews > 5 ? 0.8 : 0.2; 
-                        if(Math.random() < voteChance) {
-                            const votes = Math.max(1, Math.floor(dailyViews * 0.15));
-                            post.poll.totalVotes += votes;
-                            const split = Math.random();
-                            post.poll.options[0].votes += Math.floor(votes * split);
-                            post.poll.options[1].votes += Math.floor(votes * (1-split));
-                            if(post.poll.options[0].votes + post.poll.options[1].votes !== post.poll.totalVotes) 
-                                post.poll.totalVotes = post.poll.options[0].votes + post.poll.options[1].votes;
-                            updatePollDOM(post);
-                        }
-                    }
-                    updatePostStatsDOM(post);
-                }
-            });
-
-            const currentUser = getCurrentUser();
-            let audChange = -Math.floor(currentUser.audience * 0.0005); 
-            if (daysSincePost >= 2) {
-                const decayRate = 0.002 * Math.pow((daysSincePost - 1), 1.2);
-                audChange -= Math.floor(currentUser.audience * decayRate);
-            }
-            currentUser.audience = Math.max(0, currentUser.audience + audChange + Math.floor(totalNewViews * 0.015));
-            currentUser.followers += Math.floor(totalNewViews * 0.001);
-            
-            updateGlobalStats();
-            if(state.activeTab !== 'post-detail') renderFeed(state.activeTab === 'notes' ? 'notes-feed' : state.activeTab === 'profile' ? 'profile-feed' : 'feed', true);
-            saveData();
-        }
-
-        // --- RENDERING ---
-        function formatContent(text) {
-            let safeText = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-            safeText = safeText.replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank" onclick="event.stopPropagation()">$1</a>');
-            safeText = safeText.replace(/@(\w+)/g, (match, handle) => {
-                const user = state.bots.find(b => b.handle.toLowerCase() === '@' + handle.toLowerCase()) || (state.user.handle.toLowerCase() === '@' + handle.toLowerCase() ? state.user : null);
-                if(user) return `<span class="handle-link" onclick="event.stopPropagation(); switchTab('profile', '${user.id}')">${match}</span>`;
-                return match; 
-            });
-            return safeText;
-        }
-
-        function createPostElement(post) {
-            const div = document.createElement('div');
-            div.className = 'post';
-            div.id = `post-${post.id}`;
-            div.onclick = (e) => {
-                if(e.target.closest('button') || e.target.closest('.handle-group') || e.target.closest('.poll-option') || e.target.tagName === 'A' || e.target.closest('.handle-link')) return;
-                openPostDetail(post.id);
-            };
-
-            const timeStr = formatTime(post.dayPosted, state.day);
-            let author = post.authorId === 'me' ? state.user : state.bots.find(b => b.id == post.authorId);
-            if(!author) author = {name:'Unknown', handle:'@unknown', followers:0};
-            const badge = (author.followers >= 15000) ? getVerifiedBadge() : '';
-            const avatarContent = getAvatarContent(author, post.authorId !== 'me');
-
-            let collabText = '';
-            if(post.collabs && post.collabs.length > 0) {
-                const suffix = post.collabs.length > 1 ? "collaborators" : "collaborator";
-                collabText = `<span class="collab-text">+${post.collabs.length} ${suffix}</span>`;
-            } else if (post.collab) collabText = `<span class="collab-text">+1 collaborator</span>`;
-
-            let mediaHTML = '';
-            if (post.media) {
-                if (post.media.type === 'image') mediaHTML = `<img src="${post.media.data}" class="post-image">`;
-                else if (post.media.type === 'video') mediaHTML = `<video src="${post.media.data}" class="post-video" controls onclick="event.stopPropagation()"></video>`;
-                else if (post.image) mediaHTML = `<img src="${post.image}" class="post-image">`;
-            } else if (post.image) {
-                mediaHTML = `<img src="${post.image}" class="post-image">`;
-            }
-
-            let pollHTML = post.poll ? `<div class="poll-wrapper" id="poll-${post.id}"></div>` : '';
-            let noteHTML = (post.myNote && post.myNote.trim()) ? `<div class="private-note"><span class="private-note-label">Private Note</span>${post.myNote}</div>` : '';
-            let clicksHTML = post.hasLink ? `<div class="stat-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M15 3h6v6"></path><path d="M10 14L21 3"></path><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path></svg><span class="ticker-root" id="clicks-${post.id}">0</span></div>` : '';
-
-            div.innerHTML = `
-                <div class="avatar" onclick="event.stopPropagation(); switchTab('profile', '${post.authorId}')">${avatarContent}</div>
-                <div class="post-content">
-                    <div class="post-header">
-                        <div class="handle-group glass-shine" onclick="handleHandleClick(event, '${post.authorId}', '${post.collab ? post.collab.id : ''}')">
-                            <span class="handle">${author.name} ${badge}</span> ${collabText}
-                        </div>
-                        <div style="display:flex; align-items:center; gap:8px;">
-                            <span class="time subtle" id="time-${post.id}">${timeStr}</span>
-                            <div class="post-menu-container">
-                                <button class="post-menu-btn" onclick="togglePostMenu(event, ${post.id})"><svg viewBox="0 0 24 24" fill="currentColor" style="width:16px; height:16px;"><circle cx="12" cy="12" r="1.5"/><circle cx="6" cy="12" r="1.5"/><circle cx="18" cy="12" r="1.5"/></svg></button>
-                                <div class="post-menu" id="menu-${post.id}">
-                                    <button class="menu-item" onclick="openNoteModal(${post.id})">${post.myNote ? 'Edit Note' : 'Add Note'}</button>
-                                    <button class="menu-item" style="color:#e0245e;" onclick="event.stopPropagation(); alert('Delete feature coming soon')">Delete</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="post-text">${formatContent(post.content)}</div>
-                    ${mediaHTML} ${pollHTML} ${noteHTML}
-                    <div class="post-stats">
-                        <div class="stat-item ${post.liked ? 'liked' : ''}" id="like-btn-${post.id}" onclick="event.stopPropagation(); toggleLike(${post.id})">
-                            <svg class="stat-icon" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
-                            <span class="ticker-root" id="like-${post.id}"></span>
-                        </div>
-                        <div class="stat-item ${post.reposted ? 'reposted' : ''}" id="repost-btn-${post.id}" onclick="event.stopPropagation(); toggleRepost(${post.id})">
-                            <svg class="stat-icon" viewBox="0 0 24 24"><path d="M17 1l4 4-4 4"></path><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><path d="M7 23l-4-4 4-4"></path><path d="M21 13v2a4 4 0 0 1-4 4H3"></path></svg>
-                            <span class="ticker-root" id="repost-${post.id}"></span>
-                        </div>
-                        <div class="view-count-container"><span class="ticker-root" id="view-${post.id}"></span> <span class="subtle" style="margin-left:4px;font-weight:400;">views</span></div>
-                        ${clicksHTML}
-                    </div>
-                </div>
-            `;
-            
-            setTimeout(() => {
-                createTicker(div.querySelector(`#like-${post.id}`), post.likes);
-                createTicker(div.querySelector(`#repost-${post.id}`), post.reposts);
-                createTicker(div.querySelector(`#view-${post.id}`), post.views);
-                if(post.hasLink) createTicker(div.querySelector(`#clicks-${post.id}`), post.clicks);
-                if(post.poll) updatePollDOM(post, div.querySelector(`#poll-${post.id}`));
-            }, 0);
-
-            return div;
-        }
-
-        // --- HELPER FUNCTIONS ---
-        function toggleLike(postId) {
-            const post = state.posts.find(p => p.id === postId); if(!post) return;
-            post.liked = !post.liked; post.likes += post.liked ? 1 : -1;
-            const btn = document.getElementById(`like-btn-${postId}`); if(btn) { if(post.liked) btn.classList.add('liked'); else btn.classList.remove('liked'); }
-            updateTicker(document.getElementById(`like-${postId}`), post.likes);
-            const dBtn = document.getElementById(`detail-like-btn-${postId}`); if(dBtn) { if(post.liked) dBtn.classList.add('liked'); else dBtn.classList.remove('liked'); }
-            updateTicker(document.getElementById(`detail-like-${postId}`), post.likes);
-            saveData();
-        }
-        function toggleRepost(postId) {
-            const post = state.posts.find(p => p.id === postId); if(!post) return;
-            post.reposted = !post.reposted; post.reposts += post.reposted ? 1 : -1;
-            const btn = document.getElementById(`repost-btn-${postId}`); if(btn) { if(post.reposted) btn.classList.add('reposted'); else btn.classList.remove('reposted'); }
-            updateTicker(document.getElementById(`repost-${postId}`), post.reposts);
-            const dBtn = document.getElementById(`detail-repost-btn-${postId}`); if(dBtn) { if(post.reposted) dBtn.classList.add('reposted'); else dBtn.classList.remove('reposted'); }
-            updateTicker(document.getElementById(`detail-repost-${postId}`), post.reposts);
-            saveData();
-        }
-        function votePoll(postId, optIdx) {
-            const post = state.posts.find(p => p.id === postId); if(!post || post.poll.voted) return;
-            post.poll.voted = true; post.poll.totalVotes++; post.poll.options[optIdx].votes++;
-            updatePollDOM(post); saveData();
-        }
-        function togglePostMenu(event, postId) { 
-            event.stopPropagation(); 
-            closeAllMenus(); 
-            const menu = document.getElementById(`menu-${postId}`); 
-            if(menu) menu.classList.add('active'); 
-        }
-        function handleHandleClick(event, authorId, collabId) {
-            event.stopPropagation();
-            if(!collabId) { 
-                switchTab('profile', authorId); 
-            } else {
-                closeAllMenus(); 
-                const div = document.createElement('div'); 
-                div.className = 'post-menu active'; 
-                div.style.position = 'fixed'; 
-                div.style.left = event.clientX + 'px'; 
-                div.style.top = event.clientY + 'px'; 
-                div.style.zIndex = 1000;
-                
-                const bot = state.bots.find(b => b.id == collabId); 
-                const botName = bot ? bot.name : "Collaborator";
-                const author = authorId === 'me' ? state.user : state.bots.find(b => b.id == authorId); 
-                const authorName = author ? author.name : "Author";
-                
-                div.innerHTML = `<button class="menu-item" onclick="switchTab('profile', '${authorId}')">View ${authorName}</button><button class="menu-item" onclick="switchTab('profile', '${collabId}')">View ${botName}</button>`;
-                document.body.appendChild(div); 
-                const remover = () => { div.remove(); document.body.removeEventListener('click', remover); }; 
-                setTimeout(() => document.body.addEventListener('click', remover), 0);
-            }
-        }
-        function closeAllMenus(e) { 
-            document.querySelectorAll('.post-menu').forEach(el => { 
-                if(el.style.position !== 'fixed') el.classList.remove('active'); 
-            }); 
-        }
-        function openNoteModal(postId) { 
-            currentNotePostId = postId; 
-            const post = state.posts.find(p => p.id === postId); 
-            if(!post) return; 
-            document.getElementById('note-input').value = post.myNote || ""; 
-            document.getElementById('note-modal').classList.remove('hidden'); 
-            document.getElementById('note-modal').style.opacity = '1'; 
-        }
-        function closeNoteModal() { 
-            document.getElementById('note-modal').style.opacity = '0'; 
-            setTimeout(() => document.getElementById('note-modal').classList.add('hidden'), 300); 
-            currentNotePostId = null; 
-        }
-        function saveNote() { 
-            if(!currentNotePostId) return; 
-            const text = document.getElementById('note-input').value.trim(); 
-            const post = state.posts.find(p => p.id === currentNotePostId); 
-            if(post) { 
-                post.myNote = text; 
-                renderFeed(state.activeTab === 'notes' ? 'notes-feed' : state.activeTab === 'profile' ? 'profile-feed' : 'feed'); 
-                saveData(); 
-            } 
-            closeNoteModal(); 
-        }
-        function openCollabModal() { 
-            document.getElementById('collab-modal').classList.remove('hidden'); 
-            document.getElementById('collab-modal').style.opacity = '1'; 
-        }
-        function closeCollabModal() { 
-            document.getElementById('collab-modal').style.opacity = '0'; 
-            setTimeout(() => document.getElementById('collab-modal').classList.add('hidden'), 300); 
-        }
-        function confirmAddBot() { 
-            const name = document.getElementById('bot-name').value; 
-            let handle = document.getElementById('bot-handle').value; 
-            const aud = parseInt(document.getElementById('bot-audience').value) || 0; 
-            const fol = parseInt(document.getElementById('bot-followers').value) || 0; 
-            const isCustom = document.getElementById('bot-custom').checked; 
-            if(!name || !handle) return; 
-            if(!handle.startsWith('@')) handle = '@' + handle; 
-            const bot = { id: Date.now(), name, handle, audience: aud, followers: fol, following: false, isCustom: isCustom }; 
-            state.bots.push(bot); 
-            updateBotList(); 
-            closeCollabModal(); 
-            saveData(); 
-        }
-        function updateBotList() { 
-            const list = document.getElementById('bot-list'); 
-            const select1 = document.getElementById('collab-select-1'); 
-            const select2 = document.getElementById('collab-select-2'); 
-            list.innerHTML = state.bots.length ? state.bots.map(b => `<div><b>${b.name}</b> <span class="subtle">${b.handle}</span>${b.isCustom ? ' <span style="font-size:0.7rem;background:var(--border);padding:2px 4px;border-radius:4px;">Custom</span>' : ''}<br><span style="font-size:0.8rem">Aud: ${formatNumber(b.audience)} | Fol: ${formatNumber(b.followers)}</span></div>`).join('<hr style="border:0; border-top:1px solid var(--border); margin:0.5rem 0;">') : "No bots yet."; 
-            const opts = `<option value="">+ Collab</option>` + state.bots.map(b => `<option value="${b.id}">${b.name}</option>`).join(''); 
-            select1.innerHTML = opts; 
-            select2.innerHTML = opts; 
-        }
-        function toggleFollow(botId) { 
-            const bot = state.bots.find(b => b.id == botId); 
-            if(bot) { 
-                bot.following = !bot.following; 
-                saveData(); 
-                renderProfile(botId); 
-            } 
-        }
-        function updatePollDOM(post, element) { 
-            const el = element || document.getElementById(`poll-${post.id}`); 
-            if(!el) return; 
-            const total = post.poll.totalVotes || 1; 
-            const showResults = post.poll.voted || post.authorId === state.activeAccountId; 
-            let html = ''; 
-            post.poll.options.forEach((opt, idx) => { 
-                if(showResults) { 
-                    const pct = Math.round((opt.votes / total) * 100); 
-                    html += `<div class="poll-option" style="cursor: default;"><div class="poll-result-bg" style="width: ${pct}%"></div><span class="poll-text">${opt.text}</span><span class="poll-percent"><span class="ticker-root" id="poll-${post.id}-opt-${idx}">${pct}</span>%</span></div>`; 
-                } else { 
-                    html += `<div class="poll-option" onclick="event.stopPropagation(); votePoll(${post.id}, ${idx})"><span class="poll-text">${opt.text}</span></div>`; 
-                } 
-            }); 
-            if(showResults) html += `<div style="padding: 0.5rem 1rem; font-size: 0.8rem; color: var(--subtle); border-top: 1px solid var(--border);"><span class="ticker-root" id="poll-${post.id}-total">${post.poll.totalVotes}</span> votes</div>`; 
-            el.innerHTML = html; 
-            if(showResults) {
-                setTimeout(() => { 
-                    post.poll.options.forEach((opt, idx) => { 
-                        const pct = Math.round((opt.votes / total) * 100); 
-                        createTicker(el.querySelector(`#poll-${post.id}-opt-${idx}`), pct); 
-                    }); 
-                    createTicker(el.querySelector(`#poll-${post.id}-total`), post.poll.totalVotes); 
-                }, 0); 
-            } 
-        }
-
-        function updatePostStatsDOM(post) {
-            updateTicker(document.getElementById(`view-${post.id}`), post.views);
-            updateTicker(document.getElementById(`like-${post.id}`), post.likes);
-            updateTicker(document.getElementById(`repost-${post.id}`), post.reposts);
-            if(post.hasLink) updateTicker(document.getElementById(`clicks-${post.id}`), post.clicks);
-            
-            // Detail view update handled in loop if active
-        }
-
+            // Start animation after a slight delay to match the fade-in
+            setTimeout(animateCounter, 800);
+        });
     </script>
 </body>
 </html>
