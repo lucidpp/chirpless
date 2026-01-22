@@ -1,675 +1,1502 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="theme-color" content="#121212">
+    <title>Chirpless</title>
+    
+    <!-- PWA Settings -->
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <link rel="icon" type="image/png" href="siteicon.png">
-    <title>Chirpless AI</title>
-    
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        darkbg: '#121212',
-                        darkcard: '#1E1E1E',
-                        darkborder: '#2A2A2A',
-                    },
-                    animation: {
-                        'pulse-fast': 'pulse 1s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-                        'spin-slow': 'spin 3s linear infinite',
-                    }
-                }
-            }
-        }
-    </script>
-    
-    <!-- Fonts & Icons -->
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#ffffff">
+    <link rel="icon" href="siteicon.png" type="image/png">
+    <link rel="apple-touch-icon" href="siteicon.png">
+
+    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <script src="https://unpkg.com/@phosphor-icons/web"></script>
-    
-    <!-- Markdown & Highlight -->
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 
     <style>
-        body { font-family: 'Inter', sans-serif; -webkit-font-smoothing: antialiased; overscroll-behavior-y: none; user-select: none; }
-        #chat-container, #history-list, .prose { user-select: text; }
-        
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: #6b7280; }
-
-        @keyframes blink { 50% { opacity: 0; } }
-        
-        /* New Typing Cursor - Bouncing Ball */
-        .typing-cursor::after {
-            content: '';
-            display: inline-block;
-            width: 10px;
-            height: 10px;
-            background-color: currentColor;
-            border-radius: 50%;
-            margin-left: 6px;
-            animation: cursorBounce 0.6s infinite alternate cubic-bezier(0.5, 0.05, 1, 0.5);
-            vertical-align: baseline;
+        /* --- RESET & VARS --- */
+        :root {
+            --bg: #ffffff;
+            --text: #000000;
+            --subtle: #6e6e6e;
+            --border: #e8e8e8;
+            --accent: #000000;
+            --glass: rgba(255, 255, 255, 0.95);
+            --sidebar-width: 260px;
+            --font-main: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            --anim-speed: 0.8s;
+            --anim-ease: cubic-bezier(0.25, 1, 0.5, 1);
+            
+            /* Interaction Colors */
+            --like-color: #e0245e; 
+            --repost-grad: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
         }
-        @keyframes cursorBounce {
-            from { transform: translateY(0); opacity: 1; }
-            to { transform: translateY(-6px); opacity: 0.7; }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg: #050505;
+                --text: #ffffff;
+                --subtle: #888888;
+                --border: #222222;
+                --accent: #ffffff;
+                --glass: rgba(5, 5, 5, 0.95);
+            }
         }
-        
-        .bouncing-ball-container { display: flex; align-items: center; justify-content: center; width: 24px; height: 24px; }
-        .bouncing-ball { width: 10px; height: 10px; background-color: currentColor; border-radius: 50%; animation: singleBounce 0.6s infinite alternate cubic-bezier(0.5, 0.05, 1, 0.5); }
-        @keyframes singleBounce { from { transform: translateY(0); } to { transform: translateY(-10px); } }
 
-        .call-pulse { position: absolute; width: 100px; height: 100px; background: rgba(255, 255, 255, 0.1); border-radius: 50%; animation: pulse-ring 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite; }
-        @keyframes pulse-ring { 0% { transform: scale(0.5); opacity: 0; } 50% { opacity: 1; } 100% { transform: scale(1.5); opacity: 0; } }
+        * { box-sizing: border-box; outline: none; -webkit-tap-highlight-color: transparent; }
+        body, html { margin: 0; padding: 0; font-family: var(--font-main); background: var(--bg); color: var(--text); height: 100%; overflow: hidden; letter-spacing: -0.015em; }
 
-        .sidebar-btn { transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
-        .sidebar-btn:hover { transform: scale(1.05); }
-        .sidebar-btn:active { transform: scale(0.95); }
+        /* --- TYPOGRAPHY --- */
+        h1, h2, h3 { margin: 0; font-weight: 800; letter-spacing: -0.03em; }
+        p { margin: 0; line-height: 1.6; }
+        .bold { font-weight: 700; }
+        .subtle { color: var(--subtle); font-size: 0.9rem; }
+        .pointer { cursor: pointer; }
 
-        .prose pre { background-color: #1a1a1a !important; border: 1px solid #333; border-radius: 12px; margin: 16px 0; padding: 0 !important; overflow: hidden; position: relative; }
-        .prose code { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 0.9em; background-color: rgba(255,255,255,0.1); padding: 0.2em 0.4em; border-radius: 4px; color: #e5e7eb; }
-        .prose pre code { background-color: transparent; padding: 1em; display: block; overflow-x: auto; color: inherit; }
-        .prose { color: #d1d5db; }
-        .prose strong, .prose h1, .prose h2, .prose h3 { color: #fff; }
-        .prose a { color: #60a5fa; }
-
-        .code-header { display: flex; justify-content: space-between; align-items: center; padding: 8px 16px; background-color: #262626; border-bottom: 1px solid #333; font-size: 0.75rem; color: #9ca3af; font-weight: 600; }
-
-        @keyframes fade-in-up { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .animate-fade-in { animation: fade-in-up 0.3s ease-out forwards; }
-
-        .heart-liked { color: #ef4444; animation: heart-pop 0.3s ease-in-out; }
-        @keyframes heart-pop { 0% { transform: scale(1); } 50% { transform: scale(1.3); } 100% { transform: scale(1); } }
-        
-        .particle { position: absolute; width: 6px; height: 6px; border-radius: 50%; pointer-events: none; opacity: 0; }
-        @keyframes particle-explode { 0% { transform: translate(0, 0) scale(1); opacity: 1; } 100% { transform: translate(var(--tx), var(--ty)) scale(0); opacity: 0; } }
-
-        #toast-container { position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%); z-index: 100; pointer-events: none; }
-        .toast { background: #fff; color: #000; padding: 10px 20px; border-radius: 50px; font-size: 0.875rem; margin-top: 10px; opacity: 0; transform: translateY(10px); transition: all 0.3s ease; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        .toast.show { opacity: 1; transform: translateY(0); }
-
-        .nav-item.active i { color: #fff; font-weight: bold; }
-        .nav-item.active span { color: #fff; font-weight: 600; }
-        .nav-btn-click { animation: nav-click 0.2s ease-in-out; }
-        @keyframes nav-click { 0% { transform: scale(1); } 50% { transform: scale(0.9); } 100% { transform: scale(1); } }
-
-        .android-spinner { width: 20px; height: 20px; border: 2px solid rgba(255,255,255,0.3); border-radius: 50%; border-top-color: #fff; animation: spin 1s ease-in-out infinite; }
-        @keyframes spin { to { transform: rotate(360deg); } }
-        .modal-backdrop { background-color: rgba(0,0,0,0.6); backdrop-filter: blur(4px); }
-
-        /* Glass Shine Effect on Container */
-        .glass-shine {
-            position: relative;
+        /* --- ODOMETER ANIMATION --- */
+        .ticker-root {
+            display: inline-flex;
+            flex-direction: row;
+            align-items: flex-start;
             overflow: hidden;
+            height: 1.2em; 
+            line-height: 1.2em; 
+            vertical-align: text-bottom;
+            font-variant-numeric: tabular-nums;
+            position: relative;
+            mask-image: linear-gradient(to bottom, transparent 0%, black 10%, black 90%, transparent 100%);
+            -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 10%, black 90%, transparent 100%);
         }
-        .glass-shine::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 50%;
-            height: 100%;
-            background: linear-gradient(
-                120deg,
-                transparent,
-                rgba(255, 255, 255, 0.15),
-                transparent
-            );
-            animation: shine 4s infinite;
+        .ticker-digit-col {
+            display: flex;
+            flex-direction: column;
+            transition: transform var(--anim-speed) var(--anim-ease);
+            will-change: transform;
         }
+        .ticker-digit {
+            height: 1.2em;
+            line-height: 1.2em;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* --- UI COMPONENTS --- */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5); 
+            backdrop-filter: blur(5px);
+            z-index: 999;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            text-align: center;
+            transition: opacity 0.3s ease;
+        }
+        .modal-overlay.hidden { opacity: 0; pointer-events: none; }
+        
+        #onboarding { background: var(--bg); }
+
+        .modal-card {
+            background: var(--bg);
+            padding: 2rem;
+            border-radius: 24px;
+            max-width: 400px;
+            width: 100%;
+            border: 1px solid var(--border);
+            text-align: left;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .input-group { margin: 1rem 0; width: 100%; text-align: left; }
+        .input-group label { display: block; font-size: 0.75rem; color: var(--subtle); margin-bottom: 0.5rem; font-weight: 700; letter-spacing: 0.02em; text-transform: uppercase; }
+        input[type="text"], input[type="number"], textarea.modal-input {
+            width: 100%; padding: 1rem; background: var(--bg); border: 1px solid var(--border); border-radius: 14px; color: var(--text); font-size: 1rem; font-family: inherit; transition: border-color 0.2s;
+        }
+        textarea.modal-input { min-height: 100px; resize: none; }
+        input:focus, textarea.modal-input:focus { border-color: var(--text); }
+        
+        .btn-primary {
+            background: var(--text); color: var(--bg); border: none; padding: 1rem; border-radius: 14px; font-weight: 700; cursor: pointer; width: 100%; margin-top: 1rem; transition: transform 0.1s;
+        }
+        .btn-primary:active { transform: scale(0.98); }
+        .btn-secondary {
+            background: transparent; color: var(--subtle); border: 1px solid var(--border); padding: 0.8rem; border-radius: 14px; font-weight: 600; cursor: pointer; width: 100%; margin-top: 0.5rem;
+        }
+
+        /* --- LAYOUT --- */
+        #app { display: none; flex-direction: row; height: 100%; }
+
+        /* SIDEBAR */
+        .sidebar {
+            width: var(--sidebar-width); height: 100%; padding: 2rem; display: flex; flex-direction: column;
+            border-right: 1px solid var(--border); position: relative; background: var(--glass); z-index: 10;
+        }
+
+        .brand { font-size: 1.5rem; font-weight: 900; margin-bottom: 2rem; display: flex; align-items: center; gap: 12px; letter-spacing: -1px; }
+        
+        .nav-btn {
+            background: transparent; border: none; text-align: left; padding: 1rem 1.2rem; font-size: 1.05rem;
+            color: var(--subtle); cursor: pointer; transition: color 0.2s, transform 0.2s;
+            display: flex; align-items: center; gap: 15px; font-weight: 600;
+            border-radius: 16px; margin-bottom: 0.5rem;
+            position: relative; overflow: hidden;
+        }
+        .nav-btn.active { color: var(--text); font-weight: 800; background: var(--border); }
+        .nav-btn:hover { color: var(--text); background: rgba(125,125,125,0.05); }
+        
+        /* Glass Shine */
         @keyframes shine {
-            0% { left: -100%; }
-            20% { left: 200%; }
-            100% { left: 200%; }
+            0% { left: -100%; opacity: 0.5; }
+            50% { opacity: 1; }
+            100% { left: 150%; opacity: 0.5; }
+        }
+        .nav-btn::after, .glass-shine::after {
+            content: ''; position: absolute; top: 0; left: -100%; width: 50%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+            transform: skewX(-20deg); pointer-events: none; transition: 0.5s;
+        }
+        @media (prefers-color-scheme: dark) {
+            .nav-btn::after, .glass-shine::after { background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent); }
+        }
+        .nav-btn:hover::after, .glass-shine:hover::after { animation: shine 1.2s cubic-bezier(0.25, 1, 0.5, 1); }
+        
+        .sidebar-stats { margin-top: auto; padding-top: 2rem; border-top: 1px solid var(--border); }
+        .stat-block { margin-bottom: 1.5rem; }
+        .stat-label { font-size: 0.75rem; color: var(--subtle); text-transform: uppercase; font-weight: 700; margin-bottom: 0.3rem; letter-spacing: 0.05em; }
+        .stat-value { font-size: 1.3rem; font-weight: 800; letter-spacing: -0.02em; }
+
+        /* MAIN CONTENT */
+        .main-content {
+            flex: 1; display: flex; flex-direction: column; position: relative; max-width: 650px; margin: 0 auto; width: 100%; height: 100%;
         }
 
-        /* Text Shimmer Effect */
-        .text-shimmer {
-            background: linear-gradient(90deg, #ffffff 0%, #a1a1aa 50%, #ffffff 100%);
-            background-size: 200% auto;
-            color: transparent;
-            background-clip: text;
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            animation: textShine 3s linear infinite;
+        .top-bar {
+            padding: 1rem 1.5rem; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;
+            background: rgba(255,255,255,0.85); backdrop-filter: blur(12px); position: sticky; top: 0; z-index: 20; flex-shrink: 0;
         }
-        @keyframes textShine {
-            to { background-position: 200% center; }
+        @media (prefers-color-scheme: dark) { .top-bar { background: rgba(0,0,0,0.85); } }
+
+        .day-counter { font-weight: 800; font-size: 0.9rem; padding: 0.5rem 1rem; background: var(--border); border-radius: 20px; }
+        .btn-next-day {
+            background: var(--text); color: var(--bg); border: none; padding: 0.6rem 1.4rem; border-radius: 20px; 
+            font-weight: 700; font-size: 0.9rem; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+        .btn-next-day:hover { transform: translateY(-1px); box-shadow: 0 6px 15px rgba(0,0,0,0.15); }
+        .btn-next-day:active { transform: scale(0.96); }
+
+        .mobile-stats-bar {
+            display: none; padding: 0.8rem 1rem; background: var(--bg); border-bottom: 1px solid var(--border); gap: 1rem; justify-content: space-between; font-size: 0.9rem;
+            position: sticky; top: 61px; z-index: 15; flex-shrink: 0;
         }
 
-        /* Suggestion Chips */
-        .suggestion-chip {
-            background: rgba(255,255,255,0.05);
-            border: 1px solid #2A2A2A;
-            padding: 10px 16px;
-            border-radius: 99px;
-            font-size: 0.85rem;
-            color: #9ca3af;
-            cursor: pointer;
-            transition: all 0.2s;
+        .view-section { 
+            display: none; flex-direction: column; flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding-bottom: 80px;
         }
-        .suggestion-chip:hover {
-            background: rgba(255,255,255,0.1);
-            color: white;
-            border-color: #4b5563;
+        .view-section.active { display: flex; }
+
+        /* POST DETAIL VIEW */
+        .post-detail-header {
+            padding: 1rem 1.5rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 1rem;
+            position: sticky; top: 0; background: rgba(255,255,255,0.85); backdrop-filter: blur(12px); z-index: 20; flex-shrink: 0;
+        }
+        @media (prefers-color-scheme: dark) { .post-detail-header { background: rgba(0,0,0,0.85); } }
+        
+        .post-detail-content { padding: 1.5rem; }
+        .post-detail-text { font-size: 1.4rem; line-height: 1.4; margin: 1rem 0; white-space: pre-wrap; font-weight: 500; }
+        .post-detail-stats { 
+            display: flex; gap: 2rem; padding: 1rem 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); margin-top: 1.5rem;
+        }
+        .detail-stat-item { display: flex; flex-direction: column; }
+        .detail-stat-label { font-size: 0.75rem; color: var(--subtle); text-transform: uppercase; font-weight: 700; margin-top: 4px; }
+        .detail-stat-value { font-size: 1.2rem; font-weight: 800; }
+        .post-detail-actions { display: flex; justify-content: space-around; padding: 1rem 0; border-bottom: 1px solid var(--border); }
+        .post-detail-actions .stat-item { transform: scale(1.2); }
+
+        /* COMPOSER */
+        .composer { padding: 1.5rem; border-bottom: 1px solid var(--border); display: flex; gap: 1rem; flex-direction: column; flex-shrink: 0; }
+        .composer-top { display: flex; gap: 1rem; }
+        .avatar {
+            width: 44px; height: 44px; background: #333; color: #fff; border-radius: 50%; flex-shrink: 0; 
+            display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1.1rem; 
+            cursor: pointer; overflow: hidden; position: relative;
+        }
+        .avatar img { width: 100%; height: 100%; object-fit: cover; }
+        
+        textarea { width: 100%; border: none; resize: none; background: transparent; font-family: inherit; font-size: 1.1rem; color: var(--text); min-height: 50px; padding: 0.5rem 0; line-height: 1.4; }
+        textarea::placeholder { color: var(--subtle); opacity: 0.7; }
+        
+        .image-preview-container {
+            position: relative; margin-top: 10px; display: none; width: 100%; border-radius: 12px; overflow: hidden;
+        }
+        .image-preview-container.active { display: block; }
+        .image-preview { width: 100%; max-height: 300px; object-fit: cover; display: block; border-radius: 12px; border: 1px solid var(--border); }
+        .remove-image-btn {
+            position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.6); color: white; border: none;
+            border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; cursor: pointer;
         }
 
-        /* Deep Thinking Active */
-        .deep-mode-active {
-            box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
-            border-color: rgba(59, 130, 246, 0.5) !important;
+        .composer-tools { display: flex; justify-content: space-between; align-items: center; padding-left: 60px; }
+        .tools-left { display: flex; gap: 0.5rem; align-items: center; }
+        .collab-select { font-size: 0.85rem; padding: 0.4rem 0.8rem; border-radius: 15px; border: 1px solid var(--border); background: transparent; color: var(--text); cursor: pointer; }
+        .btn-icon { background: transparent; border: 1px solid var(--border); padding: 0.4rem; border-radius: 50%; color: var(--text); cursor: pointer; display: flex; align-items: center; justify-content: center;}
+        .btn-icon:hover { background: var(--border); }
+        .btn-post { background: var(--text); color: var(--bg); border: none; padding: 0.6rem 1.6rem; border-radius: 24px; font-weight: 700; cursor: pointer; opacity: 0.5; pointer-events: none; transition: 0.2s; }
+        .btn-post.active { opacity: 1; pointer-events: auto; }
+
+        .poll-creator { display: none; flex-direction: column; gap: 0.5rem; margin-top: 0.5rem; padding: 1rem; background: var(--border); border-radius: 16px; margin-left: 60px; }
+        .poll-creator.active { display: flex; }
+        .poll-creator input { padding: 0.6rem; font-size: 0.9rem; background: var(--bg); border-radius: 10px; }
+
+        /* POSTS */
+        .post { 
+            padding: 1.5rem; border-bottom: 1px solid var(--border); display: flex; gap: 1rem; 
+            animation: slideIn 0.4s ease-out; position: relative; flex-shrink: 0; 
+            overflow: hidden; cursor: pointer;
         }
+        .post:hover { background: rgba(125,125,125,0.02); }
+        @keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .post-header { display: flex; justify-content: space-between; margin-bottom: 0.4rem; align-items: flex-start; }
+        .handle-group { display: flex; align-items: center; flex-wrap: wrap; cursor: pointer; gap: 4px; transition: opacity 0.2s; }
+        .handle-group:hover { opacity: 0.8; }
+        .handle { font-weight: 800; color: var(--text); text-decoration: none; display: flex; align-items: center; gap: 3px; }
+        
+        .verified-badge { width: 14px; height: 14px; fill: var(--text); flex-shrink: 0; }
+        .collab-text { font-size: 0.9rem; color: var(--subtle); margin-left: 4px; }
+        .collab-text:hover { text-decoration: underline; color: var(--text); }
+        .post-text { font-size: 1rem; line-height: 1.6; margin-bottom: 1rem; white-space: pre-wrap; font-weight: 400; }
+        .post-image { width: 100%; height: auto; border-radius: 12px; margin-bottom: 1rem; border: 1px solid var(--border); display: block; max-height: 500px; object-fit: cover; }
+
+        /* MENUS */
+        .post-menu-container { position: relative; }
+        .post-menu-btn { background: none; border: none; padding: 4px; cursor: pointer; color: var(--subtle); border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+        .post-menu-btn:hover { background: var(--border); color: var(--text); }
+        .post-menu { 
+            position: absolute; right: 0; top: 100%; background: var(--bg); border: 1px solid var(--border); 
+            border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.15); display: none; z-index: 100; min-width: 160px; overflow: hidden;
+            margin-top: 4px; padding: 0.5rem 0;
+        }
+        .post-menu.active { display: block; }
+        .menu-item { display: block; padding: 0.8rem 1.2rem; width: 100%; text-align: left; background: none; border: none; cursor: pointer; font-size: 0.9rem; color: var(--text); font-weight: 500; font-family: inherit; }
+        .menu-item:hover { background: var(--border); }
+
+        .private-note { 
+            background: rgba(0,0,0,0.03); padding: 1rem; border-radius: 12px; margin-bottom: 1rem; font-size: 0.9rem; 
+            color: var(--text); border-left: 3px solid var(--text); font-style: italic; display: flex; flex-direction: column; gap: 4px;
+        }
+        .private-note-label { font-size: 0.7rem; font-weight: 800; color: var(--subtle); text-transform: uppercase; letter-spacing: 0.05em; }
+
+        /* POLL DISPLAY */
+        .poll-wrapper { margin-bottom: 1rem; border: 1px solid var(--border); border-radius: 16px; overflow: hidden; }
+        .poll-option {
+            padding: 0.8rem 1rem; background: var(--bg); border-bottom: 1px solid var(--border); cursor: pointer;
+            display: flex; justify-content: space-between; align-items: center; position: relative; height: 3.2rem;
+        }
+        .poll-option:last-child { border-bottom: none; }
+        .poll-option:hover { background: rgba(0,0,0,0.02); }
+        .poll-result-bg {
+            position: absolute; top:0; left:0; height:100%; background: rgba(0,0,0,0.06); z-index: 0; transition: width 0.8s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+        @media (prefers-color-scheme: dark) { .poll-result-bg { background: rgba(255,255,255,0.1); } }
+        .poll-text { z-index: 1; font-weight: 600; font-size: 0.95rem; }
+        .poll-percent { z-index: 1; font-weight: 700; display: flex; align-items: center; font-size: 0.9rem; }
+        
+        .post-stats { display: flex; gap: 1.5rem; font-size: 0.9rem; color: var(--subtle); align-items: center; }
+        .stat-item { display: flex; align-items: center; gap: 6px; cursor: pointer; transition: transform 0.1s; user-select: none; }
+        .stat-item:active { transform: scale(0.9); }
+        .stat-icon { stroke: currentColor; fill: transparent; transition: 0.3s; width: 19px; height: 19px; }
+        .stat-item.liked .stat-icon { fill: var(--text); stroke: var(--text); animation: bounce 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        @keyframes bounce { 0% { transform: scale(1); } 50% { transform: scale(1.4); } 100% { transform: scale(1); } }
+        .stat-item.reposted .stat-icon { stroke: orange; animation: spin 0.6s ease; }
+        .stat-item.reposted { color: orange; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .view-count-container { margin-top: 1rem; font-size: 0.85rem; color: var(--subtle); font-weight: 700; display: flex; align-items: center; gap: 4px; opacity: 0.9; }
+
+        /* PROFILE */
+        .profile-header { padding: 2rem 1.5rem; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+        .profile-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem; }
+        .profile-info h2 { font-size: 1.8rem; margin-bottom: 0.2rem; display: flex; align-items: center; gap: 6px; cursor: pointer; }
+        .profile-handle { color: var(--subtle); margin-bottom: 1rem; display: block; }
+        .profile-stats-row { display: flex; gap: 1.5rem; font-size: 0.95rem; }
+        .profile-stat span { font-weight: 800; color: var(--text); }
+        .profile-action-btn { background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 0.5rem 1.2rem; border-radius: 12px; font-weight: 600; cursor: pointer; }
+        .profile-action-btn.primary { background: var(--text); color: var(--bg); border: none; }
+        
+        /* Bounce Animation */
+        @keyframes bounce-click { 0% { transform: scale(1); } 50% { transform: scale(0.9); } 100% { transform: scale(1); } }
+        .bounce-active { animation: bounce-click 0.3s ease; }
+
+        /* MOBILE NAV */
+        .mobile-nav {
+            display: none; position: fixed; bottom: 0; left: 0; right: 0; height: 60px; background: var(--bg); border-top: 1px solid var(--border); justify-content: space-around; align-items: center; z-index: 50; padding-bottom: env(safe-area-inset-bottom);
+        }
+        
+        @media (max-width: 768px) {
+            .sidebar { display: none; }
+            .mobile-nav { display: flex; }
+            #app { flex-direction: column; }
+            .main-content { max-width: 100%; border-right: none; }
+            .composer { padding: 1rem; }
+            .composer-tools { padding-left: 0; }
+            .poll-creator { margin-left: 0; }
+            .post { padding: 1rem; }
+            .sidebar-stats { display: none; }
+            .mobile-stats-bar { display: flex; }
+        }
+        
+        svg { width: 20px; height: 20px; stroke-width: 2; }
     </style>
 </head>
-<body class="h-screen flex overflow-hidden bg-darkbg text-gray-100" oncontextmenu="return false;">
+<body onclick="closeAllMenus(event)">
 
-    <!-- Sidebar -->
-    <aside class="w-[80px] bg-darkcard border-r border-darkborder flex-col hidden md:flex z-20 flex-shrink-0 items-center py-6 gap-4">
-        <button onclick="startNewChat()" class="sidebar-btn glass-shine w-12 h-12 rounded-full border border-gray-700 flex items-center justify-center text-gray-400 hover:text-white hover:border-white transition-colors shadow-sm bg-darkcard" title="New Chat">
-            <i class="ph ph-plus text-xl"></i>
-        </button>
-        <div class="flex-1 flex flex-col gap-4 mt-4 w-full items-center">
-            <button onclick="switchView('chat')" id="nav-chat" class="sidebar-btn w-10 h-10 rounded-2xl flex items-center justify-center text-gray-500 hover:text-black dark:text-gray-400 dark:hover:text-white transition-colors bg-black text-white shadow-md">
-                <i class="ph-fill ph-chat-circle-text text-xl"></i>
-            </button>
-            <button onclick="switchView('explore')" id="nav-explore" class="sidebar-btn w-10 h-10 rounded-2xl flex items-center justify-center text-gray-400 hover:text-black dark:text-gray-500 dark:hover:text-white transition-colors hover:bg-gray-100 dark:hover:bg-gray-800">
-                <i class="ph ph-squares-four text-xl"></i>
-            </button>
-            <button onclick="openHistoryDrawer()" id="nav-history" class="sidebar-btn w-10 h-10 rounded-2xl flex items-center justify-center text-gray-400 hover:text-black dark:text-gray-500 dark:hover:text-white transition-colors hover:bg-gray-100 dark:hover:bg-gray-800">
-                <i class="ph ph-clock-counter-clockwise text-xl"></i>
-            </button>
+    <!-- Onboarding -->
+    <div id="onboarding" class="modal-overlay">
+        <div style="margin-bottom: 2rem;">
+            <h1>Welcome to Chirpless.</h1>
+            <p class="subtle">Simulation of fame.</p>
         </div>
-        <div class="mt-2">
-            <button onclick="openProfileModal()" class="sidebar-btn w-10 h-10 rounded-full bg-gray-800 overflow-hidden border-2 border-transparent hover:border-gray-600 transition-all relative group">
-                <img id="sidebar-pfp" src="" class="w-full h-full object-cover">
-                <div class="absolute inset-0 bg-black/10 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                    <i class="ph-fill ph-gear text-white text-xs"></i>
-                </div>
-            </button>
-        </div>
-    </aside>
+        <div class="input-group"><label>DISPLAY NAME</label><input type="text" id="setup-name" placeholder="e.g. Jane Doe" autocomplete="off"></div>
+        <div class="input-group"><label>HANDLE</label><input type="text" id="setup-handle" placeholder="e.g. janedoe" autocomplete="off"></div>
+        <div class="input-group"><label>INITIAL MONTHLY AUDIENCE</label><input type="number" id="setup-audience" value="1200"></div>
+        <div class="input-group"><label>INITIAL FOLLOWERS</label><input type="number" id="setup-followers" value="450"></div>
+        <button class="btn-primary" onclick="startApp()">Enter Simulation</button>
+    </div>
 
-    <!-- Main Content -->
-    <main class="flex-1 flex flex-col relative h-full bg-darkbg w-full">
-        <div id="user-banner" class="hidden h-32 w-full bg-cover bg-center shrink-0"></div>
-
-        <!-- Top Bar -->
-        <header class="h-14 flex items-center justify-between px-4 sticky top-0 bg-darkbg/95 backdrop-blur-sm z-10 w-full border-b border-transparent transition-all" id="main-header">
-            <div class="w-8 md:hidden"></div>
+    <!-- Collaboration Modal -->
+    <div id="collab-modal" class="modal-overlay hidden">
+        <div class="modal-card">
+            <h2>Collaboration Hub</h2>
+            <p class="subtle" style="margin-bottom: 1.5rem;">Create bots to collaborate with. Enable "Custom Bot" to control them.</p>
+            <div class="input-group"><label>BOT NAME</label><input type="text" id="bot-name" placeholder="e.g. Cool Brand"></div>
+            <div class="input-group"><label>BOT HANDLE</label><input type="text" id="bot-handle" placeholder="e.g. coolbrand"></div>
+            <div style="display: flex; gap: 1rem;">
+                <div class="input-group"><label>AUDIENCE</label><input type="number" id="bot-audience" value="50000"></div>
+                <div class="input-group"><label>FOLLOWERS</label><input type="number" id="bot-followers" value="2000"></div>
+            </div>
+            <!-- Checkbox for custom -->
+            <div style="margin-bottom:1rem; display:flex; align-items:center; gap:8px;">
+                <input type="checkbox" id="bot-custom" style="width:auto;">
+                <label for="bot-custom" style="margin:0; font-size:0.9rem; font-weight:600; cursor:pointer;">Enable Control (Custom Bot)</label>
+            </div>
             
-            <div class="flex-1 flex justify-center">
-                <button onclick="openCharacterInfo()" class="flex items-center gap-2 group hover:bg-gray-800 px-4 py-2 rounded-xl transition-all border border-transparent hover:border-gray-700">
-                    <span id="header-char-name" class="font-bold text-lg text-white">Chirpless X7</span>
-                    <i class="ph-fill ph-seal-check text-orange-500 text-xl" title="Verified Character"></i>
+            <button class="btn-primary" onclick="confirmAddBot()">Create Bot</button>
+            <button class="btn-secondary" onclick="closeCollabModal()">Close</button>
+            <div style="margin-top: 2rem; border-top: 1px solid var(--border); padding-top: 1rem;">
+                <label style="font-size: 0.8rem; color: var(--subtle); font-weight: 600;">EXISTING BOTS</label>
+                <div id="bot-list" style="margin-top: 0.5rem; font-size: 0.9rem; color: var(--subtle);">No bots yet.</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Note Modal -->
+    <div id="note-modal" class="modal-overlay hidden">
+        <div class="modal-card">
+            <h2>Private Note</h2>
+            <p class="subtle" style="margin-bottom: 1rem;">Add a private note to this post. Only you can see this.</p>
+            <textarea id="note-input" class="modal-input" placeholder="Type your thoughts..."></textarea>
+            <button class="btn-primary" onclick="saveNote()">Save Note</button>
+            <button class="btn-secondary" onclick="closeNoteModal()">Cancel</button>
+        </div>
+    </div>
+
+    <!-- Main App -->
+    <div id="app">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="brand">Chirpless</div>
+            <nav>
+                <button class="nav-btn active" onclick="switchTab('home')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg> Home
                 </button>
+                <button class="nav-btn" onclick="switchTab('search')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg> Search
+                </button>
+                <button class="nav-btn" onclick="switchTab('profile')">
+                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg> Profile
+                </button>
+                <button class="nav-btn" onclick="switchTab('notes')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg> Notes
+                </button>
+                <button class="nav-btn" onclick="openCollabModal()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg> Collaborate
+                </button>
+            </nav>
+            <div class="sidebar-stats">
+                <div class="stat-block"><div class="stat-label">Monthly Audience</div><div class="stat-value ticker-root" id="audience-count">0</div></div>
+                <div class="stat-block"><div class="stat-label">Followers</div><div class="stat-value ticker-root" id="follower-count">0</div></div>
+            </div>
+        </aside>
+
+        <!-- Content -->
+        <main class="main-content">
+            <div class="top-bar">
+                <div class="day-counter">Day <span id="day-display">1</span></div>
+                <button class="btn-next-day" onclick="nextDay()">Next Day &rarr;</button>
             </div>
 
-            <div class="flex items-center gap-2">
-                <button onclick="openPlansModal()" class="px-3 py-1 bg-white text-black text-xs font-bold rounded-full hover:opacity-80 transition-opacity mr-2 glass-shine">Upgrade</button>
-                <button onclick="openCallMode()" class="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-green-500 hover:bg-green-900/20 rounded-full transition-colors"><i class="ph-fill ph-phone-call text-xl"></i></button>
-                <button class="md:hidden w-8 h-8 flex items-center justify-center text-gray-400" onclick="openHistoryDrawer()"><i class="ph ph-clock-counter-clockwise text-xl"></i></button>
+            <div class="mobile-stats-bar" id="mobile-stats">
+                <div style="display: flex; gap: 5px;">Audience: <span class="ticker-root bold" id="mob-audience-count">0</span></div>
+                <div style="display: flex; gap: 5px;">Followers: <span class="ticker-root bold" id="mob-follower-count">0</span></div>
             </div>
-            <div class="hidden md:block w-8"></div> 
-        </header>
 
-        <!-- VIEWS -->
-        <div id="view-chat" class="flex-1 flex flex-col h-full overflow-hidden relative w-full max-w-full">
-            <div id="chat-container" class="flex-1 overflow-y-auto p-4 md:p-0 w-full scroll-smooth">
-                <div class="max-w-3xl mx-auto w-full min-h-full flex flex-col justify-end">
-                    <div class="flex flex-col items-center justify-center flex-1 text-center space-y-6 mt-10 md:mt-0 mb-10" id="empty-state">
-                        <div class="w-20 h-20 bg-gradient-to-br from-gray-800 to-gray-700 border border-gray-600 rounded-[2rem] flex items-center justify-center shadow-sm mb-2 transform hover:scale-105 transition-transform duration-500 glass-shine">
-                            <i class="ph-fill ph-feather text-4xl text-white"></i>
-                        </div>
-                        <h2 id="greeting-text" class="text-3xl font-bold text-white tracking-tight">How can I help you?</h2>
-                        <!-- Suggestion Chips -->
-                        <div id="suggestion-chips" class="flex flex-wrap justify-center gap-2 max-w-md px-4">
-                            <!-- Populated by JS -->
+            <!-- HOME TAB -->
+            <div id="view-home" class="view-section active">
+                <div class="composer">
+                    <div class="composer-top">
+                        <div class="avatar" id="user-avatar" onclick="switchTab('profile')">?</div>
+                        <div class="composer-area">
+                            <textarea id="post-input" placeholder="What's new?" oninput="checkInput()"></textarea>
+                            <div class="image-preview-container" id="image-preview-container">
+                                <img src="" id="image-preview" class="image-preview">
+                                <button class="remove-image-btn" onclick="removeImage()">✕</button>
+                            </div>
                         </div>
                     </div>
-                    <div id="messages-list" class="flex flex-col gap-6 py-6 px-4 md:px-0 w-full"></div>
-                    <!-- Large Shimmering Loading Text -->
-                    <div id="loading-indicator" class="hidden px-6 py-4 max-w-md mx-auto w-full">
-                         <div class="text-3xl font-bold text-shimmer text-center animate-pulse" id="loading-text">Thinking...</div>
+                    <div class="composer-tools">
+                        <div class="tools-left">
+                            <select id="collab-select" class="collab-select"><option value="">No Collaborator</option></select>
+                            
+                            <!-- Image Upload Button -->
+                            <button class="btn-icon" onclick="triggerImageUpload()" title="Add Image">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                            </button>
+                            <input type="file" id="image-upload-input" accept="image/*" style="display: none;" onchange="handleImageFile(this)">
+
+                            <!-- Poll Button -->
+                            <button class="btn-icon" onclick="togglePollCreator()" title="Create Poll">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 20v-6M6 20V10M18 20V4"></path></svg>
+                            </button>
+                        </div>
+                        <button class="btn-post" id="post-btn" onclick="createPost()">Post</button>
+                    </div>
+                    <div class="poll-creator" id="poll-creator">
+                        <input type="text" id="poll-opt-1" placeholder="Option 1">
+                        <input type="text" id="poll-opt-2" placeholder="Option 2">
                     </div>
                 </div>
+                <div id="feed"></div>
             </div>
 
-            <div class="flex-shrink-0 bg-darkbg pt-2 pb-24 md:pb-6 px-4 border-t border-transparent z-20 transition-colors">
-                <div class="max-w-3xl mx-auto">
-                    <div class="flex justify-between items-center mb-2 px-2">
-                        <span class="text-[10px] font-bold text-gray-400 uppercase" id="chat-limit-display">Chats left: 20</span>
-                    </div>
-                    <!-- Chat Box with Glass Shine -->
-                    <form onsubmit="sendMessage(event)" id="chat-form" class="glass-shine relative flex items-end gap-2 bg-[#1E1E1E] rounded-[32px] border border-transparent focus-within:border-gray-600 focus-within:bg-[#2A2A2A] transition-all p-2 shadow-sm ring-0 outline-none">
-                        <input type="file" id="file-upload" class="hidden" />
-                        <button type="button" onclick="document.getElementById('file-upload').click()" class="p-3 text-gray-400 hover:text-white rounded-full hover:bg-gray-700 transition-colors ml-1 mb-0.5">
-                            <i class="ph ph-plus text-lg"></i>
-                        </button>
-                        <textarea id="user-input" rows="1" placeholder="Message..." class="w-full bg-transparent border-none focus:ring-0 outline-none py-3.5 px-2 max-h-52 resize-none text-gray-200 placeholder-gray-500 font-normal leading-relaxed text-base" oninput="this.style.height = ''; this.style.height = this.scrollHeight + 'px'" onkeydown="if(event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); sendMessage(event); }"></textarea>
-                        
-                        <!-- Deep Thinking Button -->
-                        <button type="button" id="deep-think-btn" onclick="toggleDeepThinking()" class="p-3 text-gray-400 hover:text-blue-400 rounded-full hover:bg-gray-700 transition-colors mb-0.5" title="Deep Thinking (1 Free Try)">
-                            <i class="ph-fill ph-brain text-xl"></i>
-                        </button>
-
-                        <button type="button" id="mic-btn" onclick="toggleSpeechRecognition()" class="p-3 text-gray-400 hover:text-white rounded-full hover:bg-gray-700 transition-colors mb-0.5">
-                            <i class="ph-fill ph-microphone text-xl" id="mic-icon"></i>
-                        </button>
-                        <button type="submit" class="p-3 bg-white text-black rounded-full hover:bg-gray-200 disabled:opacity-30 disabled:cursor-not-allowed transition-all mb-0.5 mr-0.5 shadow-md hover:scale-105 active:scale-95 flex-shrink-0 flex items-center justify-center w-11 h-11" id="send-btn" disabled>
-                            <i class="ph-fill ph-arrow-up text-xl" id="send-icon"></i>
-                            <div class="android-spinner hidden" id="send-spinner"></div>
-                        </button>
-                    </form>
-                    <div class="text-center mt-3 text-xs text-gray-400 font-medium hidden md:block">Chirpless can make mistakes.</div>
+            <!-- SEARCH TAB -->
+            <div id="view-search" class="view-section">
+                <div style="padding: 1rem 1.5rem; border-bottom: 1px solid var(--border); flex-shrink: 0;">
+                    <input type="text" id="search-input" placeholder="Search posts..." oninput="renderSearch()">
                 </div>
+                <div id="search-results"></div>
             </div>
+
+            <!-- PROFILE TAB -->
+            <div id="view-profile" class="view-section">
+                <div id="profile-container"></div>
+                <div id="profile-feed"></div>
+            </div>
+
+            <!-- NOTES TAB -->
+            <div id="view-notes" class="view-section">
+                <div style="padding: 2rem 1.5rem; border-bottom: 1px solid var(--border); flex-shrink: 0;">
+                    <h2>My Notes</h2>
+                    <p class="subtle">Private thoughts on posts.</p>
+                </div>
+                <div id="notes-feed"></div>
+            </div>
+
+            <!-- POST DETAIL TAB -->
+            <div id="view-post-detail" class="view-section">
+                <div class="post-detail-header">
+                    <button class="btn-icon" onclick="goBackFromPost()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+                    </button>
+                    <span class="bold">Post</span>
+                </div>
+                <div id="post-detail-container"></div>
+            </div>
+        </main>
+
+        <!-- Mobile Nav -->
+        <div class="mobile-nav">
+            <div class="nav-btn" onclick="switchTab('home')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg></div>
+            <div class="nav-btn" onclick="switchTab('search')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg></div>
+            <div class="nav-btn" onclick="switchTab('profile')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg></div>
+            <div class="nav-btn" onclick="switchTab('notes')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><line x1="16" y1="13" x2="8" y2="13"></line></svg></div>
+            <div class="nav-btn" onclick="openCollabModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle></svg></div>
         </div>
 
-        <!-- Explore View -->
-        <div id="view-explore" class="hidden flex-1 overflow-y-auto p-6 md:p-10 bg-darkbg w-full mb-[60px] md:mb-0 transition-colors">
-            <div class="max-w-5xl mx-auto">
-                <div class="flex items-center gap-4 mb-8">
-                    <div class="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-lg transform -rotate-3">
-                        <i class="ph-fill ph-compass text-black text-2xl"></i>
-                    </div>
-                    <div><h1 class="text-3xl font-bold text-white">Explore Characters</h1><p class="text-gray-500">Select a personality to chat with.</p></div>
-                </div>
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="explore-grid"></div>
-            </div>
-        </div>
-    </main>
-
-    <!-- Mobile Nav -->
-    <nav class="fixed bottom-0 left-0 right-0 bg-darkcard border-t border-darkborder h-[50px] md:hidden z-30 flex items-center justify-around px-4 pb-safe transition-colors">
-        <button onclick="mobileNavClick(this, 'chat')" id="mobile-nav-chat" class="nav-item flex flex-col items-center justify-center text-gray-400 w-full h-full active"><i class="ph-fill ph-chat-circle-text text-2xl"></i></button>
-        <button onclick="startNewChat()" class="nav-item flex flex-col items-center justify-center text-white w-full h-full transform active:scale-90 transition-transform"><div class="w-10 h-10 bg-white rounded-full flex items-center justify-center text-black shadow-lg -mt-8"><i class="ph-bold ph-plus text-xl"></i></div></button>
-        <button onclick="mobileNavClick(this, 'explore')" id="mobile-nav-explore" class="nav-item flex flex-col items-center justify-center text-gray-400 w-full h-full"><i class="ph ph-squares-four text-2xl"></i></button>
-        <button onclick="openProfileModal()" class="nav-item flex flex-col items-center justify-center text-gray-400 w-full h-full"><div class="w-6 h-6 rounded-full overflow-hidden border border-gray-600"><img id="mobile-nav-pfp" src="" class="w-full h-full object-cover"></div></button>
-    </nav>
-
-    <!-- Drawers & Modals -->
-    <div id="history-drawer" class="fixed inset-y-0 right-0 w-80 bg-darkcard shadow-2xl transform translate-x-full transition-transform duration-300 z-50 flex flex-col border-l border-darkborder"><div class="p-5 border-b border-darkborder flex items-center justify-between"><h2 class="text-lg font-bold text-white">History</h2><button onclick="closeHistoryDrawer()" class="p-2 hover:bg-gray-800 rounded-full transition-colors"><i class="ph-bold ph-x text-lg text-white"></i></button></div><div class="flex-1 overflow-y-auto p-2" id="history-list"></div><div class="p-4 border-t border-darkborder"><button onclick="clearAllHistory()" class="w-full py-3 text-red-500 font-medium text-sm hover:bg-red-900/20 rounded-xl transition-colors">Clear All History</button></div></div>
-    <div id="history-overlay" class="fixed inset-0 bg-black/20 backdrop-blur-sm z-40 hidden" onclick="closeHistoryDrawer()"></div>
-
-    <div id="plans-modal" class="fixed inset-0 modal-backdrop z-[70] hidden flex items-center justify-center opacity-0 transition-opacity duration-300"><div class="bg-darkcard rounded-3xl shadow-2xl w-full max-w-lg mx-4 transform scale-95 transition-transform duration-300 overflow-hidden relative p-6"><button onclick="closePlansModal()" class="absolute top-4 right-4 p-2 bg-gray-800 rounded-full"><i class="ph-bold ph-x"></i></button><h2 class="text-2xl font-bold mb-6 text-center text-white">Upgrade Plan</h2><div class="grid gap-4"><div class="border border-gray-700 p-4 rounded-2xl relative"><span class="absolute top-0 right-0 bg-gray-700 text-xs font-bold px-2 py-1 rounded-bl-xl">CURRENT</span><h3 class="font-bold text-lg text-white">Chirpless Basic</h3><div class="text-2xl font-bold mt-1 text-white">$0<span class="text-sm font-normal text-gray-500">/mo</span></div><ul class="mt-3 space-y-2 text-sm text-gray-400"><li>• Chirpless X1 Only</li><li>• 20 Chats / Week</li><li>• 3 Calls / Day</li><li>• 1 Deep Think / Lifetime</li></ul></div><div class="border-2 border-white p-4 rounded-2xl relative overflow-hidden"><div class="absolute inset-0 bg-gradient-to-br from-transparent to-gray-800 opacity-50"></div><h3 class="font-bold text-lg text-white relative z-10">Chirpless+</h3><div class="text-2xl font-bold mt-1 text-white relative z-10">$10.00<span class="text-sm font-normal text-gray-500">/mo</span></div><ul class="mt-3 space-y-2 text-sm text-gray-400 relative z-10"><li>• <strong>Unlock Chirpless VX4</strong> (IQ 160+)</li><li>• Unlimited Chats & Calls</li><li>• Advanced Coding</li><li>• Unlimited Deep Thinking</li></ul><div class="mt-4 relative z-10"><p class="text-xs text-gray-500 mb-2">Contact peytotoria@gmail.com to purchase.</p><div class="flex gap-2"><input type="text" id="plan-code-input" placeholder="Enter Secret Code" class="flex-1 bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-sm outline-none text-white"><button onclick="redeemCode()" class="bg-white text-black px-4 py-2 rounded-lg text-sm font-bold">Redeem</button></div></div></div></div></div></div>
-    
-    <div id="refine-modal" class="fixed inset-0 modal-backdrop z-[70] hidden flex items-center justify-center opacity-0 transition-opacity duration-300"><div class="bg-darkcard rounded-3xl shadow-2xl w-full max-w-sm mx-4 transform scale-95 transition-transform duration-300 overflow-hidden p-6"><h3 class="text-lg font-bold mb-4 text-white">Refine Message</h3><div class="grid grid-cols-2 gap-3 mb-4"><button onclick="applyRefinePreset('Professional')" class="p-3 border rounded-xl hover:bg-gray-800 border-gray-700 text-white text-sm">Professional</button><button onclick="applyRefinePreset('Friendly')" class="p-3 border rounded-xl hover:bg-gray-800 border-gray-700 text-white text-sm">Friendly</button><button onclick="applyRefinePreset('Genius')" class="p-3 border rounded-xl hover:bg-gray-800 border-gray-700 text-white text-sm">Genius</button><button onclick="applyRefinePreset('Cool')" class="p-3 border rounded-xl hover:bg-gray-800 border-gray-700 text-white text-sm">Cool</button></div><textarea id="refine-custom" class="w-full border rounded-xl p-3 text-sm mb-4 bg-gray-800 border-gray-700 text-white outline-none" rows="3" placeholder="Or describe your edit..."></textarea><div class="flex justify-end gap-2"><button onclick="closeRefineModal()" class="px-4 py-2 text-gray-500 hover:text-white">Cancel</button><button onclick="submitRefine()" class="px-4 py-2 bg-white text-black rounded-lg font-bold">Refine</button></div></div></div>
-    
-    <div id="tos-modal" class="fixed inset-0 bg-darkbg z-[80] flex flex-col items-center justify-center p-6 transition-opacity duration-300"><div class="max-w-md w-full text-center"><div class="w-16 h-16 bg-white rounded-2xl mx-auto flex items-center justify-center mb-6"><i class="ph-fill ph-scroll text-black text-3xl"></i></div><h1 class="text-2xl font-bold mb-4 text-white">Terms of Service</h1><div class="text-sm text-gray-400 text-left mb-8 h-48 overflow-y-auto border p-4 rounded-xl border-gray-700"><p class="mb-2"><strong>1. Acceptance:</strong> By using Chirpless AI, you agree to these terms.</p><p class="mb-2"><strong>2. Liability:</strong> Chirpless.com is NOT responsible for AI-generated content. The AI acts independently.</p><p class="mb-2"><strong>3. Usage Limits:</strong> Basic users are limited to 20 chats/week and limited coding capabilities. Upgrading unlocks features.</p><p class="mb-2"><strong>4. Conduct:</strong> Do not abuse the bots or use them for illegal activities.</p><p><strong>5. Coding Policy:</strong> Basic bots will refuse advanced coding tasks (>250 lines).</p></div><button onclick="acceptToS()" class="w-full py-4 bg-white text-black font-bold rounded-xl shadow-lg hover:scale-[1.02] transition-transform">Accept & Continue</button></div></div>
-    
-    <div id="call-overlay" class="fixed inset-0 bg-darkbg z-[60] hidden flex flex-col items-center justify-center transition-opacity duration-500 opacity-0"><div class="absolute top-6 right-6"><button onclick="hangUp()" class="p-3 bg-gray-800 rounded-full hover:bg-gray-700"><i class="ph-bold ph-x text-xl text-white"></i></button></div><div class="relative w-40 h-40 flex items-center justify-center mb-8"><div class="call-pulse"></div><div class="w-32 h-32 bg-white rounded-full flex items-center justify-center z-10 shadow-2xl"><i class="ph-fill ph-microphone text-5xl text-black"></i></div></div><h2 class="text-2xl font-bold mb-2 text-white">Chirpless Live</h2><p class="text-gray-500 mb-8" id="call-status">Connecting...</p><div class="flex gap-6"><button onclick="toggleCallMute()" class="w-16 h-16 rounded-full bg-gray-800 flex items-center justify-center hover:bg-gray-700 transition-colors" id="call-mute-btn"><i class="ph-fill ph-microphone text-2xl text-white"></i></button><button onclick="hangUp()" class="w-16 h-16 rounded-full bg-red-500 flex items-center justify-center hover:bg-red-600 transition-colors shadow-lg shadow-red-500/30 transform hover:scale-110 active:scale-95 duration-200"><i class="ph-fill ph-phone-disconnect text-2xl text-white"></i></button></div></div>
-
-    <div id="char-info-modal" class="fixed inset-0 modal-backdrop z-50 hidden flex items-center justify-center opacity-0 transition-opacity duration-300"><div class="bg-darkcard rounded-3xl shadow-2xl w-full max-w-sm mx-4 transform scale-95 transition-transform duration-300 overflow-hidden relative"><button onclick="closeCharacterInfo()" class="absolute top-4 right-4 p-2 bg-gray-800 rounded-full hover:bg-gray-200 z-10"><i class="ph-bold ph-x"></i></button><div class="h-24 bg-gradient-to-r from-orange-400 to-orange-600"></div><div class="px-6 pb-6 -mt-12 text-center"><div class="w-24 h-24 mx-auto bg-darkcard rounded-full p-1 shadow-lg mb-3"><div id="char-info-icon" class="w-full h-full rounded-full bg-gray-800 flex items-center justify-center text-4xl"></div></div><div class="flex items-center justify-center gap-2 mb-1"><h2 id="char-info-name" class="text-2xl font-bold text-white"></h2><i class="ph-fill ph-seal-check text-orange-500 text-xl"></i></div><p id="char-info-model" class="text-sm text-gray-500 mb-4 font-mono"></p><div class="grid grid-cols-2 gap-3 mb-6"><div class="bg-gray-800 p-3 rounded-xl"><div class="text-xs text-gray-400 font-bold uppercase">Uses</div><div id="char-info-uses" class="text-lg font-bold text-white"></div></div><div class="bg-gray-800 p-3 rounded-xl"><div class="text-xs text-gray-400 font-bold uppercase">Verified</div><div class="text-lg font-bold text-green-500 flex items-center justify-center gap-1"><i class="ph-fill ph-check-circle"></i> Yes</div></div></div><div class="mb-6 text-left"><label class="text-xs text-gray-500 font-bold uppercase mb-2 block ml-1">Switch Model</label><div id="model-list-modal" class="grid gap-2"></div></div><button onclick="closeCharacterInfo()" class="w-full py-3 bg-white text-black font-bold rounded-xl">Close</button></div></div></div>
-    
-    <div id="profile-modal" class="fixed inset-0 modal-backdrop z-[60] hidden flex items-center justify-center opacity-0 transition-opacity duration-300"><div class="bg-darkcard rounded-3xl shadow-2xl w-full max-w-md mx-4 transform scale-95 transition-transform duration-300 overflow-hidden" id="profile-modal-content"><div class="px-6 py-5 border-b border-darkborder flex items-center justify-between"><h3 class="text-lg font-bold text-white">Profile</h3><button onclick="closeProfileModal()" class="w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center"><i class="ph-bold ph-x"></i></button></div><div class="p-6 space-y-5"><div class="flex flex-col items-center mb-2"><div class="relative w-24 h-24 mb-3"><img id="preview-pfp" src="" class="w-full h-full rounded-full object-cover border-4 border-darkcard shadow-lg"></div><span id="preview-name" class="font-bold text-xl text-white">User</span></div><div><label class="block text-xs font-bold text-gray-500 uppercase mb-2 ml-1">Choose Avatar</label><div class="flex gap-2 justify-center flex-wrap" id="avatar-presets"></div></div><div class="space-y-4"><div><label class="block text-xs font-bold text-gray-500 uppercase mb-1 ml-1">Username</label><input type="text" id="input-username" class="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 outline-none text-white"></div><div><label class="block text-xs font-bold text-gray-500 uppercase mb-1 ml-1">Personality</label><select id="input-persona" class="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 outline-none text-white"><option value="default">Default</option><option value="sarcastic">Sarcastic</option><option value="professional">Professional</option><option value="pirate">Pirate</option><option value="eli5">ELI5</option></select></div></div></div><div class="p-6 pt-2 pb-6"><button onclick="saveProfile()" class="w-full bg-white text-black font-bold py-3.5 rounded-xl">Save Changes</button></div></div></div>
-    
-    <div id="model-dropdown" class="hidden absolute top-[70px] left-1/2 transform -translate-x-1/2 mt-2 w-72 bg-darkcard rounded-2xl shadow-xl border border-darkborder overflow-hidden p-2 z-50"><div class="px-3 py-2 text-xs font-bold text-gray-400 uppercase tracking-wider">Select Model</div><div id="model-list" class="flex flex-col gap-1"></div></div>
+    </div>
 
     <script>
-        // --- Constants & Config ---
-        const API_KEY = "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";
-        const GREETINGS = ["How can I help you?", "What's on your mind?", "Ready to chat?", "Need assistance?", "Hello! What's up?"];
-        const SUGGESTIONS = ["Explain quantum physics", "Roast my setup", "Write a haiku", "Python code for snake"];
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        
-        function playTone(freq, type, duration) { 
-            if (audioCtx.state === 'suspended') audioCtx.resume(); 
-            const osc = audioCtx.createOscillator(); 
-            const gain = audioCtx.createGain(); 
-            osc.type = type; 
-            osc.frequency.value = freq; 
-            osc.connect(gain); 
-            gain.connect(audioCtx.destination); 
-            osc.start(); 
-            gain.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + duration); 
-            osc.stop(audioCtx.currentTime + duration); 
-        }
-        function playCallSound() { playTone(440, 'sine', 0.5); setTimeout(() => playTone(880, 'sine', 0.5), 600); }
-        function playHangupSound() { playTone(400, 'square', 0.3); setTimeout(() => playTone(300, 'square', 0.3), 300); }
-        function playClickSound() { playTone(1200, 'sine', 0.1); }
-
-        // --- Data Definitions ---
-        const MODELS = {
-            'chirpless-x1': { apiModel: 'meta-llama/llama-3.3-70b-instruct:free', baseName: 'Core Model', isBasic: true },
-            'chirpless-x7': { apiModel: 'meta-llama/llama-3.3-70b-instruct:free', baseName: 'Advanced Model', isBasic: false },
-            'chirpless-xlz1': { apiModel: 'google/gemini-2.0-flash-exp:free', baseName: 'Ultra Model', isBasic: false },
-            'chirpless-vx4': { apiModel: 'google/gemini-2.0-flash-exp:free', baseName: 'VX4 Quantum', isBasic: false, isPlus: true }
-        };
-
-        const CHARACTERS = {
-            'best-friend': { id: 'best-friend', name: 'Best Friend', modelRef: 'chirpless-x7', uses: '1.1m', icon: 'ph-smiley', color: 'text-orange-500', prompt: "You are the user's Best Friend. Supportive and casual." },
-            'lost-void': { id: 'lost-void', name: 'Lost Void', modelRef: 'chirpless-xlz1', uses: '13k', icon: 'ph-ghost', color: 'text-purple-500', prompt: "You are Lost Void. Cryptic and philosophical." },
-            'tuna-og': { id: 'tuna-og', name: 'Tuna (OG)', modelRef: 'chirpless-x1', uses: '91m', icon: 'ph-fish', color: 'text-blue-500', prompt: "You are Tuna. Simple and energetic." },
-            'chirpless-vx4': { id: 'chirpless-vx4', name: 'Chirpless VX4', modelRef: 'chirpless-vx4', uses: '281k', icon: 'ph-cpu', color: 'text-white', warning: 'Plus Only', prompt: "You are Chirpless VX4. IQ 160+. Expert coder." },
-            'coding-wizard': { id: 'coding-wizard', name: 'Coding Wizard', modelRef: 'chirpless-xlz1', uses: '500k', icon: 'ph-code', color: 'text-green-500', prompt: "You are the Coding Wizard. Expert programmer." },
-            'roast-master': { id: 'roast-master', name: 'Roast Master', modelRef: 'chirpless-x7', uses: '80k', icon: 'ph-fire', color: 'text-red-500', prompt: "You are the Roast Master. Snarky and witty." }
-        };
-
+        // --- GAME STATE ---
         let state = {
-            currentCharId: 'best-friend',
-            currentModel: 'chirpless-x7',
-            messages: [],
-            chats: [],
-            currentChatId: null,
-            isLoading: false,
-            recognition: null,
-            isListening: false,
-            isCallMode: false,
-            isDeepMode: false,
-            user: { name: 'User', pfp: 'https://api.dicebear.com/7.x/avataaars/svg?seed=User', banner: '', persona: 'default', plan: 'basic', tosAccepted: false, chatCount: 0, callCount: 0, deepThinkingCount: 0, lastReset: Date.now() },
-            refineTargetId: null
+            user: { id: 'me', name: "", handle: "", audience: 0, followers: 0, pfp: null },
+            day: 1,
+            posts: [],
+            bots: [],
+            lastPostDay: 0,
+            activeTab: 'home',
+            previousTab: 'home',
+            viewingProfile: null,
+            activeAccountId: 'me' // 'me' or bot ID
+        };
+        
+        let currentImageBase64 = null; 
+
+        // --- PERSISTENCE ---
+        const DB_KEY = 'chirpless_save_v6';
+        
+        function saveData() {
+            try {
+                localStorage.setItem(DB_KEY, JSON.stringify(state));
+            } catch (e) {
+                console.error("Storage full or error", e);
+            }
+        }
+
+        function loadData() {
+            const saved = localStorage.getItem(DB_KEY);
+            if (saved) {
+                try {
+                    const parsed = JSON.parse(saved);
+                    state = { ...state, ...parsed };
+                    if(!state.user.pfp) state.user.pfp = null;
+                    if(!state.activeAccountId) state.activeAccountId = 'me';
+                    // Ensure bots have following prop
+                    state.bots.forEach(b => { if(typeof b.following === 'undefined') b.following = false; });
+                    return true;
+                } catch(e) { console.error("Save data corrupted", e); return false; }
+            }
+            return false;
+        }
+
+        // --- ACCOUNT HELPERS ---
+        function getCurrentUser() {
+            if (state.activeAccountId === 'me') return state.user;
+            return state.bots.find(b => b.id == state.activeAccountId) || state.user;
+        }
+
+        function switchAccount(id) {
+            state.activeAccountId = id;
+            updateUserAvatarDisplay();
+            updateGlobalStats(true);
+            saveData();
+            // Refresh current view
+            if(state.activeTab === 'profile') renderProfile(id); // Go to self profile
+            else if(state.activeTab === 'home') renderFeed('feed'); // refresh feed composer
+            closeAllMenus();
+        }
+
+        function toggleAccountMenu(event) {
+            event.stopPropagation();
+            closeAllMenus();
+            
+            // Generate list of accounts: Me + Custom Bots
+            const accounts = [{id: 'me', name: state.user.name, handle: state.user.handle, pfp: state.user.pfp}];
+            state.bots.filter(b => b.isCustom).forEach(b => accounts.push(b));
+            
+            const div = document.createElement('div');
+            div.className = 'post-menu active';
+            div.style.position = 'absolute';
+            div.style.top = '100%';
+            div.style.left = '0';
+            div.style.minWidth = '200px';
+            div.style.zIndex = 1000;
+            
+            let html = '';
+            accounts.forEach(acc => {
+                const isMe = acc.id === 'me';
+                const avatar = isMe ? (acc.pfp ? `<img src="${acc.pfp}" style="width:24px;height:24px;border-radius:50%;object-fit:cover;margin-right:8px;">` : `<div style="width:24px;height:24px;border-radius:50%;background:#eee;margin-right:8px;display:flex;align-items:center;justify-content:center;font-size:0.8rem;font-weight:700;">${acc.name.substring(0,1)}</div>`) 
+                                    : `<img src="https://api.dicebear.com/9.x/thumbs/svg?seed=${acc.handle}" style="width:24px;height:24px;border-radius:50%;object-fit:cover;margin-right:8px;">`;
+                
+                const check = state.activeAccountId == acc.id ? ' ✓' : '';
+                html += `<button class="menu-item" onclick="switchAccount('${acc.id}')" style="display:flex;align-items:center;">
+                    ${avatar} ${acc.name}${check}
+                </button>`;
+            });
+            div.innerHTML = html;
+            
+            // Append to the header (need reference)
+            const h2 = event.currentTarget.parentElement; // The h2 container
+            if(h2) {
+               h2.style.position = 'relative';
+               h2.appendChild(div);
+            }
+            
+            const remover = (e) => { 
+                if(!div.contains(e.target)) {
+                    div.remove(); document.body.removeEventListener('click', remover); 
+                }
+            };
+            setTimeout(() => document.body.addEventListener('click', remover), 0);
+        }
+
+        // --- DEFAULTS ---
+        function populateDefaults() {
+            if(state.bots.length === 0) {
+                const defaults = [
+                    { name: "The Rock", handle: "@therock", audience: 300000000, followers: 80000000 },
+                    { name: "Juice WRLD", handle: "@juicewrld999", audience: 150000000, followers: 40000000 },
+                    { name: "Elon Musk", handle: "@elonmusk", audience: 500000000, followers: 160000000 },
+                    { name: "Taylor Swift", handle: "@taylorswift13", audience: 400000000, followers: 100000000 },
+                    { name: "Cristiano", handle: "@cristiano", audience: 600000000, followers: 200000000 },
+                    { name: "Kylie Jenner", handle: "@kyliejenner", audience: 250000000, followers: 60000000 },
+                    { name: "MrBeast", handle: "@mrbeast", audience: 200000000, followers: 50000000 },
+                    { name: "NASA", handle: "@nasa", audience: 100000000, followers: 30000000 },
+                    { name: "PlayStation", handle: "@playstation", audience: 80000000, followers: 25000000 },
+                    { name: "Nike", handle: "@nike", audience: 90000000, followers: 28000000 }
+                ];
+                state.bots = defaults.map((d, i) => ({ ...d, id: Date.now() + i, following: false, isCustom: false }));
+                saveData();
+            }
+        }
+
+        // --- APP INIT ---
+        window.onload = function() {
+            if(loadData()) {
+                document.getElementById('onboarding').classList.add('hidden');
+                document.getElementById('app').style.display = 'flex';
+                updateUserAvatarDisplay();
+                document.getElementById('day-display').innerText = state.day;
+                populateDefaults();
+                updateGlobalStats(true);
+                updateBotList();
+                renderFeed('feed');
+            } else {
+                document.getElementById('onboarding').classList.remove('hidden');
+            }
         };
 
-        // --- Core UI Functions (Defined First) ---
-        function scrollToBottom() { const c = document.getElementById('chat-container'); if(c) c.scrollTo({ top: c.scrollHeight, behavior: 'smooth' }); }
+        function updateUserAvatarDisplay() {
+            const currentUser = getCurrentUser();
+            const el = document.getElementById('user-avatar');
+            const isBot = state.activeAccountId !== 'me';
+            el.innerHTML = getAvatarContent(currentUser, isBot);
+        }
+
+        function getAvatarContent(user, isBot) {
+            if (isBot || user.isCustom) { // Treat custom users like bots for avatar logic if needed
+                return `<img src="https://api.dicebear.com/9.x/thumbs/svg?seed=${user.handle}" style="width:100%; height:100%; object-fit:cover;">`;
+            }
+            if (user.pfp) {
+                return `<img src="${user.pfp}" style="width:100%; height:100%; object-fit:cover;">`;
+            }
+            return user.name.substring(0,2).toUpperCase();
+        }
+
+        // --- TICKER & FORMATTING ---
+        function createTicker(element, value) {
+            if(!element) return;
+            const strVal = formatNumber(value);
+            element.innerHTML = ''; 
+            element.dataset.value = value;
+            element.dataset.str = strVal;
+            strVal.split('').forEach(char => {
+                const wrapper = document.createElement('span');
+                if (/\d/.test(char)) {
+                    wrapper.className = 'ticker-digit-col';
+                    let html = '';
+                    for(let i=0; i<=9; i++) html += `<span class="ticker-digit">${i}</span>`;
+                    wrapper.innerHTML = html;
+                    wrapper.style.transform = `translateY(${-(parseInt(char) * 10)}%)`; 
+                } else {
+                    wrapper.className = 'ticker-digit';
+                    wrapper.innerText = char;
+                }
+                element.appendChild(wrapper);
+            });
+        }
+
+        function updateTicker(element, newValue) {
+            if(!element) return;
+            const strVal = formatNumber(newValue);
+            if (element.dataset.str === strVal) return;
+            const oldStr = element.dataset.str || "";
+            if (oldStr.length !== strVal.length || oldStr.replace(/\d/g,'') !== strVal.replace(/\d/g,'')) {
+                createTicker(element, newValue);
+                return;
+            }
+            element.dataset.value = newValue;
+            element.dataset.str = strVal;
+            const cols = element.querySelectorAll('.ticker-digit-col');
+            let digitIndex = 0;
+            strVal.split('').forEach(char => {
+                if (/\d/.test(char)) {
+                    if(cols[digitIndex]) {
+                        cols[digitIndex].style.transform = `translateY(${-(parseInt(char) * 10)}%)`;
+                    }
+                    digitIndex++;
+                }
+            });
+        }
+
+        function formatNumber(num) {
+            if (num >= 1000000000) return Math.floor(num / 1000000000) + 'b';
+            if (num >= 1000000) return Math.floor(num / 1000000) + 'm';
+            if (num >= 1000) return Math.floor(num / 1000) + 'k';
+            return Math.floor(num).toString();
+        }
+
+        function formatTime(dayPosted, currentDay) {
+            const diff = currentDay - dayPosted;
+            if (diff === 0) return "Today";
+            if (diff <= 6) return `${diff}d`;
+            if (diff < 30) return `${Math.floor(diff/7)}w`;
+            if (diff < 365) return `${Math.floor(diff/30)}m`;
+            return `${Math.floor(diff/365)}y`;
+        }
         
-        function escapeHtml(t) { return t.replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m])) }
+        function getVerifiedBadge() {
+            return `<svg class="verified-badge" viewBox="0 0 24 24"><path d="M22.5 12.5c0-1.58-.875-2.95-2.148-3.6.154-.435.238-.905.238-1.4 0-2.21-1.71-3.998-3.818-3.998-.47 0-.92.114-1.32.325C14.808 2.65 13.447 1.77 11.875 1.77c-1.558 0-2.908.866-3.55 2.025-.404-.2-.848-.31-1.325-.31-2.11 0-3.818 1.79-3.818 4 0 .47.076.914.215 1.332-1.295.64-2.197 2.016-2.197 3.633 0 1.565.86 2.9 2.095 3.56-.16.447-.254.936-.254 1.44 0 2.21 1.71 4 3.818 4 .47 0 .914-.11 1.314-.316.646 1.18 2.01 1.996 3.577 1.996 1.564 0 2.93-.816 3.577-1.996.4.206.843.316 1.314.316 2.11 0 3.818-1.79 3.818-4 0-.53-.105-1.04-.282-1.507 1.185-.68 1.982-2.035 1.982-3.623zM9.52 16.29l-3.328-3.326 1.414-1.416 1.914 1.913 5.414-5.414 1.414 1.414-6.828 6.828z"></path></svg>`;
+        }
+
+        // --- CORE LOGIC ---
+        function startApp() {
+            const name = document.getElementById('setup-name').value;
+            const handle = document.getElementById('setup-handle').value;
+            const audience = parseInt(document.getElementById('setup-audience').value) || 0;
+            const followers = parseInt(document.getElementById('setup-followers').value) || 0;
+
+            if(!name || !handle) { alert("Name and handle required."); return; }
+
+            state.user.name = name;
+            state.user.handle = handle.startsWith('@') ? handle : '@' + handle;
+            state.user.audience = audience;
+            state.user.followers = followers;
+
+            document.getElementById('onboarding').classList.add('hidden');
+            document.getElementById('app').style.display = 'flex';
+            updateUserAvatarDisplay();
+            
+            populateDefaults();
+            saveData();
+            updateGlobalStats(true);
+            renderFeed('feed');
+        }
+
+        function updateGlobalStats(force = false) {
+            const currentUser = getCurrentUser();
+            ['audience-count', 'mob-audience-count'].forEach(id => {
+                const el = document.getElementById(id);
+                if(force) createTicker(el, currentUser.audience); else updateTicker(el, currentUser.audience);
+            });
+            ['follower-count', 'mob-follower-count'].forEach(id => {
+                const el = document.getElementById(id);
+                if(force) createTicker(el, currentUser.followers); else updateTicker(el, currentUser.followers);
+            });
+        }
+
+        function togglePollCreator() {
+            const el = document.getElementById('poll-creator');
+            el.classList.toggle('active');
+        }
+
+        // --- IMAGE & PFP UPLOAD LOGIC ---
+        function triggerImageUpload() { document.getElementById('image-upload-input').click(); }
+        function triggerPfpUpload() { document.getElementById('pfp-upload-input').click(); }
+
+        function handleImageFile(input) {
+            if(input.files && input.files[0]) {
+                const file = input.files[0];
+                if (file.size > 2000000) { alert("Image too large (max 2MB)."); return; }
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    currentImageBase64 = e.target.result;
+                    document.getElementById('image-preview').src = currentImageBase64;
+                    document.getElementById('image-preview-container').classList.add('active');
+                    checkInput();
+                }
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function handlePfpFile(input) {
+            if(input.files && input.files[0]) {
+                const file = input.files[0];
+                if (file.size > 2000000) { alert("Image too large (max 2MB)."); return; }
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    state.user.pfp = e.target.result;
+                    updateUserAvatarDisplay();
+                    saveData();
+                    if(state.activeTab === 'profile' && state.viewingProfile === 'me') renderProfile('me');
+                    renderFeed('feed');
+                }
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function removeImage() {
+            currentImageBase64 = null;
+            document.getElementById('image-preview').src = "";
+            document.getElementById('image-preview-container').classList.remove('active');
+            document.getElementById('image-upload-input').value = ""; 
+            checkInput();
+        }
+
+        function createPost() {
+            const text = document.getElementById('post-input').value.trim();
+            const pollOpt1 = document.getElementById('poll-opt-1').value.trim();
+            const pollOpt2 = document.getElementById('poll-opt-2').value.trim();
+            const hasPoll = document.getElementById('poll-creator').classList.contains('active') && pollOpt1 && pollOpt2;
+
+            if(!text && !hasPoll && !currentImageBase64) return;
+
+            const currentUser = getCurrentUser();
+            const collabId = document.getElementById('collab-select').value;
+            const bot = state.bots.find(b => b.id == collabId);
+            
+            let mult = 1.0;
+            if (bot) mult = 1 + (bot.audience / (currentUser.audience + 1000)) * 0.5;
+
+            const followerContribution = currentUser.followers * (0.15 + Math.random() * 0.15);
+            const audienceContribution = currentUser.audience * (0.8 + Math.random() * 0.4);
+            const combinedPotential = (followerContribution + audienceContribution) * mult;
+
+            const newPost = {
+                id: Date.now(),
+                authorId: state.activeAccountId, // Post as active user (me or bot)
+                content: text,
+                dayPosted: state.day,
+                views: 0, likes: 0, reposts: 0,
+                liked: false, reposted: false,
+                collab: bot ? { id: bot.id, name: bot.name, handle: bot.handle } : null,
+                potential: combinedPotential, 
+                decay: 1.0,
+                poll: hasPoll ? {
+                    options: [{text: pollOpt1, votes: 0}, {text: pollOpt2, votes: 0}],
+                    totalVotes: 0,
+                    voted: false
+                } : null,
+                myNote: null,
+                image: currentImageBase64
+            };
+
+            state.posts.unshift(newPost);
+            state.lastPostDay = state.day;
+            currentUser.audience += Math.floor(currentUser.audience * 0.02) + 50; 
+            
+            document.getElementById('post-input').value = '';
+            document.getElementById('poll-opt-1').value = '';
+            document.getElementById('poll-opt-2').value = '';
+            document.getElementById('poll-creator').classList.remove('active');
+            document.getElementById('collab-select').value = "";
+            removeImage();
+            checkInput();
+            
+            if(state.activeTab === 'home') renderFeed('feed');
+            else if(state.activeTab === 'profile') renderProfile(state.activeAccountId);
+            
+            updateGlobalStats();
+            saveData();
+        }
+
+        function checkInput() {
+            const val = document.getElementById('post-input').value.trim();
+            document.getElementById('post-btn').classList.toggle('active', val.length > 0 || document.getElementById('poll-creator').classList.contains('active') || currentImageBase64 !== null);
+        }
+
+        // --- NAVIGATION & VIEWS ---
+        function switchTab(tab, profileId = null) {
+            if (tab !== 'post-detail' && state.activeTab !== 'post-detail') {
+                state.previousTab = state.activeTab;
+            }
+            state.activeTab = tab;
+            
+            document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
+            
+            const navIndex = {'home':0, 'search':1, 'profile':2, 'notes': 3}[tab];
+            if(navIndex !== undefined) document.querySelectorAll('.sidebar .nav-btn')[navIndex].classList.add('active');
+
+            if(tab === 'home') {
+                document.getElementById('view-home').classList.add('active');
+                renderFeed('feed');
+            } else if(tab === 'search') {
+                document.getElementById('view-search').classList.add('active');
+                renderSearch();
+            } else if(tab === 'profile') {
+                document.getElementById('view-profile').classList.add('active');
+                renderProfile(profileId || state.activeAccountId);
+            } else if(tab === 'notes') {
+                document.getElementById('view-notes').classList.add('active');
+                renderFeed('notes-feed');
+            } else if (tab === 'post-detail') {
+                document.getElementById('view-post-detail').classList.add('active');
+            }
+        }
+
+        function openPostDetail(postId) {
+            state.previousTab = state.activeTab;
+            switchTab('post-detail');
+            renderPostDetail(postId);
+        }
+
+        function goBackFromPost() {
+            switchTab(state.previousTab || 'home');
+        }
+
+        // --- MENUS ---
+        let currentNotePostId = null;
+
+        function togglePostMenu(event, postId) {
+            event.stopPropagation();
+            closeAllMenus();
+            const menu = document.getElementById(`menu-${postId}`);
+            if(menu) menu.classList.add('active');
+        }
         
-        function simulateTyping(text, elementId) { 
-            // Handle both element reference and ID string
-            const el = typeof elementId === 'string' ? document.getElementById(elementId) : elementId;
-            if(!el) return; 
-            
-            el.classList.add('typing-cursor'); 
-            let i = 0; const speed = 5; 
-            
-            function type() { 
-                if(!el) return;
-                if (i < text.length) { 
-                    el.innerText += text.substr(i, 5); i += 5; scrollToBottom(); setTimeout(type, speed); 
-                } else { 
-                    el.classList.remove('typing-cursor'); 
-                    el.innerHTML = marked.parse(text); 
-                    document.querySelectorAll('pre code').forEach(block => hljs.highlightElement(block)); 
-                    scrollToBottom(); 
-                } 
-            } 
-            type(); 
-        }
-
-        function toggleLike(btn) { 
-            const i = btn.querySelector('i'); 
-            if (i.classList.contains('ph-heart')) { i.classList.replace('ph-heart', 'ph-heart-fill'); i.classList.add('heart-liked'); } 
-            else { i.classList.replace('ph-heart-fill', 'ph-heart'); i.classList.remove('heart-liked'); } 
-        }
-
-        function speakText(text) { 
-            if ('speechSynthesis' in window) { 
-                window.speechSynthesis.cancel(); 
-                const u = new SpeechSynthesisUtterance(text); 
-                u.onend = () => { if (state.isCallMode) try{state.recognition.start()}catch(e){} }; 
-                window.speechSynthesis.speak(u); 
-            } 
-        }
-
-        function copyText(text) { navigator.clipboard.writeText(text).then(() => showToast("Copied!")); }
-        
-        function copyToClipboard(btn) { 
-            const code = decodeURIComponent(btn.getAttribute('data-code')); 
-            navigator.clipboard.writeText(code).then(() => { 
-                btn.innerHTML = `<i class="ph-bold ph-check text-green-600"></i> Copied`; 
-                setTimeout(() => btn.innerHTML = `<i class="ph-bold ph-copy"></i> Copy`, 2000); 
-            }); 
-        }
-
-        function openRefineModal(msgId) { state.refineTargetId = msgId; const m = document.getElementById('refine-modal'); m.classList.remove('hidden'); setTimeout(() => m.classList.remove('opacity-0'), 10); }
-
-        function addMessageToUI(role, text) {
-            const list = document.getElementById('messages-list'); 
-            if(!list) return;
-            const div = document.createElement('div'); 
-            div.className = "w-full animate-fade-in";
-            
-            let uniqueId = '';
-
-            if (role === 'user') { 
-                div.innerHTML = `<div class="flex justify-end"><div class="msg-user text-[15px] leading-relaxed max-w-[85%] md:max-w-[70%] bg-[#f4f4f4] dark:bg-[#2A2A2A] dark:text-gray-100 rounded-3xl px-5 py-3">${escapeHtml(text)}</div></div>`; 
+        function handleHandleClick(event, authorId, collabId) {
+            event.stopPropagation();
+            if(!collabId) {
+                switchTab('profile', authorId);
             } else {
-                const char = CHARACTERS[state.currentCharId]; 
-                uniqueId = 'msg-' + Math.random().toString(36).substr(2, 9);
-                div.innerHTML = `<div class="flex gap-4 max-w-full group"><div class="w-8 h-8 rounded-full border border-gray-200 dark:border-gray-700 flex items-center justify-center flex-shrink-0 mt-1 bg-white dark:bg-darkcard text-lg"><i class="ph-fill ${char.icon} ${char.color}"></i></div><div class="msg-ai flex-1 overflow-hidden min-w-0"><div class="font-bold text-xs mb-1 text-gray-500 dark:text-gray-400 uppercase tracking-wide flex items-center gap-2">${char.name}<div class="opacity-0 group-hover:opacity-100 transition-opacity flex gap-2"><button onclick="toggleLike(this)" class="hover:text-red-500 transition-colors relative"><i class="ph ph-heart dark:text-gray-400"></i></button><button onclick="speakText('${escapeHtml(text).replace(/'/g, "\\'")}')" class="hover:text-blue-500 transition-colors"><i class="ph ph-speaker-high dark:text-gray-400"></i></button><button onclick="openRefineModal('${uniqueId}')" class="hover:text-yellow-500 transition-colors"><i class="ph ph-lightbulb dark:text-gray-400"></i></button><button onclick="copyText('${escapeHtml(text).replace(/'/g, "\\'")}')" class="hover:text-green-500 transition-colors"><i class="ph ph-copy dark:text-gray-400"></i></button></div></div><div id="${uniqueId}" class="prose text-[15px] leading-relaxed max-w-none text-gray-800 dark:text-gray-200"></div></div></div>`;
+                closeAllMenus();
+                const div = document.createElement('div');
+                div.className = 'post-menu active';
+                div.style.position = 'fixed';
+                div.style.left = event.clientX + 'px';
+                div.style.top = event.clientY + 'px';
+                div.style.zIndex = 1000;
+                
+                const bot = state.bots.find(b => b.id == collabId);
+                const botName = bot ? bot.name : "Collaborator";
+                
+                // Need to find author name
+                const author = authorId === 'me' ? state.user : state.bots.find(b => b.id == authorId);
+                const authorName = author ? author.name : "Author";
+
+                div.innerHTML = `
+                    <button class="menu-item" onclick="switchTab('profile', '${authorId}')">View ${authorName}</button>
+                    <button class="menu-item" onclick="switchTab('profile', '${collabId}')">View ${botName}</button>
+                `;
+                document.body.appendChild(div);
+                const remover = () => { div.remove(); document.body.removeEventListener('click', remover); };
+                setTimeout(() => document.body.addEventListener('click', remover), 0);
             }
-            list.appendChild(div); 
-            
-            if(role !== 'user') {
-                const proseEl = div.querySelector(`#${uniqueId}`) || div.querySelector('.prose');
-                simulateTyping(text, proseEl); 
-            }
-            else scrollToBottom();
         }
 
-        // --- Core Functions ---
-        function init() {
-            document.addEventListener('keydown', e => { if(e.ctrlKey && (e.key === 'u' || e.key === 'U')) e.preventDefault(); });
-            const savedUser = localStorage.getItem('chirpless_user');
-            if (savedUser) state.user = { ...state.user, ...JSON.parse(savedUser) };
-            
-            if (Date.now() - state.user.lastReset > 604800000) { state.user.chatCount = 0; state.user.lastReset = Date.now(); saveUser(); }
-            if (new Date(state.user.lastReset).getDate() !== new Date().getDate()) { state.user.callCount = 0; saveUser(); }
-            
-            if (!state.user.tosAccepted) document.getElementById('tos-modal').classList.remove('hidden');
-            
-            applyUserProfile();
-            renderExploreGrid();
-            renderAvatarPresets();
-            renderModelList();
-            renderSuggestionChips();
-            
-            const headerName = document.getElementById('header-char-name');
-            if (headerName) headerName.innerText = CHARACTERS[state.currentCharId].name;
-            const greet = document.getElementById('greeting-text');
-            if (greet) greet.innerText = GREETINGS[Math.floor(Math.random() * GREETINGS.length)];
-            
-            updateChatLimitUI();
-            
-            const input = document.getElementById('user-input');
-            if(input) input.addEventListener('input', function() { document.getElementById('send-btn').disabled = this.value.trim() === ''; });
-            
-            if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-                state.recognition = new SpeechRecognition();
-                state.recognition.continuous = false; state.recognition.interimResults = false;
-                state.recognition.onresult = (event) => {
-                    const t = event.results[0][0].transcript;
-                    if (state.isCallMode) { state.recognition.stop(); sendMessage(null, t); }
-                    else { document.getElementById('user-input').value += t; document.getElementById('send-btn').disabled = false; }
-                };
-                state.recognition.onend = () => { state.isListening = false; updateMicIcon(); };
-            } else { const b = document.getElementById('mic-btn'); if(b) b.style.display = 'none'; }
-            
-            startNewChat(false);
+        function closeAllMenus(e) {
+            document.querySelectorAll('.post-menu').forEach(el => {
+                if(el.style.position !== 'fixed') el.classList.remove('active'); 
+            });
         }
 
-        function acceptToS() { state.user.tosAccepted = true; saveUser(); document.getElementById('tos-modal').classList.add('hidden'); }
-        function saveUser() { localStorage.setItem('chirpless_user', JSON.stringify(state.user)); }
-        
-        function renderSuggestionChips() {
-            const container = document.getElementById('suggestion-chips');
-            if(container) {
-                container.innerHTML = '';
-                SUGGESTIONS.forEach(s => {
-                    const btn = document.createElement('button');
-                    btn.className = 'suggestion-chip';
-                    btn.innerText = s;
-                    btn.onclick = () => sendMessage(null, s);
-                    container.appendChild(btn);
+        function openNoteModal(postId) {
+            currentNotePostId = postId;
+            const post = state.posts.find(p => p.id === postId);
+            if(!post) return;
+            document.getElementById('note-input').value = post.myNote || "";
+            document.getElementById('note-modal').classList.remove('hidden');
+            document.getElementById('note-modal').style.opacity = '1';
+        }
+
+        function closeNoteModal() {
+            document.getElementById('note-modal').style.opacity = '0';
+            setTimeout(() => document.getElementById('note-modal').classList.add('hidden'), 300);
+            currentNotePostId = null;
+        }
+
+        function saveNote() {
+            if(!currentNotePostId) return;
+            const text = document.getElementById('note-input').value.trim();
+            const post = state.posts.find(p => p.id === currentNotePostId);
+            if(post) {
+                post.myNote = text;
+                renderFeed(state.activeTab === 'notes' ? 'notes-feed' : state.activeTab === 'profile' ? 'profile-feed' : 'feed');
+                saveData();
+            }
+            closeNoteModal();
+        }
+
+        // --- COLLAB & FOLLOW ---
+        function openCollabModal() {
+            document.getElementById('collab-modal').classList.remove('hidden');
+            document.getElementById('collab-modal').style.opacity = '1';
+        }
+        function closeCollabModal() {
+            document.getElementById('collab-modal').style.opacity = '0';
+            setTimeout(() => document.getElementById('collab-modal').classList.add('hidden'), 300);
+        }
+        function confirmAddBot() {
+            const name = document.getElementById('bot-name').value;
+            let handle = document.getElementById('bot-handle').value;
+            const aud = parseInt(document.getElementById('bot-audience').value) || 0;
+            const fol = parseInt(document.getElementById('bot-followers').value) || 0;
+            const isCustom = document.getElementById('bot-custom').checked;
+            
+            if(!name || !handle) return;
+            if(!handle.startsWith('@')) handle = '@' + handle;
+            
+            const bot = { id: Date.now(), name, handle, audience: aud, followers: fol, following: false, isCustom: isCustom };
+            state.bots.push(bot);
+            updateBotList();
+            closeCollabModal();
+            saveData();
+        }
+        function updateBotList() {
+            const list = document.getElementById('bot-list');
+            const select = document.getElementById('collab-select');
+            list.innerHTML = state.bots.length ? state.bots.map(b => 
+                `<div><b>${b.name}</b> <span class="subtle">${b.handle}</span>${b.isCustom ? ' <span style="font-size:0.7rem;background:var(--border);padding:2px 4px;border-radius:4px;">Custom</span>' : ''}<br><span style="font-size:0.8rem">Aud: ${formatNumber(b.audience)} | Fol: ${formatNumber(b.followers)}</span></div>`
+            ).join('<hr style="border:0; border-top:1px solid var(--border); margin:0.5rem 0;">') : "No bots yet.";
+            select.innerHTML = `<option value="">No Collaborator</option>` + state.bots.map(b => `<option value="${b.id}">${b.name}</option>`).join('');
+        }
+
+        function toggleFollow(botId) {
+            const bot = state.bots.find(b => b.id == botId);
+            if(bot) {
+                bot.following = !bot.following;
+                saveData();
+                renderProfile(botId);
+            }
+        }
+
+        // --- SIMULATION ---
+        function nextDay() {
+            state.day++;
+            document.getElementById('day-display').innerText = state.day;
+            const daysSincePost = state.day - state.lastPostDay;
+            let totalNewViews = 0;
+
+            state.posts.forEach(post => {
+                const age = state.day - post.dayPosted;
+                let dailyDecay = Math.exp(-0.15 * age); 
+                
+                if (dailyDecay > 0.01) {
+                    let dailyViews = Math.floor(post.potential * dailyDecay * (Math.random() * 0.4 + 0.1));
+                    if(dailyViews < 0) dailyViews = 0;
+                    
+                    post.views += dailyViews;
+                    totalNewViews += dailyViews;
+                    post.likes += Math.floor(dailyViews * 0.04);
+                    post.reposts += Math.floor(dailyViews * 0.008);
+                    
+                    if (post.poll && age < 7) {
+                        const voteChance = dailyViews > 5 ? 0.8 : 0.2; 
+                        if(Math.random() < voteChance) {
+                            const votes = Math.max(1, Math.floor(dailyViews * 0.15));
+                            post.poll.totalVotes += votes;
+                            const split = Math.random();
+                            post.poll.options[0].votes += Math.floor(votes * split);
+                            post.poll.options[1].votes += Math.floor(votes * (1-split));
+                            const totalCalc = post.poll.options[0].votes + post.poll.options[1].votes;
+                            if(totalCalc !== post.poll.totalVotes) post.poll.totalVotes = totalCalc;
+                            updatePollDOM(post);
+                        }
+                    }
+                    updatePostStatsDOM(post.id, post.views, post.likes, post.reposts);
+                    if(state.activeTab === 'post-detail') {
+                        updateTicker(document.getElementById(`detail-view-${post.id}`), post.views);
+                        updateTicker(document.getElementById(`detail-like-${post.id}`), post.likes);
+                        updateTicker(document.getElementById(`detail-repost-${post.id}`), post.reposts);
+                    }
+                }
+            });
+
+            const currentUser = getCurrentUser();
+            let audChange = 0;
+            if (daysSincePost < 4) {
+                audChange = Math.floor(totalNewViews * 0.015) + Math.floor(Math.random() * 100);
+            } else if (daysSincePost >= 4 && daysSincePost < 23) {
+                const slideFactor = 0.005 * (daysSincePost - 3);
+                audChange = -Math.floor(currentUser.audience * slideFactor);
+            } else {
+                audChange = -Math.floor(currentUser.audience * 0.10);
+            }
+            
+            currentUser.audience = Math.max(0, currentUser.audience + audChange);
+            currentUser.followers += Math.floor(totalNewViews * 0.001);
+            
+            updateGlobalStats();
+            if(state.activeTab !== 'post-detail') {
+                const activeFeed = state.activeTab === 'notes' ? 'notes-feed' : 
+                                   state.activeTab === 'profile' ? 'profile-feed' : 'feed';
+                renderFeed(activeFeed, true); 
+            }
+            saveData();
+        }
+
+        // --- INTERACTION ---
+        function toggleLike(postId) {
+            const post = state.posts.find(p => p.id === postId);
+            if(!post) return;
+            post.liked = !post.liked;
+            post.likes += post.liked ? 1 : -1;
+            
+            const btn = document.getElementById(`like-btn-${postId}`);
+            if(btn) { if(post.liked) btn.classList.add('liked'); else btn.classList.remove('liked'); }
+            updateTicker(document.getElementById(`like-${postId}`), post.likes);
+            
+            const dBtn = document.getElementById(`detail-like-btn-${postId}`);
+            if(dBtn) { if(post.liked) dBtn.classList.add('liked'); else dBtn.classList.remove('liked'); }
+            updateTicker(document.getElementById(`detail-like-${postId}`), post.likes);
+
+            saveData();
+        }
+        function toggleRepost(postId) {
+            const post = state.posts.find(p => p.id === postId);
+            if(!post) return;
+            post.reposted = !post.reposted;
+            post.reposts += post.reposted ? 1 : -1;
+            
+            const btn = document.getElementById(`repost-btn-${postId}`);
+            if(btn) { if(post.reposted) btn.classList.add('reposted'); else btn.classList.remove('reposted'); }
+            updateTicker(document.getElementById(`repost-${postId}`), post.reposts);
+
+            const dBtn = document.getElementById(`detail-repost-btn-${postId}`);
+            if(dBtn) { if(post.reposted) dBtn.classList.add('reposted'); else dBtn.classList.remove('reposted'); }
+            updateTicker(document.getElementById(`detail-repost-${postId}`), post.reposts);
+
+            saveData();
+        }
+        function votePoll(postId, optIdx) {
+            const post = state.posts.find(p => p.id === postId);
+            if(!post || post.poll.voted) return;
+            post.poll.voted = true;
+            post.poll.totalVotes++;
+            post.poll.options[optIdx].votes++;
+            updatePollDOM(post);
+            saveData();
+        }
+
+        // --- RENDERING ---
+        function renderFeed(containerId, updateTimesOnly = false) {
+            const container = document.getElementById(containerId);
+            if(!container) return;
+            
+            let posts = state.posts;
+            const currentUser = getCurrentUser(); // for 'me' context
+
+            if (containerId === 'profile-feed') {
+                // If viewing a profile, show posts BY that author (authorId === viewingProfile)
+                // OR posts where that profile is a collaborator
+                const targetId = state.viewingProfile;
+                posts = state.posts.filter(p => p.authorId == targetId || (p.collab && p.collab.id == targetId));
+            } else if (containerId === 'search-results') {
+                const query = document.getElementById('search-input').value.toLowerCase();
+                posts = state.posts.filter(p => p.content.toLowerCase().includes(query));
+            } else if (containerId === 'notes-feed') {
+                // Notes are personal to the active account viewing them? 
+                // Currently notes are global to the browser session. Let's keep it simple.
+                posts = state.posts.filter(p => p.myNote && p.myNote.trim().length > 0);
+            }
+
+            if (updateTimesOnly) {
+                posts.forEach(p => {
+                    const timeEl = document.getElementById(`time-${p.id}`);
+                    if(timeEl) timeEl.innerText = formatTime(p.dayPosted, state.day);
                 });
-            }
-        }
-
-        function toggleDeepThinking() {
-            const btn = document.getElementById('deep-think-btn');
-            if(state.isDeepMode) {
-                state.isDeepMode = false;
-                btn.classList.remove('deep-mode-active', 'text-blue-500');
-                btn.classList.add('text-gray-400');
-            } else {
-                state.isDeepMode = true;
-                btn.classList.add('deep-mode-active', 'text-blue-500');
-                btn.classList.remove('text-gray-400');
-            }
-        }
-
-        async function sendMessage(e, textOverride) {
-            if (e) e.preventDefault();
-            const inputEl = document.getElementById('user-input');
-            const text = textOverride || (inputEl ? inputEl.value.trim() : '');
-            if (!text || state.isLoading) return;
-
-            if (state.user.plan === 'basic' && state.user.chatCount >= 20) { showToast("Weekly limit reached. Upgrade for more."); return; }
-            const modelConfig = MODELS[state.currentModel];
-            if (modelConfig.isPlus && state.user.plan !== 'plus') { showToast("Plus model required."); return; }
-            
-            if(state.isDeepMode && state.user.plan === 'basic' && state.user.deepThinkingCount >= 1) {
-                showToast("Basic users only get 1 Deep Think try.");
                 return;
             }
 
-            if(inputEl) { inputEl.value = ''; inputEl.style.height = 'auto'; }
-            const sendBtn = document.getElementById('send-btn');
-            if(sendBtn) sendBtn.disabled = true;
-            const sendIcon = document.getElementById('send-icon');
-            const sendSpinner = document.getElementById('send-spinner');
-            if(sendIcon) sendIcon.classList.add('hidden');
-            if(sendSpinner) sendSpinner.classList.remove('hidden');
-            const emptyState = document.getElementById('empty-state');
-            if(emptyState) emptyState.classList.add('hidden');
-
-            addMessageToUI('user', text);
-            state.messages.push({ role: 'user', content: text });
-            
-            if (state.messages.length > 12) state.messages = state.messages.slice(-12);
-            if (state.user.plan === 'basic') { state.user.chatCount++; }
-            
-            let deepPromptAddon = "";
-            if(state.isDeepMode) {
-                state.user.deepThinkingCount++;
-                deepPromptAddon = " Think deeply, step-by-step, and provide the most comprehensive answer possible.";
-                toggleDeepThinking(); // Turn off after use
+            container.innerHTML = '';
+            if (posts.length === 0) {
+                container.innerHTML = `<div style="padding:3rem; text-align:center; color:var(--subtle);">No posts found.</div>`;
+                return;
             }
-            saveUser();
-            updateChatLimitUI();
+            posts.forEach(p => container.appendChild(createPostElement(p)));
+        }
 
-            setLoading(true);
-            if (state.isCallMode) document.getElementById('call-status').innerText = "Thinking...";
+        function renderSearch() { renderFeed('search-results'); }
 
-            try {
-                const char = CHARACTERS[state.currentCharId];
-                let systemPrompt = char.prompt;
-                if (char.id === 'tuna-og' || modelConfig.isBasic) systemPrompt += " Limit responses. No advanced code.";
-                if (state.currentModel === 'chirpless-vx4') systemPrompt += " Expert mode. Always include '<!-- Created by Chirpless.com -->'.";
-                systemPrompt += deepPromptAddon;
+        function renderProfile(profileId) {
+            state.viewingProfile = profileId;
+            const container = document.getElementById('profile-container');
+            const isMe = profileId == state.activeAccountId; // Is this the profile I am currently acting as?
+            
+            let user;
+            if (profileId === 'me') user = state.user;
+            else user = state.bots.find(b => b.id == profileId);
+            
+            // If we are looking for 'me' but active account is a bot, we might need to handle ID mismatch
+            // If profileId is 'me', it means the main user object
+            if (profileId === 'me' && state.activeAccountId !== 'me') {
+               // We are viewing main profile while logged in as bot
+               user = state.user;
+            } else if (profileId == state.activeAccountId && state.activeAccountId !== 'me') {
+               // Viewing active bot profile
+               user = state.bots.find(b => b.id == state.activeAccountId);
+            }
 
-                const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-                    method: "POST",
-                    headers: { "Authorization": `Bearer ${API_KEY}`, "Content-Type": "application/json", "HTTP-Referer": "https://chirpless.ai", "X-Title": "Chirpless AI" },
-                    body: JSON.stringify({ model: modelConfig.apiModel, messages: [{ "role": "system", "content": systemPrompt }, ...state.messages] })
-                });
+            if (!user) { container.innerHTML = "User not found"; return; }
+            
+            const badge = (user.followers >= 15000) ? getVerifiedBadge() : '';
+            const avatarHTML = getAvatarContent(user, profileId !== 'me' && profileId !== state.user.id); // Treat as bot if not main user ID? 
+            
+            // Dropdown trigger logic
+            let nameHTML = `<h2>${user.name} ${badge}</h2>`;
+            // If we are viewing the profile we are logged in as (whether 'me' or bot), show dropdown
+            if (isMe) {
+                nameHTML = `<h2 onclick="toggleAccountMenu(event)">${user.name} ${badge} <span style="font-size:0.8em; opacity:0.5; margin-left:4px;">▼</span></h2>`;
+            }
 
-                if (!response.ok) throw new Error(`API Error: ${response.status}`);
-                const data = await response.json();
-                const aiText = data.choices?.[0]?.message?.content || "I'm having trouble thinking.";
-                
-                setLoading(false);
-                state.messages.push({ role: 'assistant', content: aiText });
-                addMessageToUI('assistant', aiText);
-                if (state.isCallMode) { document.getElementById('call-status').innerText = "Speaking..."; speakText(aiText); }
-            } catch (error) {
-                console.error(error); setLoading(false); addMessageToUI('assistant', `**Error:** ${error.message}`);
-                if (state.isCallMode) document.getElementById('call-status').innerText = "Error";
-            } finally {
-                if(sendIcon) sendIcon.classList.remove('hidden');
-                if(sendSpinner) sendSpinner.classList.add('hidden');
+            let actionButton = '';
+            if (isMe) {
+                actionButton = `
+                    <div style="display:flex; gap:8px;">
+                        <button class="profile-action-btn" onclick="switchTab('notes')">My Notes</button>
+                        <button class="profile-action-btn" onclick="triggerPfpUpload()">Edit Profile</button>
+                    </div>
+                    <input type="file" id="pfp-upload-input" accept="image/*" style="display: none;" onchange="handlePfpFile(this)">
+                `;
+            } else {
+                // Following button
+                const text = user.following ? 'Following' : 'Follow';
+                const cls = user.following ? 'profile-action-btn' : 'profile-action-btn primary';
+                actionButton = `<button class="${cls}" onclick="toggleFollow('${user.id}'); this.classList.add('bounce-active'); setTimeout(()=>this.classList.remove('bounce-active'),300);">${text}</button>`;
+            }
+
+            container.innerHTML = `
+                <div class="profile-header">
+                    <div class="profile-top">
+                        <div class="avatar" style="width:80px; height:80px; font-size:2rem; cursor:default; background:#eee;">${avatarHTML}</div>
+                        ${actionButton}
+                    </div>
+                    <div class="profile-info">
+                        ${nameHTML}
+                        <span class="profile-handle">${user.handle}</span>
+                        <div class="profile-stats-row"><div class="profile-stat"><span>${formatNumber(user.followers)}</span> followers</div><div class="profile-stat"><span>${formatNumber(user.audience)}</span> audience</div></div>
+                    </div>
+                </div>
+            `;
+            renderFeed('profile-feed');
+        }
+
+        function renderPostDetail(postId) {
+            const container = document.getElementById('post-detail-container');
+            const post = state.posts.find(p => p.id === postId);
+            if(!post) { container.innerHTML = "Post not found"; return; }
+
+            const timeStr = formatTime(post.dayPosted, state.day);
+            
+            // Resolve author
+            let author = post.authorId === 'me' ? state.user : state.bots.find(b => b.id == post.authorId);
+            if(!author) author = {name:'Unknown', handle:'@unknown', followers:0};
+
+            const badge = (author.followers >= 15000) ? getVerifiedBadge() : '';
+            const avatarContent = getAvatarContent(author, post.authorId !== 'me');
+
+            let handleHTML = `
+                <div class="handle-group" onclick="handleHandleClick(event, '${post.authorId}', '${post.collab ? post.collab.id : ''}')">
+                    <div class="avatar" style="width:48px;height:48px;margin-right:10px;">${avatarContent}</div>
+                    <div>
+                        <div class="handle" style="font-size:1.1rem;">${author.name} ${badge}</div>
+                        ${post.collab ? `<span class="collab-text">with ${post.collab.name}</span>` : ''}
+                    </div>
+                </div>
+            `;
+
+            let pollHTML = '';
+            if (post.poll) {
+                pollHTML = `<div class="poll-wrapper" id="poll-${post.id}"></div>`;
+            }
+
+            let imageHTML = '';
+            if (post.image) {
+                imageHTML = `<img src="${post.image}" class="post-image" style="max-height:600px;">`;
+            }
+
+            const statsHTML = `
+                <div class="post-detail-stats">
+                    <div class="detail-stat-item">
+                        <div class="detail-stat-label">Views</div>
+                        <div class="detail-stat-value ticker-root" id="detail-view-${post.id}">0</div>
+                    </div>
+                    <div class="detail-stat-item">
+                        <div class="detail-stat-label">Likes</div>
+                        <div class="detail-stat-value ticker-root" id="detail-like-${post.id}">0</div>
+                    </div>
+                    <div class="detail-stat-item">
+                        <div class="detail-stat-label">Reposts</div>
+                        <div class="detail-stat-value ticker-root" id="detail-repost-${post.id}">0</div>
+                    </div>
+                </div>
+            `;
+
+            container.innerHTML = `
+                <div class="post-detail-content">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        ${handleHTML}
+                        <div class="post-menu-container">
+                            <button class="post-menu-btn" onclick="togglePostMenu(event, ${post.id})">
+                                <svg viewBox="0 0 24 24" fill="currentColor" style="width:20px; height:20px;"><circle cx="12" cy="12" r="1.5"/><circle cx="6" cy="12" r="1.5"/><circle cx="18" cy="12" r="1.5"/></svg>
+                            </button>
+                            <div class="post-menu" id="menu-${post.id}">
+                                <button class="menu-item" onclick="openNoteModal(${post.id})">${post.myNote ? 'Edit Note' : 'Add Note'}</button>
+                                <button class="menu-item" style="color:#e0245e;" onclick="alert('Delete feature coming soon')">Delete</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="post-detail-text">${post.content}</div>
+                    ${imageHTML}
+                    ${pollHTML}
+                    
+                    <div style="color:var(--subtle); font-size:0.95rem; margin-top:1rem;">
+                        ${timeStr}
+                    </div>
+
+                    ${statsHTML}
+
+                    <div class="post-detail-actions">
+                        <div class="stat-item ${post.liked ? 'liked' : ''}" id="detail-like-btn-${post.id}" onclick="toggleLike(${post.id})">
+                            <svg class="stat-icon" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+                        </div>
+                        <div class="stat-item ${post.reposted ? 'reposted' : ''}" id="detail-repost-btn-${post.id}" onclick="toggleRepost(${post.id})">
+                            <svg class="stat-icon" viewBox="0 0 24 24"><path d="M17 1l4 4-4 4"></path><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><path d="M7 23l-4-4 4-4"></path><path d="M21 13v2a4 4 0 0 1-4 4H3"></path></svg>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            setTimeout(() => {
+                createTicker(container.querySelector(`#detail-view-${post.id}`), post.views);
+                createTicker(container.querySelector(`#detail-like-${post.id}`), post.likes);
+                createTicker(container.querySelector(`#detail-repost-${post.id}`), post.reposts);
+                if(post.poll) updatePollDOM(post, container.querySelector(`#poll-${post.id}`));
+            }, 0);
+        }
+
+        function createPostElement(post) {
+            const div = document.createElement('div');
+            div.className = 'post glass-shine';
+            div.id = `post-${post.id}`;
+            div.onclick = (e) => {
+                if(e.target.closest('button') || e.target.closest('.handle-group') || e.target.closest('.poll-option')) return;
+                openPostDetail(post.id);
+            };
+
+            const timeStr = formatTime(post.dayPosted, state.day);
+            
+            // Resolve author
+            let author = post.authorId === 'me' ? state.user : state.bots.find(b => b.id == post.authorId);
+            if(!author) author = {name:'Unknown', handle:'@unknown', followers:0};
+
+            const badge = (author.followers >= 15000) ? getVerifiedBadge() : '';
+            const avatarContent = getAvatarContent(author, post.authorId !== 'me');
+
+            let handleHTML = `
+                <div class="handle-group glass-shine" onclick="handleHandleClick(event, '${post.authorId}', '${post.collab ? post.collab.id : ''}')">
+                    <span class="handle">${author.name} ${badge}</span>
+                    ${post.collab ? `<span class="collab-text">+1 collaborator</span>` : ''}
+                </div>
+            `;
+
+            let pollHTML = '';
+            if (post.poll) {
+                pollHTML = `<div class="poll-wrapper" id="poll-${post.id}"></div>`;
+            }
+
+            let noteHTML = '';
+            if (post.myNote && post.myNote.trim().length > 0) {
+                noteHTML = `<div class="private-note"><span class="private-note-label">Private Note</span>${post.myNote}</div>`;
+            }
+
+            let imageHTML = '';
+            if (post.image) {
+                imageHTML = `<img src="${post.image}" class="post-image">`;
+            }
+
+            div.innerHTML = `
+                <div class="avatar" onclick="event.stopPropagation(); switchTab('profile', '${post.authorId}')">${avatarContent}</div>
+                <div class="post-content">
+                    <div class="post-header">
+                        ${handleHTML}
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <span class="time subtle" id="time-${post.id}">${timeStr}</span>
+                            <div class="post-menu-container">
+                                <button class="post-menu-btn" onclick="togglePostMenu(event, ${post.id})">
+                                    <svg viewBox="0 0 24 24" fill="currentColor" style="width:16px; height:16px;"><circle cx="12" cy="12" r="1.5"/><circle cx="6" cy="12" r="1.5"/><circle cx="18" cy="12" r="1.5"/></svg>
+                                </button>
+                                <div class="post-menu" id="menu-${post.id}">
+                                    <button class="menu-item" onclick="openNoteModal(${post.id})">${post.myNote ? 'Edit Note' : 'Add Note'}</button>
+                                    <button class="menu-item" style="color:#e0245e;" onclick="event.stopPropagation(); alert('Delete feature coming soon')">Delete</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="post-text">${post.content}</div>
+                    ${imageHTML}
+                    ${pollHTML}
+                    ${noteHTML}
+                    <div class="post-stats">
+                        <div class="stat-item ${post.liked ? 'liked' : ''}" id="like-btn-${post.id}" onclick="event.stopPropagation(); toggleLike(${post.id})">
+                            <svg class="stat-icon" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+                            <span class="ticker-root" id="like-${post.id}"></span>
+                        </div>
+                        <div class="stat-item ${post.reposted ? 'reposted' : ''}" id="repost-btn-${post.id}" onclick="event.stopPropagation(); toggleRepost(${post.id})">
+                            <svg class="stat-icon" viewBox="0 0 24 24"><path d="M17 1l4 4-4 4"></path><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><path d="M7 23l-4-4 4-4"></path><path d="M21 13v2a4 4 0 0 1-4 4H3"></path></svg>
+                            <span class="ticker-root" id="repost-${post.id}"></span>
+                        </div>
+                    </div>
+                    <div class="view-count-container"><span class="ticker-root" id="view-${post.id}"></span> views</div>
+                </div>
+            `;
+            
+            setTimeout(() => {
+                createTicker(div.querySelector(`#like-${post.id}`), post.likes);
+                createTicker(div.querySelector(`#repost-${post.id}`), post.reposts);
+                createTicker(div.querySelector(`#view-${post.id}`), post.views);
+                if(post.poll) updatePollDOM(post, div.querySelector(`#poll-${post.id}`));
+            }, 0);
+
+            return div;
+        }
+
+        function updatePollDOM(post, element) {
+            const el = element || document.getElementById(`poll-${post.id}`);
+            if(!el) return;
+            const total = post.poll.totalVotes || 1; 
+            const showResults = post.poll.voted || post.authorId === state.activeAccountId; // Show if voted or if author (me or my bot)
+            let html = '';
+            post.poll.options.forEach((opt, idx) => {
+                if(showResults) {
+                    const pct = Math.round((opt.votes / total) * 100);
+                    html += `
+                        <div class="poll-option" style="cursor: default;">
+                            <div class="poll-result-bg" style="width: ${pct}%"></div>
+                            <span class="poll-text">${opt.text}</span>
+                            <span class="poll-percent"><span class="ticker-root" id="poll-${post.id}-opt-${idx}">${pct}</span>%</span>
+                        </div>
+                    `;
+                } else {
+                    html += `
+                        <div class="poll-option" onclick="event.stopPropagation(); votePoll(${post.id}, ${idx})">
+                            <span class="poll-text">${opt.text}</span>
+                        </div>
+                    `;
+                }
+            });
+            if(showResults) {
+                html += `<div style="padding: 0.5rem 1rem; font-size: 0.8rem; color: var(--subtle); border-top: 1px solid var(--border);">
+                    <span class="ticker-root" id="poll-${post.id}-total">${post.poll.totalVotes}</span> votes
+                </div>`;
+            }
+            el.innerHTML = html;
+            if(showResults) {
+                setTimeout(() => {
+                    post.poll.options.forEach((opt, idx) => {
+                        const pct = Math.round((opt.votes / total) * 100);
+                        createTicker(el.querySelector(`#poll-${post.id}-opt-${idx}`), pct);
+                    });
+                    createTicker(el.querySelector(`#poll-${post.id}-total`), post.poll.totalVotes);
+                }, 0);
             }
         }
 
-        function updateChatLimitUI() {
-            const limit = document.getElementById('chat-limit-display');
-            if(!limit) return;
-            if (state.user.plan === 'basic') { limit.innerText = `Chats left: ${20 - state.user.chatCount}`; limit.classList.remove('hidden'); }
-            else { limit.classList.add('hidden'); }
+        function updatePostStatsDOM(pid, v, l, r) {
+            updateTicker(document.getElementById(`view-${pid}`), v);
+            updateTicker(document.getElementById(`like-${pid}`), l);
+            updateTicker(document.getElementById(`repost-${pid}`), r);
         }
-
-        // --- Helpers ---
-        function selectCharacter(id) { if(CHARACTERS[id].id === 'chirpless-vx4' && state.user.plan !== 'plus') { showToast("Upgrade to Plus"); openPlansModal(); return; } state.currentCharId = id; state.currentModel = CHARACTERS[id].modelRef; const h = document.getElementById('header-char-name'); if(h) h.innerText = CHARACTERS[id].name; switchView('chat'); addSystemNotification(`Switched to ${CHARACTERS[id].name}`); }
-        function selectModel(modelId) { if(MODELS[modelId].isPlus && state.user.plan !== 'plus') { showToast("Plus required"); openPlansModal(); return; } state.currentModel = modelId; const infoModel = document.getElementById('char-info-model'); if(infoModel) infoModel.innerText = `Powered by ${MODELS[modelId].baseName}`; addSystemNotification(`Switched to ${MODELS[modelId].baseName}`); }
-        function addSystemNotification(text) { const div = document.createElement('div'); div.className = "flex justify-center my-4 animate-fade-in"; div.innerHTML = `<div class="bg-gray-800 text-gray-400 text-xs py-1 px-3 rounded-full flex items-center gap-1">${text}</div>`; document.getElementById('messages-list').appendChild(div); scrollToBottom(); }
-        function renderModelList() { const list = document.getElementById('model-list-modal'); if(!list) return; list.innerHTML = ''; Object.entries(MODELS).forEach(([id, model]) => { const div = document.createElement('div'); div.className = "flex items-center gap-3 p-3 bg-gray-800 hover:bg-gray-700 rounded-xl cursor-pointer transition-colors"; div.onclick = (e) => { e.stopPropagation(); selectModel(id); }; const icon = model.isPlus ? 'ph-sparkle text-yellow-500' : 'ph-cpu text-blue-500'; div.innerHTML = `<div class="w-8 h-8 rounded-full bg-gray-600 flex items-center justify-center text-lg"><i class="ph-fill ${icon}"></i></div><div class="flex-1"><div class="text-sm font-bold text-white">${model.baseName}</div><div class="text-xs text-gray-400">${model.isPlus ? 'Plus' : 'Free'}</div></div>`; list.appendChild(div); }); }
-        function applyUserProfile() { const s = document.getElementById('sidebar-pfp'); if(s) s.src = state.user.pfp; const m = document.getElementById('mobile-nav-pfp'); if(m) m.src = state.user.pfp; const b = document.getElementById('user-banner'); if (b) { if (state.user.banner) { b.style.backgroundImage = `url('${state.user.banner}')`; b.classList.remove('hidden'); } else { b.classList.add('hidden'); } } }
-        function showToast(m){const c=document.getElementById('toast-container');const t=document.createElement('div');t.className='toast';t.innerText=m;c.appendChild(t);requestAnimationFrame(()=>t.classList.add('show'));setTimeout(()=>{t.classList.remove('show');setTimeout(()=>t.remove(),300)},3000)}
-        function openHistoryDrawer(){document.getElementById('history-drawer').classList.remove('translate-x-full');document.getElementById('history-overlay').classList.remove('hidden')}
-        function closeHistoryDrawer(){document.getElementById('history-drawer').classList.add('translate-x-full');document.getElementById('history-overlay').classList.add('hidden')}
-        function clearAllHistory(){if(confirm("Clear history?")){state.chats=[];localStorage.removeItem('chirpless_chats');}}
-        function openRefineModal(id){state.refineTargetId=id;const m=document.getElementById('refine-modal');m.classList.remove('hidden');setTimeout(()=>{m.classList.remove('opacity-0');},10)}
-        function closeRefineModal(){const m=document.getElementById('refine-modal');m.classList.add('opacity-0');setTimeout(()=>m.classList.add('hidden'),300)}
-        function applyRefinePreset(s){document.getElementById('refine-custom').value=`Make it ${s}`}
-        function submitRefine(){const i=document.getElementById('refine-custom').value;if(i){sendMessage(null,`Rewrite last msg: ${i}`);closeRefineModal()}}
-        function mobileNavClick(b,v){switchView(v)}
-        function startNewChat(){state.currentChatId=Date.now().toString();state.messages=[];document.getElementById('messages-list').innerHTML='';document.getElementById('empty-state').classList.remove('hidden');switchView('chat')}
-        function switchView(v){document.getElementById('view-chat').classList.add('hidden');document.getElementById('view-explore').classList.add('hidden');document.getElementById(`view-${v}`).classList.remove('hidden')}
-        function toggleSpeechRecognition(){if(!state.recognition)return;if(state.isListening)state.recognition.stop();else{state.recognition.start();state.isListening=true;updateMicIcon()}}
-        function updateMicIcon(){const i=document.getElementById('mic-icon');if(state.isListening)i.className='ph-fill ph-stop text-red-500 text-xl';else i.className='ph-fill ph-microphone text-xl'}
-        function toggleCallMute(){const b=document.getElementById('call-mute-btn');if(b.classList.contains('bg-gray-800')){b.classList.replace('bg-gray-800','bg-red-800');if(state.recognition)state.recognition.stop()}else{b.classList.replace('bg-red-800','bg-gray-800');if(state.recognition)state.recognition.start()}}
-        function openCallMode(){if(state.user.plan==='basic'&&state.user.callCount>=3){showToast("Daily limit reached");return}state.isCallMode=true;document.getElementById('call-overlay').classList.remove('hidden');setTimeout(()=>document.getElementById('call-overlay').classList.remove('opacity-0'),10);playCallSound();if(state.recognition){try{state.recognition.start()}catch(e){}state.isListening=true}else{document.getElementById('call-status').innerText="Mic not supported"}}
-        function closeCallMode(){state.isCallMode=false;document.getElementById('call-overlay').classList.add('opacity-0');setTimeout(()=>document.getElementById('call-overlay').classList.add('hidden'),500);if(state.recognition)state.recognition.stop();window.speechSynthesis.cancel()}
-        function hangUp(){playHangupSound();closeCallMode()}
-        function openPlansModal(){const m=document.getElementById('plans-modal');m.classList.remove('hidden');setTimeout(()=>{m.classList.remove('opacity-0');m.firstElementChild.classList.add('scale-100')},10)}
-        function closePlansModal(){const m=document.getElementById('plans-modal');m.classList.add('opacity-0');setTimeout(()=>m.classList.add('hidden'),300)}
-        function redeemCode(){if(document.getElementById('plan-code-input').value==='333181'){state.user.plan='plus';saveUser();showToast("Upgraded to Chirpless+!");closePlansModal();updateChatLimitUI()}else{showToast("Invalid Code")}}
-        function updateChatLimitUI() { const l = document.getElementById('chat-limit-display'); if(l) { if (state.user.plan === 'basic') { l.innerText = `Chats left: ${20 - state.user.chatCount}`; l.classList.remove('hidden'); } else { l.classList.add('hidden'); } } }
-        function openProfileModal() { const m = document.getElementById('profile-modal'); const c = document.getElementById('profile-modal-content'); document.getElementById('input-username').value = state.user.name; document.getElementById('input-pfp').value = state.user.pfp; m.classList.remove('hidden'); setTimeout(() => { m.classList.remove('opacity-0'); c.classList.remove('scale-95'); c.classList.add('scale-100'); }, 10); }
-        function closeProfileModal() { const m = document.getElementById('profile-modal'); const c = document.getElementById('profile-modal-content'); m.classList.add('opacity-0'); c.classList.remove('scale-100'); c.classList.add('scale-95'); setTimeout(() => m.classList.add('hidden'), 300); }
-        function saveProfile() { state.user.name = document.getElementById('input-username').value; state.user.pfp = document.getElementById('input-pfp').value; state.user.banner = document.getElementById('input-banner').value; state.user.persona = document.getElementById('input-persona').value; saveUser(); applyUserProfile(); closeProfileModal(); }
-        function updateHeader() { const char = CHARACTERS[state.currentCharId]; const el = document.getElementById('header-char-name'); if(el) el.innerText = char.name; }
-        function openCharacterInfo() { const c=CHARACTERS[state.currentCharId];document.getElementById('char-info-name').innerText=c.name;document.getElementById('char-info-icon').innerHTML=`<i class="ph-fill ${c.icon} ${c.color}"></i>`;document.getElementById('char-info-model').innerText=`Powered by ${MODELS[state.currentModel].baseName}`;document.getElementById('char-info-uses').innerText=c.uses;const m=document.getElementById('char-info-modal');m.classList.remove('hidden');setTimeout(()=>{m.classList.remove('opacity-0');m.firstElementChild.classList.remove('scale-95');m.firstElementChild.classList.add('scale-100')},10)}
-        function closeCharacterInfo() { const m=document.getElementById('char-info-modal');m.classList.add('opacity-0');setTimeout(()=>m.classList.add('hidden'),300)}
-        function toggleModelDropdown() { document.getElementById('model-dropdown').classList.toggle('hidden'); }
-        document.addEventListener('click', (e) => { if (!document.querySelector('.group').contains(e.target)) document.getElementById('model-dropdown').classList.add('hidden'); });
-        function renderAvatarPresets() { 
-            const p = ['Felix', 'Aneka', 'Zack', 'Midnight', 'Bear', 'Bandit']; 
-            const c = document.getElementById('avatar-presets'); 
-            if(!c) return;
-            c.innerHTML = ''; 
-            p.forEach(s => { 
-                const url = `https://api.dicebear.com/7.x/avataaars/svg?seed=${s}`; 
-                const b = document.createElement('button'); 
-                b.className = "w-10 h-10 rounded-full overflow-hidden border-2 border-transparent hover:border-white transition-all"; 
-                b.innerHTML = `<img src="${url}" class="w-full h-full object-cover">`; 
-                b.onclick = () => { 
-                    document.getElementById('input-pfp').value = url; 
-                    document.getElementById('preview-pfp').src = url; 
-                }; 
-                c.appendChild(b); 
-            }); 
-        }
-        function setLoading(l){state.isLoading=l;const i=document.getElementById('loading-indicator');if(l){i.classList.remove('hidden');scrollToBottom()}else{i.classList.add('hidden')}}
-        function renderExploreGrid(){const g=document.getElementById('explore-grid');g.innerHTML='';Object.values(CHARACTERS).forEach(c=>{const d=document.createElement('div');d.onclick=()=>selectCharacter(c.id);d.className="bg-darkcard p-6 rounded-3xl border border-gray-700 hover:shadow-xl transition-all cursor-pointer group relative overflow-hidden";let w=c.warning?`<div class="absolute top-0 right-0 bg-red-900/50 text-red-400 text-[10px] font-bold px-3 py-1.5 rounded-bl-2xl">${c.warning}</div>`:'';d.innerHTML=`${w}<div class="w-12 h-12 bg-gray-800 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"><i class="ph-fill ${c.icon} ${c.color} text-2xl"></i></div><h3 class="text-lg font-bold text-white flex items-center gap-1">${c.name}<i class="ph-fill ph-seal-check text-orange-500 text-sm"></i></h3><p class="text-sm text-gray-400 mt-1 mb-6 flex-1">${c.prompt.split('.')[0]}.</p><div class="flex items-center justify-between mt-auto pt-4 border-t border-gray-700"><span class="text-xs font-bold text-gray-400">${c.uses} Uses</span><i class="ph-bold ph-arrow-right text-gray-600 group-hover:text-white transition-colors"></i></div>`;g.appendChild(d)})}
-
-        const renderer=new marked.Renderer();
-        renderer.code=function(c,l){
-            let validCode=(typeof c==='object'&&c!==null)?(c.text||''):(c?String(c):'');
-            let validLang=(typeof c==='object'&&c!==null)?(c.lang||l):l;
-            let highlighted;try{highlighted=(!!validLang&&hljs.getLanguage(validLang))?hljs.highlight(validCode,{language:validLang}).value:hljs.highlightAuto(validCode).value}catch(e){highlighted=validCode.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}
-            const esc=encodeURIComponent(validCode);
-            return `<div class="my-6 rounded-xl overflow-hidden border border-gray-700 shadow-sm group bg-darkbg"><div class="code-header flex justify-between items-center px-4 py-2 bg-darkcard border-b border-gray-700"><span class="font-mono text-xs lowercase bg-gray-700 px-2 py-0.5 rounded text-gray-300 font-bold">${validLang||'code'}</span><div class="code-actions flex gap-3"><button onclick="copyToClipboard(this)" data-code="${esc}" class="code-action-btn text-xs font-medium flex items-center gap-1 text-gray-400 hover:text-white transition-colors"><i class="ph-bold ph-copy"></i> Copy</button></div></div><div class="bg-[#111] p-4 overflow-x-auto"><pre><code class="hljs ${validLang||''} bg-transparent p-0 text-sm leading-relaxed font-mono">${highlighted}</code></pre></div></div>`;
-        };
-        marked.use({renderer});
-
-        window.addEventListener('DOMContentLoaded', init);
     </script>
 </body>
 </html>
