@@ -30,14 +30,22 @@
             --font-main: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             --anim-speed: 0.8s;
             --anim-ease: cubic-bezier(0.25, 1, 0.5, 1);
-            
-            /* Interaction Colors */
             --like-color: #e0245e; 
-            --repost-grad: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
         }
 
+        /* Dark Mode Override */
+        html.dark {
+            --bg: #050505;
+            --text: #ffffff;
+            --subtle: #888888;
+            --border: #222222;
+            --accent: #ffffff;
+            --glass: rgba(5, 5, 5, 0.95);
+        }
+
+        /* System Preference Fallback (if no manual toggle set) */
         @media (prefers-color-scheme: dark) {
-            :root {
+            :root:not(.light) {
                 --bg: #050505;
                 --text: #ffffff;
                 --subtle: #888888;
@@ -48,7 +56,7 @@
         }
 
         * { box-sizing: border-box; outline: none; -webkit-tap-highlight-color: transparent; }
-        body, html { margin: 0; padding: 0; font-family: var(--font-main); background: var(--bg); color: var(--text); height: 100%; overflow: hidden; letter-spacing: -0.015em; }
+        body, html { margin: 0; padding: 0; font-family: var(--font-main); background: var(--bg); color: var(--text); height: 100%; overflow: hidden; letter-spacing: -0.015em; transition: background 0.3s, color 0.3s; }
 
         /* --- TYPOGRAPHY --- */
         h1, h2, h3 { margin: 0; font-weight: 800; letter-spacing: -0.03em; }
@@ -165,9 +173,7 @@
             background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
             transform: skewX(-20deg); pointer-events: none; transition: 0.5s;
         }
-        @media (prefers-color-scheme: dark) {
-            .nav-btn::after, .glass-shine::after { background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent); }
-        }
+        html.dark .nav-btn::after, html.dark .glass-shine::after { background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent); }
         .nav-btn:hover::after, .glass-shine:hover::after { animation: shine 1.2s cubic-bezier(0.25, 1, 0.5, 1); }
         
         .sidebar-stats { margin-top: auto; padding-top: 2rem; border-top: 1px solid var(--border); }
@@ -184,7 +190,7 @@
             padding: 1rem 1.5rem; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;
             background: rgba(255,255,255,0.85); backdrop-filter: blur(12px); position: sticky; top: 0; z-index: 20; flex-shrink: 0;
         }
-        @media (prefers-color-scheme: dark) { .top-bar { background: rgba(0,0,0,0.85); } }
+        html.dark .top-bar { background: rgba(5,5,5,0.85); }
 
         .day-counter { font-weight: 800; font-size: 0.9rem; padding: 0.5rem 1rem; background: var(--border); border-radius: 20px; }
         .btn-next-day {
@@ -210,7 +216,7 @@
             padding: 1rem 1.5rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 1rem;
             position: sticky; top: 0; background: rgba(255,255,255,0.85); backdrop-filter: blur(12px); z-index: 20; flex-shrink: 0;
         }
-        @media (prefers-color-scheme: dark) { .post-detail-header { background: rgba(0,0,0,0.85); } }
+        html.dark .post-detail-header { background: rgba(5,5,5,0.85); }
         
         .post-detail-content { padding: 1.5rem; }
         .post-detail-text { font-size: 1.4rem; line-height: 1.4; margin: 1rem 0; white-space: pre-wrap; font-weight: 500; }
@@ -247,8 +253,8 @@
         }
 
         .composer-tools { display: flex; justify-content: space-between; align-items: center; padding-left: 60px; }
-        .tools-left { display: flex; gap: 0.5rem; align-items: center; }
-        .collab-select { font-size: 0.85rem; padding: 0.4rem 0.8rem; border-radius: 15px; border: 1px solid var(--border); background: transparent; color: var(--text); cursor: pointer; }
+        .tools-left { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
+        .collab-select { font-size: 0.85rem; padding: 0.4rem 0.8rem; border-radius: 15px; border: 1px solid var(--border); background: transparent; color: var(--text); cursor: pointer; max-width: 120px; }
         .btn-icon { background: transparent; border: 1px solid var(--border); padding: 0.4rem; border-radius: 50%; color: var(--text); cursor: pointer; display: flex; align-items: center; justify-content: center;}
         .btn-icon:hover { background: var(--border); }
         .btn-post { background: var(--text); color: var(--bg); border: none; padding: 0.6rem 1.6rem; border-radius: 24px; font-weight: 700; cursor: pointer; opacity: 0.5; pointer-events: none; transition: 0.2s; }
@@ -308,7 +314,7 @@
         .poll-result-bg {
             position: absolute; top:0; left:0; height:100%; background: rgba(0,0,0,0.06); z-index: 0; transition: width 0.8s cubic-bezier(0.25, 1, 0.5, 1);
         }
-        @media (prefers-color-scheme: dark) { .poll-result-bg { background: rgba(255,255,255,0.1); } }
+        html.dark .poll-result-bg { background: rgba(255,255,255,0.1); }
         .poll-text { z-index: 1; font-weight: 600; font-size: 0.95rem; }
         .poll-percent { z-index: 1; font-weight: 700; display: flex; align-items: center; font-size: 0.9rem; }
         
@@ -333,7 +339,6 @@
         .profile-action-btn { background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 0.5rem 1.2rem; border-radius: 12px; font-weight: 600; cursor: pointer; }
         .profile-action-btn.primary { background: var(--text); color: var(--bg); border: none; }
         
-        /* Bounce Animation */
         @keyframes bounce-click { 0% { transform: scale(1); } 50% { transform: scale(0.9); } 100% { transform: scale(1); } }
         .bounce-active { animation: bounce-click 0.3s ease; }
 
@@ -384,12 +389,10 @@
                 <div class="input-group"><label>AUDIENCE</label><input type="number" id="bot-audience" value="50000"></div>
                 <div class="input-group"><label>FOLLOWERS</label><input type="number" id="bot-followers" value="2000"></div>
             </div>
-            <!-- Checkbox for custom -->
             <div style="margin-bottom:1rem; display:flex; align-items:center; gap:8px;">
                 <input type="checkbox" id="bot-custom" style="width:auto;">
                 <label for="bot-custom" style="margin:0; font-size:0.9rem; font-weight:600; cursor:pointer;">Enable Control (Custom Bot)</label>
             </div>
-            
             <button class="btn-primary" onclick="confirmAddBot()">Create Bot</button>
             <button class="btn-secondary" onclick="closeCollabModal()">Close</button>
             <div style="margin-top: 2rem; border-top: 1px solid var(--border); padding-top: 1rem;">
@@ -431,6 +434,9 @@
                 <button class="nav-btn" onclick="openCollabModal()">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg> Collaborate
                 </button>
+                <button class="nav-btn" onclick="toggleTheme()">
+                    <svg id="theme-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg> Theme
+                </button>
             </nav>
             <div class="sidebar-stats">
                 <div class="stat-block"><div class="stat-label">Monthly Audience</div><div class="stat-value ticker-root" id="audience-count">0</div></div>
@@ -465,7 +471,9 @@
                     </div>
                     <div class="composer-tools">
                         <div class="tools-left">
-                            <select id="collab-select" class="collab-select"><option value="">No Collaborator</option></select>
+                            <!-- Collab Selectors -->
+                            <select id="collab-select-1" class="collab-select"><option value="">+ Collab 1</option></select>
+                            <select id="collab-select-2" class="collab-select"><option value="">+ Collab 2</option></select>
                             
                             <!-- Image Upload Button -->
                             <button class="btn-icon" onclick="triggerImageUpload()" title="Add Image">
@@ -528,7 +536,7 @@
             <div class="nav-btn" onclick="switchTab('home')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg></div>
             <div class="nav-btn" onclick="switchTab('search')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg></div>
             <div class="nav-btn" onclick="switchTab('profile')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg></div>
-            <div class="nav-btn" onclick="switchTab('notes')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><line x1="16" y1="13" x2="8" y2="13"></line></svg></div>
+            <div class="nav-btn" onclick="toggleTheme()"><svg id="mob-theme-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg></div>
             <div class="nav-btn" onclick="openCollabModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle></svg></div>
         </div>
 
@@ -545,13 +553,14 @@
             activeTab: 'home',
             previousTab: 'home',
             viewingProfile: null,
-            activeAccountId: 'me' // 'me' or bot ID
+            activeAccountId: 'me',
+            theme: 'light'
         };
         
         let currentImageBase64 = null; 
 
         // --- PERSISTENCE ---
-        const DB_KEY = 'chirpless_save_v6';
+        const DB_KEY = 'chirpless_save_v7';
         
         function saveData() {
             try {
@@ -569,12 +578,27 @@
                     state = { ...state, ...parsed };
                     if(!state.user.pfp) state.user.pfp = null;
                     if(!state.activeAccountId) state.activeAccountId = 'me';
-                    // Ensure bots have following prop
+                    if(!state.theme) state.theme = 'light';
                     state.bots.forEach(b => { if(typeof b.following === 'undefined') b.following = false; });
                     return true;
                 } catch(e) { console.error("Save data corrupted", e); return false; }
             }
             return false;
+        }
+
+        // --- THEME ---
+        function applyTheme() {
+            if (state.theme === 'dark') {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+        }
+
+        function toggleTheme() {
+            state.theme = state.theme === 'light' ? 'dark' : 'light';
+            applyTheme();
+            saveData();
         }
 
         // --- ACCOUNT HELPERS ---
@@ -588,9 +612,8 @@
             updateUserAvatarDisplay();
             updateGlobalStats(true);
             saveData();
-            // Refresh current view
-            if(state.activeTab === 'profile') renderProfile(id); // Go to self profile
-            else if(state.activeTab === 'home') renderFeed('feed'); // refresh feed composer
+            if(state.activeTab === 'profile') renderProfile(id);
+            else if(state.activeTab === 'home') renderFeed('feed');
             closeAllMenus();
         }
 
@@ -598,7 +621,6 @@
             event.stopPropagation();
             closeAllMenus();
             
-            // Generate list of accounts: Me + Custom Bots
             const accounts = [{id: 'me', name: state.user.name, handle: state.user.handle, pfp: state.user.pfp}];
             state.bots.filter(b => b.isCustom).forEach(b => accounts.push(b));
             
@@ -623,8 +645,7 @@
             });
             div.innerHTML = html;
             
-            // Append to the header (need reference)
-            const h2 = event.currentTarget.parentElement; // The h2 container
+            const h2 = event.currentTarget.parentElement;
             if(h2) {
                h2.style.position = 'relative';
                h2.appendChild(div);
@@ -661,6 +682,7 @@
         // --- APP INIT ---
         window.onload = function() {
             if(loadData()) {
+                applyTheme();
                 document.getElementById('onboarding').classList.add('hidden');
                 document.getElementById('app').style.display = 'flex';
                 updateUserAvatarDisplay();
@@ -682,7 +704,7 @@
         }
 
         function getAvatarContent(user, isBot) {
-            if (isBot || user.isCustom) { // Treat custom users like bots for avatar logic if needed
+            if (isBot || user.isCustom) {
                 return `<img src="https://api.dicebear.com/9.x/thumbs/svg?seed=${user.handle}" style="width:100%; height:100%; object-fit:cover;">`;
             }
             if (user.pfp) {
@@ -700,12 +722,16 @@
             element.dataset.str = strVal;
             strVal.split('').forEach(char => {
                 const wrapper = document.createElement('span');
-                if (/\d/.test(char)) {
+                if (/\d/.test(char) || char === '.') {
                     wrapper.className = 'ticker-digit-col';
                     let html = '';
-                    for(let i=0; i<=9; i++) html += `<span class="ticker-digit">${i}</span>`;
+                    if(char === '.') {
+                        html = '<span class="ticker-digit">.</span>';
+                    } else {
+                        for(let i=0; i<=9; i++) html += `<span class="ticker-digit">${i}</span>`;
+                    }
                     wrapper.innerHTML = html;
-                    wrapper.style.transform = `translateY(${-(parseInt(char) * 10)}%)`; 
+                    if(char !== '.') wrapper.style.transform = `translateY(${-(parseInt(char) * 10)}%)`; 
                 } else {
                     wrapper.className = 'ticker-digit';
                     wrapper.innerText = char;
@@ -719,7 +745,7 @@
             const strVal = formatNumber(newValue);
             if (element.dataset.str === strVal) return;
             const oldStr = element.dataset.str || "";
-            if (oldStr.length !== strVal.length || oldStr.replace(/\d/g,'') !== strVal.replace(/\d/g,'')) {
+            if (oldStr.length !== strVal.length || oldStr.replace(/[\d.]/g,'') !== strVal.replace(/[\d.]/g,'')) {
                 createTicker(element, newValue);
                 return;
             }
@@ -733,14 +759,16 @@
                         cols[digitIndex].style.transform = `translateY(${-(parseInt(char) * 10)}%)`;
                     }
                     digitIndex++;
+                } else if(char === '.') {
+                    digitIndex++;
                 }
             });
         }
 
         function formatNumber(num) {
-            if (num >= 1000000000) return Math.floor(num / 1000000000) + 'b';
-            if (num >= 1000000) return Math.floor(num / 1000000) + 'm';
-            if (num >= 1000) return Math.floor(num / 1000) + 'k';
+            if (num >= 1000000000) return (num / 1000000000).toFixed(1) + 'b';
+            if (num >= 1000000) return (num / 1000000).toFixed(1) + 'm';
+            if (num >= 1000) return (num / 1000).toFixed(1) + 'k';
             return Math.floor(num).toString();
         }
 
@@ -850,11 +878,22 @@
             if(!text && !hasPoll && !currentImageBase64) return;
 
             const currentUser = getCurrentUser();
-            const collabId = document.getElementById('collab-select').value;
-            const bot = state.bots.find(b => b.id == collabId);
             
+            // Collect up to 2 collaborators
+            const c1 = document.getElementById('collab-select-1').value;
+            const c2 = document.getElementById('collab-select-2').value;
+            const collabs = [];
+            if(c1) { const b = state.bots.find(x => x.id == c1); if(b) collabs.push({id: b.id, name: b.name, handle: b.handle}); }
+            if(c2 && c2 !== c1) { const b = state.bots.find(x => x.id == c2); if(b) collabs.push({id: b.id, name: b.name, handle: b.handle}); }
+
+            // Calculate Potential
             let mult = 1.0;
-            if (bot) mult = 1 + (bot.audience / (currentUser.audience + 1000)) * 0.5;
+            let collabAudience = 0;
+            collabs.forEach(c => {
+                const b = state.bots.find(x => x.id == c.id);
+                if(b) collabAudience += b.audience;
+            });
+            if (collabAudience > 0) mult = 1 + (collabAudience / (currentUser.audience + 1000)) * 0.4; // Weighted boost
 
             const followerContribution = currentUser.followers * (0.15 + Math.random() * 0.15);
             const audienceContribution = currentUser.audience * (0.8 + Math.random() * 0.4);
@@ -862,12 +901,12 @@
 
             const newPost = {
                 id: Date.now(),
-                authorId: state.activeAccountId, // Post as active user (me or bot)
+                authorId: state.activeAccountId,
                 content: text,
                 dayPosted: state.day,
                 views: 0, likes: 0, reposts: 0,
                 liked: false, reposted: false,
-                collab: bot ? { id: bot.id, name: bot.name, handle: bot.handle } : null,
+                collabs: collabs, // Array of collaborators
                 potential: combinedPotential, 
                 decay: 1.0,
                 poll: hasPoll ? {
@@ -887,7 +926,8 @@
             document.getElementById('poll-opt-1').value = '';
             document.getElementById('poll-opt-2').value = '';
             document.getElementById('poll-creator').classList.remove('active');
-            document.getElementById('collab-select').value = "";
+            document.getElementById('collab-select-1').value = "";
+            document.getElementById('collab-select-2').value = "";
             removeImage();
             checkInput();
             
@@ -1043,11 +1083,16 @@
         }
         function updateBotList() {
             const list = document.getElementById('bot-list');
-            const select = document.getElementById('collab-select');
+            const select1 = document.getElementById('collab-select-1');
+            const select2 = document.getElementById('collab-select-2');
+            
             list.innerHTML = state.bots.length ? state.bots.map(b => 
                 `<div><b>${b.name}</b> <span class="subtle">${b.handle}</span>${b.isCustom ? ' <span style="font-size:0.7rem;background:var(--border);padding:2px 4px;border-radius:4px;">Custom</span>' : ''}<br><span style="font-size:0.8rem">Aud: ${formatNumber(b.audience)} | Fol: ${formatNumber(b.followers)}</span></div>`
             ).join('<hr style="border:0; border-top:1px solid var(--border); margin:0.5rem 0;">') : "No bots yet.";
-            select.innerHTML = `<option value="">No Collaborator</option>` + state.bots.map(b => `<option value="${b.id}">${b.name}</option>`).join('');
+            
+            const opts = `<option value="">+ Collab</option>` + state.bots.map(b => `<option value="${b.id}">${b.name}</option>`).join('');
+            select1.innerHTML = opts;
+            select2.innerHTML = opts;
         }
 
         function toggleFollow(botId) {
@@ -1102,17 +1147,23 @@
             });
 
             const currentUser = getCurrentUser();
-            let audChange = 0;
-            if (daysSincePost < 4) {
-                audChange = Math.floor(totalNewViews * 0.015) + Math.floor(Math.random() * 100);
-            } else if (daysSincePost >= 4 && daysSincePost < 23) {
-                const slideFactor = 0.005 * (daysSincePost - 3);
-                audChange = -Math.floor(currentUser.audience * slideFactor);
-            } else {
-                audChange = -Math.floor(currentUser.audience * 0.10);
+            
+            // Natural Churn (Loss of traction over time)
+            // Even active users lose a tiny bit (0.05%) daily to represent "churn"
+            let audChange = -Math.floor(currentUser.audience * 0.0005); 
+
+            // Inactivity Penalty (The Fall Off)
+            // Starts earlier (day 2) but softer, ramping up
+            if (daysSincePost >= 2) {
+                // Exponential-ish ramp: (days-1)^1.5 * 0.2%
+                const decayRate = 0.002 * Math.pow((daysSincePost - 1), 1.2);
+                audChange -= Math.floor(currentUser.audience * decayRate);
             }
             
-            currentUser.audience = Math.max(0, currentUser.audience + audChange);
+            // Growth from new views
+            const growth = Math.floor(totalNewViews * 0.015) + Math.floor(Math.random() * 100);
+            
+            currentUser.audience = Math.max(0, currentUser.audience + audChange + growth);
             currentUser.followers += Math.floor(totalNewViews * 0.001);
             
             updateGlobalStats();
@@ -1176,16 +1227,17 @@
             const currentUser = getCurrentUser(); // for 'me' context
 
             if (containerId === 'profile-feed') {
-                // If viewing a profile, show posts BY that author (authorId === viewingProfile)
-                // OR posts where that profile is a collaborator
+                // Check if collab is single obj or array
                 const targetId = state.viewingProfile;
-                posts = state.posts.filter(p => p.authorId == targetId || (p.collab && p.collab.id == targetId));
+                posts = state.posts.filter(p => {
+                    const isAuthor = p.authorId == targetId;
+                    const isCollab = p.collabs ? p.collabs.some(c => c.id == targetId) : (p.collab && p.collab.id == targetId); // Support legacy single collab
+                    return isAuthor || isCollab;
+                });
             } else if (containerId === 'search-results') {
                 const query = document.getElementById('search-input').value.toLowerCase();
                 posts = state.posts.filter(p => p.content.toLowerCase().includes(query));
             } else if (containerId === 'notes-feed') {
-                // Notes are personal to the active account viewing them? 
-                // Currently notes are global to the browser session. Let's keep it simple.
                 posts = state.posts.filter(p => p.myNote && p.myNote.trim().length > 0);
             }
 
@@ -1210,30 +1262,21 @@
         function renderProfile(profileId) {
             state.viewingProfile = profileId;
             const container = document.getElementById('profile-container');
-            const isMe = profileId == state.activeAccountId; // Is this the profile I am currently acting as?
+            const isMe = profileId == state.activeAccountId; 
             
             let user;
             if (profileId === 'me') user = state.user;
             else user = state.bots.find(b => b.id == profileId);
             
-            // If we are looking for 'me' but active account is a bot, we might need to handle ID mismatch
-            // If profileId is 'me', it means the main user object
-            if (profileId === 'me' && state.activeAccountId !== 'me') {
-               // We are viewing main profile while logged in as bot
-               user = state.user;
-            } else if (profileId == state.activeAccountId && state.activeAccountId !== 'me') {
-               // Viewing active bot profile
-               user = state.bots.find(b => b.id == state.activeAccountId);
-            }
+            if (profileId === 'me' && state.activeAccountId !== 'me') user = state.user;
+            else if (profileId == state.activeAccountId && state.activeAccountId !== 'me') user = state.bots.find(b => b.id == state.activeAccountId);
 
             if (!user) { container.innerHTML = "User not found"; return; }
             
             const badge = (user.followers >= 15000) ? getVerifiedBadge() : '';
-            const avatarHTML = getAvatarContent(user, profileId !== 'me' && profileId !== state.user.id); // Treat as bot if not main user ID? 
+            const avatarHTML = getAvatarContent(user, profileId !== 'me' && profileId !== state.user.id); 
             
-            // Dropdown trigger logic
             let nameHTML = `<h2>${user.name} ${badge}</h2>`;
-            // If we are viewing the profile we are logged in as (whether 'me' or bot), show dropdown
             if (isMe) {
                 nameHTML = `<h2 onclick="toggleAccountMenu(event)">${user.name} ${badge} <span style="font-size:0.8em; opacity:0.5; margin-left:4px;">▼</span></h2>`;
             }
@@ -1248,7 +1291,6 @@
                     <input type="file" id="pfp-upload-input" accept="image/*" style="display: none;" onchange="handlePfpFile(this)">
                 `;
             } else {
-                // Following button
                 const text = user.following ? 'Following' : 'Follow';
                 const cls = user.following ? 'profile-action-btn' : 'profile-action-btn primary';
                 actionButton = `<button class="${cls}" onclick="toggleFollow('${user.id}'); this.classList.add('bounce-active'); setTimeout(()=>this.classList.remove('bounce-active'),300);">${text}</button>`;
@@ -1277,19 +1319,27 @@
 
             const timeStr = formatTime(post.dayPosted, state.day);
             
-            // Resolve author
             let author = post.authorId === 'me' ? state.user : state.bots.find(b => b.id == post.authorId);
             if(!author) author = {name:'Unknown', handle:'@unknown', followers:0};
 
             const badge = (author.followers >= 15000) ? getVerifiedBadge() : '';
             const avatarContent = getAvatarContent(author, post.authorId !== 'me');
 
+            // Handle multiple collabs
+            let collabText = '';
+            if(post.collabs && post.collabs.length > 0) {
+                const names = post.collabs.map(c => c.name).join(' & ');
+                collabText = `<span class="collab-text">with ${names}</span>`;
+            } else if (post.collab) {
+                collabText = `<span class="collab-text">with ${post.collab.name}</span>`;
+            }
+
             let handleHTML = `
                 <div class="handle-group" onclick="handleHandleClick(event, '${post.authorId}', '${post.collab ? post.collab.id : ''}')">
                     <div class="avatar" style="width:48px;height:48px;margin-right:10px;">${avatarContent}</div>
                     <div>
                         <div class="handle" style="font-size:1.1rem;">${author.name} ${badge}</div>
-                        ${post.collab ? `<span class="collab-text">with ${post.collab.name}</span>` : ''}
+                        ${collabText}
                     </div>
                 </div>
             `;
@@ -1376,17 +1426,28 @@
 
             const timeStr = formatTime(post.dayPosted, state.day);
             
-            // Resolve author
             let author = post.authorId === 'me' ? state.user : state.bots.find(b => b.id == post.authorId);
             if(!author) author = {name:'Unknown', handle:'@unknown', followers:0};
 
             const badge = (author.followers >= 15000) ? getVerifiedBadge() : '';
             const avatarContent = getAvatarContent(author, post.authorId !== 'me');
 
+            // Handle multiple collabs
+            let collabText = '';
+            if(post.collabs && post.collabs.length > 0) {
+                const names = post.collabs.map(c => c.name).join(' & ');
+                // Simple singular for 1, plural style for 2
+                const suffix = post.collabs.length > 1 ? "collaborators" : "collaborator";
+                // Shortened for feed to avoid clutter
+                collabText = `<span class="collab-text">+${post.collabs.length} ${suffix}</span>`;
+            } else if (post.collab) {
+                collabText = `<span class="collab-text">+1 collaborator</span>`;
+            }
+
             let handleHTML = `
                 <div class="handle-group glass-shine" onclick="handleHandleClick(event, '${post.authorId}', '${post.collab ? post.collab.id : ''}')">
                     <span class="handle">${author.name} ${badge}</span>
-                    ${post.collab ? `<span class="collab-text">+1 collaborator</span>` : ''}
+                    ${collabText}
                 </div>
             `;
 
@@ -1455,7 +1516,7 @@
             const el = element || document.getElementById(`poll-${post.id}`);
             if(!el) return;
             const total = post.poll.totalVotes || 1; 
-            const showResults = post.poll.voted || post.authorId === state.activeAccountId; // Show if voted or if author (me or my bot)
+            const showResults = post.poll.voted || post.authorId === state.activeAccountId; 
             let html = '';
             post.poll.options.forEach((opt, idx) => {
                 if(showResults) {
