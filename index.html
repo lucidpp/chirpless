@@ -1,304 +1,1026 @@
 <!DOCTYPE html>
-<html lang="en" class="scroll-smooth">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Chirpless - Experience the sound of silence. A minimalistic communication tool for the modern era.">
-    <meta name="keywords" content="Chirpless, app, android, ios, minimal, communication, silent, podcast">
-    <meta name="author" content="Chirpless Team">
-    <meta name="theme-color" content="#262626">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#050505">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Chirpless">
     
-    <title>Chirpless</title>
-    <link rel="icon" href="siteicon.png" type="image/png">
-
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-
-    <!-- Font Awesome for Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
-
+    <!-- PWA Links -->
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/png" href="siteicon.png">
+    <link rel="apple-touch-icon" href="siteicon.png">
+    
+    <title>Chirpless | Connected</title>
     <style>
+        /* --- CSS VARIABLES & THEME --- */
+        :root {
+            --bg-color: #050505;
+            --surface-color: #121212;
+            --surface-highlight: #1e1e1e;
+            --text-primary: #ffffff;
+            --text-secondary: #999999;
+            --accent: #ffffff;
+            --accent-dim: #333333;
+            --glass-panel: rgba(20, 20, 20, 0.6);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --glass-blur: blur(20px) saturate(180%);
+            --shadow-soft: 0 10px 40px -10px rgba(0,0,0,0.5);
+            
+            --border-radius: 20px;
+            --padding: 20px;
+            --nav-height: 85px;
+            --mini-player-height: 70px;
+            --sidebar-width: 250px;
+            --font-main: 'SF Pro Display', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+            --safe-top: env(safe-area-inset-top);
+            --safe-bottom: env(safe-area-inset-bottom);
+        }
+
+        [data-theme="light"] {
+            --bg-color: #F7F5F2; /* French White */
+            --surface-color: #FFFFFF;
+            --surface-highlight: #EBE8E4;
+            --text-primary: #1A1A1A;
+            --text-secondary: #6B6661;
+            --accent: #1A1A1A;
+            --accent-dim: #D1CDC7;
+            --glass-panel: rgba(247, 245, 242, 0.75);
+            --glass-border: rgba(0, 0, 0, 0.04);
+            --glass-blur: blur(25px) saturate(120%);
+            --shadow-soft: 0 10px 30px -10px rgba(80, 70, 60, 0.15);
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
+        
         body {
-            font-family: 'Inter', sans-serif;
-            background-color: #262626; /* Neutral Dark Grey */
-            color: #f3f4f6;
-            overflow-x: hidden;
-        }
-
-        /* Custom Animations */
-        @keyframes fadeUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .animate-fade-up {
-            animation: fadeUp 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
-            opacity: 0; /* Start hidden */
-        }
-
-        .delay-100 { animation-delay: 0.1s; }
-        .delay-200 { animation-delay: 0.2s; }
-        .delay-300 { animation-delay: 0.3s; }
-        .delay-500 { animation-delay: 0.5s; }
-
-        /* Floating Animation for background elements */
-        @keyframes float {
-            0% { transform: translateY(0px); }
-            50% { transform: translateY(-20px); }
-            100% { transform: translateY(0px); }
-        }
-        .floating-shape {
-            animation: float 6s ease-in-out infinite;
-        }
-
-        /* iOS Button Hover Effect */
-        .ios-btn {
-            position: relative;
+            /* Animated Gradient Background */
+            background: linear-gradient(135deg, var(--bg-color), var(--surface-color), var(--surface-highlight));
+            background-size: 400% 400%;
+            animation: gradientBG 15s ease infinite;
+            
+            color: var(--text-primary);
+            font-family: var(--font-main); margin: 0; padding: 0;
+            height: 100dvh; width: 100vw;
             overflow: hidden;
-            transition: all 0.3s ease;
+            transition: color 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+            user-select: none;
+        }
+
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* --- ANIMATIONS --- */
+        @keyframes clickWobble {
+            0% { transform: scale(1); }
+            40% { transform: scale(0.95) rotate(-2deg); }
+            60% { transform: scale(1.02) rotate(2deg); }
+            100% { transform: scale(1) rotate(0); }
+        }
+        .wobble-click { animation: clickWobble 0.4s cubic-bezier(0.25, 1, 0.5, 1); }
+
+        /* --- UTILITIES --- */
+        .hidden { display: none !important; }
+        .flex { display: flex; }
+        .flex-col { flex-direction: column; }
+        .items-center { align-items: center; }
+        .justify-between { justify-content: space-between; }
+        .w-full { width: 100%; }
+        .text-sm { font-size: 0.9rem; }
+        .text-xs { font-size: 0.75rem; }
+        .font-bold { font-weight: 700; }
+        .text-secondary { color: var(--text-secondary); }
+        .icon { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+        
+        @keyframes navPop { 0% { transform: scale(1); } 50% { transform: scale(0.9); } 100% { transform: scale(1); } }
+        .nav-click { animation: navPop 0.2s ease-out; }
+
+        /* --- GLASS SHINE EFFECT --- */
+        @keyframes shinePass {
+            0% { left: -100%; opacity: 0; }
+            50% { opacity: 0.6; }
+            100% { left: 200%; opacity: 0; }
+        }
+        .glass-shine-hover { position: relative; overflow: hidden; }
+        .glass-shine-hover::before {
+            content: ''; position: absolute; top: 0; left: -100%; width: 50%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+            transform: skewX(-20deg); pointer-events: none; transition: none; z-index: 5;
+        }
+        .glass-shine-hover:hover::before { animation: shinePass 0.75s ease-in-out; }
+
+        /* --- LAYOUT --- */
+        #app { height: 100%; display: flex; flex-direction: column; position: relative; }
+        
+        header {
+            padding: var(--padding); padding-top: max(15px, var(--safe-top));
+            display: flex; justify-content: space-between; align-items: center; z-index: 10;
+        }
+        .brand { font-size: 1.4rem; font-weight: 800; display: flex; align-items: center; gap: 8px; letter-spacing: -0.5px; }
+        .brand img { width: 28px; height: 28px; border-radius: 6px; }
+
+        #desktop-sidebar {
+            display: none;
+            position: fixed; top: 0; left: 0; height: 100%; width: var(--sidebar-width);
+            background: var(--surface-color); border-right: 1px solid var(--surface-highlight);
+            padding: 30px 20px; z-index: 150;
+            flex-direction: column; justify-content: space-between;
+        }
+        .sidebar-menu { display: flex; flex-direction: column; gap: 10px; margin-top: 40px; }
+        .sidebar-item {
+            display: flex; align-items: center; gap: 12px; padding: 12px 16px;
+            border-radius: 12px; color: var(--text-secondary); cursor: pointer; transition: 0.2s; font-weight: 600;
+        }
+        .sidebar-item:hover { background: var(--surface-highlight); color: var(--text-primary); }
+        .sidebar-item.active { background: var(--text-primary); color: var(--bg-color); }
+
+        main {
+            flex: 1; overflow-y: scroll; scroll-behavior: smooth;
+            padding-bottom: calc(var(--nav-height) + var(--mini-player-height) + 20px);
+            overscroll-behavior: contain; transition: margin-left 0.3s;
+        }
+        main::-webkit-scrollbar { display: none; }
+
+        .section-title { font-size: 1.3rem; margin: 24px var(--padding) 12px; font-weight: 700; }
+        
+        .search-container { padding: 0 var(--padding); margin-bottom: 15px; }
+        .search-bar {
+            width: 100%; background: var(--glass-panel);
+            backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            padding: 12px 16px; border-radius: 14px;
+            display: flex; align-items: center; font-size: 1rem;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+        }
+        .search-bar input { background: transparent; border: none; width: 100%; color: inherit; font-size: inherit; margin-left: 10px; }
+
+        .filters { display: flex; gap: 10px; padding: 0 var(--padding); margin-bottom: 20px; overflow-x: auto; }
+        .chip {
+            padding: 8px 16px; background: var(--surface-color); border-radius: 20px;
+            font-size: 0.85rem; font-weight: 600; color: var(--text-secondary);
+            border: 1px solid transparent; transition: all 0.2s; white-space: nowrap;
+        }
+        .chip.active { background: var(--text-primary); color: var(--bg-color); }
+
+        .horizontal-scroll { display: flex; gap: 16px; overflow-x: auto; padding: 0 var(--padding) 10px; }
+        .horizontal-scroll::-webkit-scrollbar { display: none; }
+        
+        .podcast-card { min-width: 140px; width: 140px; display: flex; flex-direction: column; gap: 8px; cursor: pointer; }
+        .cover-art {
+            width: 100%; aspect-ratio: 1; background: var(--surface-highlight);
+            border-radius: 16px; overflow: hidden; position: relative;
+        }
+        .cover-art img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s; }
+        .podcast-card:active .cover-art img { transform: scale(0.95); }
+        /* HOME SPECIFIC BORDERS */
+        #view-home .podcast-card .cover-art { border: 2px solid var(--text-primary); }
+
+        .list-item {
+            display: flex; align-items: center; gap: 16px; padding: 12px var(--padding);
+            border-bottom: 1px solid rgba(255,255,255,0.03); transition: background 0.2s; cursor: pointer;
+        }
+        .list-item:active { background: var(--surface-highlight); }
+        .list-img { width: 56px; height: 56px; border-radius: 12px; background: var(--surface-highlight); object-fit: cover; flex-shrink: 0; }
+        .list-rank { font-size: 1.2rem; font-weight: 900; color: var(--text-secondary); width: 30px; text-align: center; font-variant-numeric: tabular-nums; }
+        
+        /* --- BADGES --- */
+        .verified-badge-container {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 22px; height: 22px; margin-left: 6px; border-radius: 50%;
+            background: var(--glass-panel); backdrop-filter: blur(4px);
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            vertical-align: middle; cursor: pointer;
+            visibility: hidden;
+        }
+        .verified-badge-container.visible { visibility: visible; }
+        .verified-badge-container svg { width: 14px; height: 14px; fill: var(--text-primary); }
+        
+        .verified-badge { width: 14px; height: 14px; margin-left: 4px; vertical-align: middle; display: inline-block; visibility: hidden; }
+        .verified-badge.visible { visibility: visible; }
+        .verified-badge.lg { width: 18px; height: 18px; margin-left: 6px; }
+        [data-theme="dark"] .verified-badge { fill: #ffffff; filter: drop-shadow(0 0 4px rgba(255,255,255,0.5)); }
+        [data-theme="light"] .verified-badge { fill: #000000; filter: none; }
+
+        .new-badge {
+            font-size: 0.6rem; font-weight: 900; letter-spacing: 0.5px;
+            background: var(--text-primary); color: var(--bg-color);
+            padding: 3px 6px; border-radius: 6px; margin-left: 8px;
+            vertical-align: middle; display: inline-block;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+        .trending-badge {
+            font-size: 0.6rem; font-weight: 800; letter-spacing: 0.3px;
+            background: linear-gradient(135deg, #FF9500, #FF3B30); color: white;
+            padding: 3px 8px; border-radius: 6px; margin-left: 8px;
+            vertical-align: middle; display: inline-block;
+            box-shadow: 0 2px 8px rgba(255, 59, 48, 0.3);
+        }
+        .sponsored-badge {
+            font-size: 0.55rem; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700;
+            color: var(--text-secondary); border: 1px solid var(--text-secondary);
+            padding: 2px 6px; border-radius: 4px; margin-left: 8px;
+            vertical-align: middle; display: inline-block;
+        }
+
+        .odometer-wrapper { display: inline-flex; height: 1.2em; overflow: hidden; vertical-align: bottom; font-variant-numeric: tabular-nums; opacity: 0; transition: opacity 0.3s ease; }
+        .odometer-wrapper.active { opacity: 1; }
+        .odometer-ribbon { display: flex; flex-direction: column; transition: transform 1.2s cubic-bezier(0.16, 1, 0.3, 1); will-change: transform; }
+        .odometer-ribbon div { height: 1.2em; display: flex; justify-content: center; align-items: center; }
+        .odometer-static { display: inline-block; }
+        .pop-effect { animation: pop-bright 0.2s ease-out forwards; }
+        @keyframes pop-bright { 50% { transform: scale(1.1); filter: brightness(1.3); } }
+
+        /* PROFILE VIEW */
+        #view-profile-detail { 
+            background: var(--bg-color); 
+            z-index: 50; position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            overflow-y: auto; padding-bottom: calc(100px + var(--safe-bottom) + 80px); 
+            overscroll-behavior: contain; transition: left 0.3s, width 0.3s;
+        }
+        #profile-bg-glow {
+            position: absolute; top: 0; left: 0; width: 100%; height: 60vh;
+            z-index: -1; pointer-events: none; overflow: hidden;
+            mask-image: linear-gradient(to bottom, black 0%, transparent 100%);
+            -webkit-mask-image: linear-gradient(to bottom, black 0%, transparent 100%);
+        }
+        #profile-bg-glow img {
+            width: 100%; height: 100%; object-fit: cover;
+            filter: blur(90px) brightness(0.7); transform: scale(1.2);
+        }
+        [data-theme="light"] #profile-bg-glow img { filter: blur(90px) brightness(1.1) saturate(1.4); }
+
+        .profile-header { padding: var(--padding); padding-top: 80px; display: flex; flex-direction: column; align-items: center; text-align: center; }
+        .profile-art { width: 160px; height: 160px; border-radius: 30px; margin-bottom: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); object-fit: cover; }
+        .profile-btn-row { display: flex; gap: 15px; margin-top: 15px; width: 100%; justify-content: center; }
+        
+        .chirp-btn-lg {
+            display: flex; align-items: center; gap: 8px; padding: 12px 30px;
+            border-radius: 30px; font-weight: 700; border: 1px solid var(--surface-highlight);
+            background: var(--surface-color); color: var(--text-primary); transition: all 0.2s;
+        }
+        .chirp-btn-lg.active { background: var(--text-primary); color: var(--bg-color); transform: scale(1.05); }
+        .chirp-btn-lg:active { transform: scale(0.95); }
+
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 0 var(--padding); margin-top: 20px; }
+        .stat-box {
+            background: var(--surface-color); padding: 15px; border-radius: 16px;
+            display: flex; flex-direction: column; gap: 4px;
         }
         
-        .ios-btn .original-text {
-            display: inline-block;
-            transition: transform 0.3s ease, opacity 0.3s ease;
+        /* ERROR VIEW */
+        .error-container {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            height: 60vh; text-align: center; opacity: 0.7; gap: 20px;
         }
+        .error-code { font-size: 3rem; font-weight: 900; letter-spacing: -2px; }
+
+        /* MODALS */
+        #install-modal, #withdraw-modal {
+            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.9);
+            width: 85%; max-width: 320px; background: var(--glass-panel); backdrop-filter: blur(25px);
+            padding: 24px; border-radius: 24px; text-align: center;
+            z-index: 500; opacity: 0; pointer-events: none;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1);
+        }
+        #install-modal.active, #withdraw-modal.active { opacity: 1; pointer-events: auto; transform: translate(-50%, -50%) scale(1); }
+        .install-btn { padding: 12px 24px; border-radius: 12px; font-weight: 700; margin: 0 5px; cursor: pointer; }
+        .btn-yes { background: var(--text-primary); color: var(--bg-color); }
+        .btn-no { background: var(--surface-highlight); color: var(--text-secondary); }
         
-        .ios-btn .hover-text {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, 150%);
-            transition: transform 0.3s ease, opacity 0.3s ease;
-            opacity: 0;
-            width: 100%;
-            text-align: center;
+        .store-btn {
+            display: flex; align-items: center; justify-content: center; gap: 10px;
+            padding: 12px 20px; border-radius: 16px; font-weight: 600; text-decoration: none;
+            background: var(--surface-highlight); color: var(--text-primary);
+            border: 1px solid var(--glass-border); transition: 0.2s;
+        }
+        .store-btn:hover { background: var(--text-primary); color: var(--bg-color); }
+        .store-btn svg { width: 20px; height: 20px; }
+
+        #creators-modal {
+            position: fixed; bottom: 0; left: 0; width: 100%;
+            background: var(--surface-color); border-top-left-radius: 30px; border-top-right-radius: 30px;
+            z-index: 400; transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+            padding: 20px; padding-bottom: max(40px, var(--safe-bottom));
+            box-shadow: 0 -10px 40px rgba(0,0,0,0.5);
+        }
+        #creators-modal.active { transform: translateY(0); }
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5); z-index: 350; opacity: 0; pointer-events: none; transition: opacity 0.3s;
+        }
+        .modal-overlay.active { opacity: 1; pointer-events: auto; }
+        .creator-item {
+            padding: 16px; border-bottom: 1px solid rgba(255,255,255,0.05);
+            font-size: 1.1rem; font-weight: 500; display: flex; justify-content: space-between; align-items: center;
+        }
+        .creator-item:last-child { border-bottom: none; }
+        .creator-item:active { background: var(--surface-highlight); border-radius: 12px; }
+
+        /* --- MINI PLAYER & NAV --- */
+        #mini-player {
+            position: absolute; bottom: calc(var(--nav-height) + var(--safe-bottom)); left: 0; width: 100%;
+            height: var(--mini-player-height); background: var(--glass-panel);
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border-top: 1px solid rgba(255,255,255,0.05);
+            display: flex; align-items: center; padding: 0 var(--padding);
+            z-index: 90; transition: transform 0.3s ease, left 0.3s, width 0.3s;
+        }
+        #mini-player.expanded { transform: translateY(200%); }
+
+        nav {
+            position: absolute; bottom: 0; width: 100%; 
+            height: calc(var(--nav-height) + var(--safe-bottom));
+            background: var(--bg-color); display: flex; justify-content: space-around;
+            padding-top: 15px; padding-bottom: var(--safe-bottom);
+            border-top: 1px solid rgba(255,255,255,0.05); z-index: 100;
+            align-items: flex-start;
+        }
+        .nav-item { display: flex; flex-direction: column; align-items: center; gap: 6px; color: var(--text-secondary); opacity: 0.7; transition: 0.2s; }
+        .nav-item.active { color: var(--text-primary); opacity: 1; }
+
+        #full-player {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(10, 10, 10, 0.65);
+            backdrop-filter: blur(45px) saturate(180%); -webkit-backdrop-filter: blur(45px) saturate(180%);
+            z-index: 200; display: flex; flex-direction: column;
+            transform: translateY(100%); transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+            overflow: hidden; 
+            padding: max(15px, var(--safe-top)) 24px max(20px, var(--safe-bottom));
+        }
+        #full-player.active { transform: translateY(0); }
+        [data-theme="light"] #full-player { background: rgba(255, 255, 255, 0.65); }
+
+        .player-top { flex: 0 0 auto; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .player-art-wrapper { 
+            width: 100%; height: auto; max-width: 340px; aspect-ratio: 1; max-height: 40vh; 
+            border-radius: 24px; overflow: hidden; box-shadow: 0 10px 40px rgba(0,0,0,0.3); margin: 0 auto 20px; position: relative;
+        }
+        .player-art-wrapper img { width: 100%; height: 100%; object-fit: cover; }
+        .player-info { flex: 0 0 auto; margin-bottom: 10px; text-align: left; }
+        .player-controls-area { flex: 0 0 auto; width: 100%; }
+
+        #lyrics-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8); backdrop-filter: blur(15px);
+            z-index: 10; display: flex; flex-direction: column;
+            justify-content: center; align-items: center; text-align: center;
+            opacity: 0; pointer-events: none; transition: opacity 0.3s;
+            border-radius: 24px; padding: 30px;
+        }
+        #lyrics-overlay.active { opacity: 1; pointer-events: auto; }
+        .lyrics-text { font-size: 1.4rem; font-weight: 600; line-height: 1.6; color: #fff; min-height: 100px; transition: opacity 0.2s; }
+        
+        .clickable-artist { text-decoration: underline; text-decoration-color: transparent; transition: 0.2s; cursor: pointer; }
+        .clickable-artist.has-multi { text-decoration-color: var(--text-secondary); }
+        .clickable-artist.has-multi:active { color: var(--text-primary); }
+
+        .search-action-btn { 
+            width: 36px; height: 36px; border-radius: 50%; 
+            background: var(--surface-highlight); color: var(--text-primary);
+            display: flex; align-items: center; justify-content: center; border: none; z-index: 2; margin-left: auto;
+            cursor: pointer;
         }
 
-        .ios-btn:hover {
-            background-color: #525252;
-            border-color: #737373;
+        #toast {
+            position: fixed; top: -60px; left: 50%; transform: translateX(-50%);
+            background: var(--text-primary); color: var(--bg-color);
+            padding: 12px 24px; border-radius: 30px; font-weight: 700;
+            z-index: 300; transition: top 0.4s;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2); display: flex; align-items: center; gap: 8px;
         }
+        #toast.show { top: 20px; }
 
-        .ios-btn:hover .original-text {
-            transform: translateY(-150%);
-            opacity: 0;
-        }
+        .spinner { width: 20px; height: 20px; border: 2px solid var(--text-secondary); border-top-color: var(--text-primary); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 10px auto; }
+        @keyframes spin { to { transform: rotate(360deg); } }
 
-        .ios-btn:hover .hover-text {
-            transform: translate(-50%, -50%);
-            opacity: 1;
-        }
-
-        /* Glow effect for main button - White/Grey Glow */
-        .glow-btn:hover {
-            box-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
-        }
-
-        /* Podcast Card Hover */
-        .podcast-card:hover {
-            transform: translateY(-5px);
-            background-color: rgba(255, 255, 255, 0.05);
+        @media (min-width: 768px) {
+            header, nav { display: none !important; }
+            #desktop-sidebar { display: flex; }
+            main { margin-left: var(--sidebar-width); padding-bottom: calc(var(--mini-player-height) + 40px); height: 100vh; }
+            #view-profile-detail { left: var(--sidebar-width); width: calc(100% - var(--sidebar-width)); padding-bottom: 120px; }
+            #view-profile-detail > div:first-child { top: 20px; left: 30px; }
+            #mini-player { left: var(--sidebar-width); width: calc(100% - var(--sidebar-width)); bottom: 0; }
+            #full-player {
+                left: 50%; top: 50%; width: 450px; height: 85vh;
+                transform: translate(-50%, 150%); border-radius: 24px;
+                border: 1px solid var(--glass-border);
+                box-shadow: 0 40px 80px rgba(0,0,0,0.6);
+            }
+            #full-player.active { transform: translate(-50%, -50%); }
+            .player-top { margin-top: 10px; }
+            #full-player::before {
+                content: ''; position: fixed; top: -50vh; left: -50vw; width: 200vw; height: 200vh;
+                background: rgba(0,0,0,0.7); z-index: -1; pointer-events: none; opacity: 0; transition: opacity 0.4s;
+            }
+            #full-player.active::before { opacity: 1; pointer-events: auto; }
         }
     </style>
 </head>
-<body class="flex flex-col min-h-screen selection:bg-gray-500 selection:text-white">
+<body data-theme="dark">
 
-    <!-- Navigation -->
-    <nav class="w-full py-6 px-6 md:px-12 flex justify-between items-center animate-fade-up">
-        <div class="flex items-center gap-3">
-            <!-- Monochrome Icon -->
-            <div class="w-8 h-8 rounded-full bg-white flex items-center justify-center">
-                <i class="fa-solid fa-feather text-[#262626] text-xs"></i>
+    <div id="app">
+        <!-- DESKTOP SIDEBAR -->
+        <aside id="desktop-sidebar">
+            <div class="brand"><img src="siteicon.png" alt="icon"> Chirpless</div>
+            <div class="sidebar-menu">
+                <div class="sidebar-item active glass-shine-hover" onclick="switchView('home', this)">
+                    <svg class="icon" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg> Home
+                </div>
+                <div class="sidebar-item glass-shine-hover" onclick="switchView('discover', this)">
+                    <svg class="icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg> Discover
+                </div>
+                <div class="sidebar-item glass-shine-hover" onclick="switchView('library', this)">
+                    <svg class="icon" viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg> Library
+                </div>
+                <div class="sidebar-item glass-shine-hover" onclick="openWithdraw()">
+                    <svg class="icon" viewBox="0 0 24 24"><path d="M21 12V7H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h16v4h2v10a2 2 0 0 1-2 2h-2v-5a2 2 0 0 0-2-2H3v2h14v7H5a2 2 0 0 1-2-2v-5"/></svg> Withdraw
+                </div>
             </div>
-            <span class="text-xl font-bold tracking-tight text-white">Chirpless</span>
-        </div>
-        <div class="hidden md:flex gap-8 text-sm font-medium text-gray-400">
-            <a href="#features" class="hover:text-white transition-colors">Features</a>
-            <a href="#featured" class="hover:text-white transition-colors">Podcasts</a>
-            <a href="#contact" class="hover:text-white transition-colors">Contact</a>
-        </div>
-    </nav>
+            <div class="glass-shine-hover" style="cursor:pointer; display:flex; align-items:center; gap:12px; color:var(--text-secondary); font-weight:600; padding:12px 16px;" onclick="toggleTheme()">
+                <svg class="icon" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg> Theme
+            </div>
+        </aside>
 
-    <!-- Hero Section -->
-    <main class="flex-grow flex flex-col items-center justify-center px-6 relative py-20">
-        
-        <!-- Abstract Background Shapes (Monochrome) -->
-        <div class="absolute top-20 left-10 w-64 h-64 bg-white/5 rounded-full blur-3xl -z-10 floating-shape"></div>
-        <div class="absolute bottom-20 right-10 w-96 h-96 bg-gray-500/10 rounded-full blur-3xl -z-10 floating-shape" style="animation-delay: 2s;"></div>
+        <!-- HEADER -->
+        <header>
+            <div class="brand"><img src="siteicon.png" alt="icon"> Chirpless</div>
+            <button onclick="toggleTheme()" style="background:none; border:none; color:inherit;">
+                <svg class="icon" style="stroke: currentColor; stroke-width: 2;" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+            </button>
+        </header>
 
-            
-            <h1 class="text-5xl md:text-7xl font-bold mb-6 text-white animate-fade-up delay-200">
-                Silence the noise.
-            </h1>
-            
-            <p class="text-lg text-gray-400 mb-10 max-w-xl mx-auto leading-relaxed animate-fade-up delay-300">
-                Chirpless is the minimalistic communication tool designed for focus. 
-                No clutter, no distractions. Just connection.
-            </p>
+        <main id="main-content">
+            <div id="view-home" class="view">
+                <div class="section-title">Trending Now</div>
+                <div class="horizontal-scroll" id="trending-container" style="min-height:200px"><div class="spinner"></div></div>
+                <div class="section-title">Recommended for You</div>
+                <div class="horizontal-scroll" id="mix-container" style="min-height:200px"><div class="spinner"></div></div>
+                <div style="height:20px"></div>
+            </div>
 
-            <!-- Buttons -->
-            <div class="flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-up delay-500">
-                <!-- Android Download (White Theme) -->
-                <a href="com_chirpless.apk" download class="group relative w-full sm:w-auto flex items-center justify-center gap-3 bg-white hover:bg-gray-200 text-black px-8 py-3.5 rounded-xl font-medium transition-all duration-300 transform hover:-translate-y-1 glow-btn">
-                    <i class="fa-brands fa-android text-lg"></i>
-                    <span>Download APK</span>
-                </a>
+            <div id="view-discover" class="view hidden">
+                <div class="section-title">Explore</div>
+                <div class="search-container">
+                    <div class="search-bar glass-shine-hover">
+                        <svg class="icon" style="opacity:0.5; width:20px;" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                        <input type="search" id="search-input" placeholder="Search..." onkeypress="handleSearch(event)">
+                    </div>
+                </div>
+                <div class="filters">
+                    <div class="chip active" onclick="setFilter('all', this)">All</div>
+                    <div class="chip" onclick="setFilter('profile', this)">Profiles</div>
+                    <div class="chip" onclick="setFilter('episode', this)">Episodes</div>
+                    <div class="chip" onclick="setFilter('charts', this)">Charts</div>
+                </div>
+                <div id="search-results">
+                    <div style="text-align:center; color:var(--text-secondary); margin-top:40px;">Find creators and stories.</div>
+                </div>
+            </div>
 
-                <!-- iOS Placeholder -->
-                <button class="ios-btn w-full sm:w-auto relative border border-gray-600 bg-transparent backdrop-blur-sm text-gray-300 px-8 py-3.5 rounded-xl font-medium">
-                    <span class="original-text flex items-center gap-3">
-                        <i class="fa-brands fa-apple text-lg"></i>
-                        <span>App Store</span>
-                    </span>
-                    <span class="hover-text text-sm font-semibold text-white">
-                        Coming Soon
-                    </span>
+            <div id="view-library" class="view hidden">
+                <div class="section-title">Your Chirps</div>
+                <div id="library-list"></div>
+            </div>
+        </main>
+
+        <!-- PROFILE DETAIL VIEW -->
+        <div id="view-profile-detail" class="hidden">
+            <div id="profile-bg-glow"><img id="pd-bg-img" src=""></div>
+            <div style="position:absolute; top:max(15px, env(safe-area-inset-top)); left:20px; z-index:10;">
+                <button onclick="closeProfile()" style="background:var(--glass-panel); width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center; border:none; color:var(--text-primary); backdrop-filter:blur(10px);">
+                    <svg class="icon" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
                 </button>
             </div>
+            
+            <div class="profile-header">
+                <img id="pd-img" src="" class="profile-art">
+                <h1 id="pd-title" style="margin:0; font-size:1.8rem; line-height:1.2;">Title</h1>
+                <p id="pd-artist-container" style="margin:8px 0;">
+                    <span id="pd-artist" class="text-secondary clickable-artist" onclick="handleArtistClick(this.innerText)">Artist</span>
+                    <span class="verified-badge-container" id="pd-verified" onclick="toggleBadgeWobble(this)">
+                        <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+                    </span>
+                    <span style="font-size:0.9rem; margin-left:5px; opacity:0.7;">🕮 ✩</span>
+                </p>
+                <div class="odometer-container" id="pd-header-stat" style="font-weight:700; font-size:1.1rem; margin-top:5px; opacity:0.8;"></div>
+                <div class="profile-btn-row">
+                    <button id="pd-chirp-btn" class="chirp-btn-lg" onclick="toggleProfileChirp()">
+                        <svg class="icon" viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+                        <span id="pd-chirp-text">Chirp</span>
+                    </button>
+                </div>
+            </div>
 
-            <!-- Stats -->
-            <div class="mt-12 flex items-center justify-center gap-2 text-gray-500 animate-fade-up" style="animation-delay: 0.7s;">
-                <div class="flex -space-x-2">
-                    <div class="w-8 h-8 rounded-full bg-gray-600 border-2 border-[#262626] flex items-center justify-center text-[10px] text-white overflow-hidden grayscale">
-                        <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" alt="User">
+            <div class="filters" style="justify-content:center; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:15px;">
+                <div class="chip active" id="tab-episodes" onclick="switchProfileTab('episodes')">Episodes</div>
+                <div class="chip" id="tab-stats" onclick="switchProfileTab('stats')">Stats</div>
+            </div>
+
+            <div id="pd-content-episodes" style="padding-bottom:100px;"></div>
+            <div id="pd-loading-more" class="hidden"><div class="spinner"></div></div>
+
+            <div id="pd-content-stats" class="hidden" style="padding-bottom:100px;">
+                <div class="stats-grid">
+                    <div class="stat-box">
+                        <span class="text-xs text-secondary">Total Chirps</span>
+                        <span class="font-bold odometer-container" style="font-size:1.5rem" id="stat-chirps"></span>
                     </div>
-                    <div class="w-8 h-8 rounded-full bg-gray-600 border-2 border-[#262626] flex items-center justify-center text-[10px] text-white overflow-hidden grayscale">
-                        <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Aneka" alt="User">
-                    </div>
-                    <div class="w-8 h-8 rounded-full bg-gray-600 border-2 border-[#262626] flex items-center justify-center text-[10px] text-white overflow-hidden grayscale">
-                        <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Zack" alt="User">
+                    <div class="stat-box">
+                        <span class="text-xs text-secondary">Total Cash Earned ($0.0000011/stream)</span>
+                        <span class="font-bold odometer-container" style="font-size:1.8rem; color:var(--text-primary);" id="stat-cash">--</span>
                     </div>
                 </div>
-                <div class="flex flex-col items-start ml-2">
-                    <span class="text-white font-bold text-sm leading-none" id="download-count">1.2K</span>
-                    <span class="text-xs">downloads total</span>
+                <div style="padding:20px; text-align:center; color:var(--text-secondary); font-size:0.8rem; line-height:1.5;">
+                    Lifetime Analytics across all platforms.<br>
                 </div>
+            </div>
+            
+            <!-- Custom Error View -->
+            <div id="pd-error-view" class="hidden error-container">
+                 <div class="error-code">214 𖠌</div>
+                 <div>Content Unavailable</div>
+                 <button onclick="closeProfile()" class="install-btn btn-yes">Go Back</button>
             </div>
         </div>
 
-        <!-- Featured Section -->
-        <section id="featured" class="w-full max-w-5xl mt-32 mb-16 animate-fade-up" style="animation-delay: 0.8s;">
-            <div class="flex items-center gap-4 mb-10 justify-center">
-                <div class="h-[1px] w-12 bg-gray-700"></div>
-                <h2 class="text-2xl font-bold text-white tracking-wide uppercase text-sm">Featured Audio</h2>
-                <div class="h-[1px] w-12 bg-gray-700"></div>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <!-- C@shXan -->
-                <div class="podcast-card p-6 rounded-2xl border border-gray-700 bg-gray-800/30 transition-all duration-300 cursor-pointer group">
-                    <div class="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center mb-4 group-hover:bg-white/20 transition-colors">
-                        <i class="fa-solid fa-microphone-lines text-white"></i>
-                    </div>
-                    <h3 class="text-lg font-bold text-white mb-1">C@shXan</h3>
-                    <p class="text-xs text-gray-400 uppercase tracking-wider mb-3">Finance & Lifestyle</p>
-                    <div class="flex items-center gap-2 text-sm text-gray-400 group-hover:text-white transition-colors">
-                        <i class="fa-solid fa-play-circle"></i>
-                        <span>Latest Episode</span>
-                    </div>
-                </div>
-
-                <!-- LucidPP -->
-                <div class="podcast-card p-6 rounded-2xl border border-gray-700 bg-gray-800/30 transition-all duration-300 cursor-pointer group">
-                    <div class="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center mb-4 group-hover:bg-white/20 transition-colors">
-                        <i class="fa-solid fa-wave-square text-white"></i>
-                    </div>
-                    <h3 class="text-lg font-bold text-white mb-1">LucidPP</h3>
-                    <p class="text-xs text-gray-400 uppercase tracking-wider mb-3">Tech & Future</p>
-                    <div class="flex items-center gap-2 text-sm text-gray-400 group-hover:text-white transition-colors">
-                        <i class="fa-solid fa-play-circle"></i>
-                        <span>Latest Episode</span>
-                    </div>
-                </div>
-
-                <!-- The Peyto Show -->
-                <div class="podcast-card p-6 rounded-2xl border border-gray-700 bg-gray-800/30 transition-all duration-300 cursor-pointer group">
-                    <div class="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center mb-4 group-hover:bg-white/20 transition-colors">
-                        <i class="fa-solid fa-podcast text-white"></i>
-                    </div>
-                    <h3 class="text-lg font-bold text-white mb-1">The Peyto Show</h3>
-                    <p class="text-xs text-gray-400 uppercase tracking-wider mb-3">Culture & Talk</p>
-                    <div class="flex items-center gap-2 text-sm text-gray-400 group-hover:text-white transition-colors">
-                        <i class="fa-solid fa-play-circle"></i>
-                        <span>Latest Episode</span>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- Minimal Features Grid -->
-        <div id="features" class="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-5xl animate-fade-up" style="animation-delay: 0.9s;">
-            <div class="p-6 rounded-2xl bg-gray-800/20 border border-gray-800 hover:border-gray-600 transition-colors">
-                <div class="w-10 h-10 rounded-lg bg-gray-800 flex items-center justify-center mb-4 text-white">
-                    <i class="fa-solid fa-shield-halved"></i>
-                </div>
-                <h3 class="text-white font-semibold mb-2">Secure Core</h3>
-                <p class="text-sm text-gray-400">End-to-end encryption built into the minimalist architecture.</p>
-            </div>
-            <div class="p-6 rounded-2xl bg-gray-800/20 border border-gray-800 hover:border-gray-600 transition-colors">
-                <div class="w-10 h-10 rounded-lg bg-gray-800 flex items-center justify-center mb-4 text-white">
-                    <i class="fa-solid fa-bolt"></i>
-                </div>
-                <h3 class="text-white font-semibold mb-2">Lightning Fast</h3>
-                <p class="text-sm text-gray-400">Optimized for speed. No bloatware, just pure performance.</p>
-            </div>
-            <div class="p-6 rounded-2xl bg-gray-800/20 border border-gray-800 hover:border-gray-600 transition-colors">
-                <div class="w-10 h-10 rounded-lg bg-gray-800 flex items-center justify-center mb-4 text-white">
-                    <i class="fa-solid fa-moon"></i>
-                </div>
-                <h3 class="text-white font-semibold mb-2">True Dark Mode</h3>
-                <p class="text-sm text-gray-400">Designed for OLED screens. Saves battery and your eyes.</p>
+        <!-- MODALS -->
+        <div class="modal-overlay" id="install-overlay"></div>
+        <div id="install-modal">
+            <div style="text-align:right;"><button onclick="dismissInstall()" style="background:none;border:none;color:var(--text-secondary);font-size:1.2rem;">&times;</button></div>
+            <h2 style="margin-top:0; margin-bottom:10px;">Get Chirpless</h2>
+            <p style="color:var(--text-secondary); margin-bottom:25px; font-size:0.95rem;">Download the official app for the best experience.</p>
+            <div style="display:flex; flex-direction:column; gap:12px;">
+                <a href="com_chirpless.apk" download class="store-btn">
+                    <svg class="icon" viewBox="0 0 24 24" style="fill:currentColor"><path d="M17.523 15.3414c-.5511 0-.9993-.4486-.9993-.9997s.4482-.9993.9993-.9993c.5511 0 .9993.4482.9993.9993.0001.5511-.4482.9997-.9993.9997m-11.046 0c-.5511 0-.9993-.4486-.9993-.9997s.4482-.9993.9993-.9993c.5511 0 .9993.4482.9993.9993 0 .5511-.4482.9997-.9993.9997m11.4045-6.02l1.9973-3.4592a.416.416 0 00-.1521-.5676.416.416 0 00-.5676.1521l-2.0223 3.503C15.5902 8.4213 13.8533 8.0935 12 8.0935s-3.5902.3278-5.1361.8562L4.8416 5.4467a.4161.4161 0 00-.5676-.1521.4156.4161 0 00-.1521.5676l1.9973 3.4592C2.6889 11.1867.3432 14.6589 0 18.761h24c-.3432-4.1021-2.6889-7.5743-6.1185-9.4396"/></svg>
+                    <span>Download APK</span>
+                </a>
+                <button class="store-btn" onclick="alert('Coming Soon')" title="Coming Soon">
+                    <svg class="icon" viewBox="0 0 24 24" style="fill:currentColor"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.48 2.43-2.45 4.13-2.48 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.77 4.09-.01.02-.42 1.45-1.48 2.73zM13 3.5c.73-.83 1.21-1.96 1.08-3.11-1.06.05-2.32.71-3.07 1.61-.65.77-1.23 2.02-1.07 3.12 1.18.09 2.33-.79 3.06-1.62z"/></svg>
+                    <span>App Store</span>
+                </button>
             </div>
         </div>
-    </main>
 
-    <!-- Footer -->
-    <footer id="contact" class="py-8 text-center text-gray-500 text-sm border-t border-gray-800/50 bg-[#262626]">
-        <p>&copy; 2026 Chirpless Inc. All rights reserved.</p>
-        <div class="flex justify-center gap-4 mt-2">
-            <a href="#" class="hover:text-white transition-colors">Privacy</a>
-            <a href="#" class="hover:text-white transition-colors">Terms</a>
+        <div class="modal-overlay" id="withdraw-overlay"></div>
+        <div id="withdraw-modal">
+            <h2 style="margin-top:0;">Withdraw Funds</h2>
+            <p style="color:var(--text-secondary); margin-bottom:20px;">Contact <b>PeytoToria@gmail.com</b> to schedule a withdrawal.</p>
+            <p style="color:var(--text-secondary); font-size:0.8rem; margin-bottom:20px;">Processing time: 1 week - 4 years.</p>
+            <button class="install-btn btn-yes" onclick="closeWithdraw()">Okay</button>
         </div>
-    </footer>
+
+        <div class="modal-overlay" id="modal-overlay" onclick="closeCreatorsModal()"></div>
+        <div id="creators-modal">
+            <div style="text-align:center; font-weight:bold; margin-bottom:20px; opacity:0.6;">Featured Creators</div>
+            <div id="creators-list"></div>
+        </div>
+
+        <div id="toast"><svg width="20" height="20" viewBox="0 0 24 24" fill="var(--bg-color)"><path d="M21 15C21 19 17 22 13 22C9 22 10 18 10 15C10 12 5 10 3 8C5.5 6 12 2 12 2Z"/></svg> Chirped!</div>
+
+        <!-- MINI PLAYER -->
+        <div id="mini-player" class="glass-shine-hover" onclick="openFullPlayer()">
+            <img id="mini-img" src="" class="list-img" style="opacity:0">
+            <div style="flex:1; margin-left:12px; overflow:hidden;">
+                <div id="mini-title" class="font-bold text-sm" style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Select a chirp</div>
+                <div id="mini-artist" class="text-xs text-secondary">Chirpless</div>
+            </div>
+            <button id="mini-play-btn" onclick="event.stopPropagation(); togglePlay()" style="padding:10px; background:none; border:none; color:inherit;">
+                <svg class="icon" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+            </button>
+        </div>
+
+        <!-- NAV -->
+        <nav>
+            <div class="nav-item active glass-shine-hover" onclick="switchView('home', this)">
+                <svg class="icon" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg> Home
+            </div>
+            <div class="nav-item glass-shine-hover" onclick="switchView('discover', this)">
+                <svg class="icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg> Discover
+            </div>
+            <div class="nav-item glass-shine-hover" onclick="switchView('library', this)">
+                <svg class="icon" viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg> Library
+            </div>
+            <div class="nav-item glass-shine-hover" onclick="openWithdraw()">
+                 <svg class="icon" viewBox="0 0 24 24"><path d="M21 12V7H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h16v4h2v10a2 2 0 0 1-2 2h-2v-5a2 2 0 0 0-2-2H3v2h14v7H5a2 2 0 0 1-2-2v-5"/></svg> Withdraw
+            </div>
+        </nav>
+
+        <!-- FULL PLAYER -->
+        <div id="full-player" class="glass-shine-hover">
+            <div class="player-top">
+                <button onclick="closeFullPlayer()" style="background:none; border:none; color:inherit;"><svg class="icon" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg></button>
+                <span class="text-xs font-bold" style="letter-spacing:2px;">NOW PLAYING</span>
+                <div style="width:24px;"></div>
+            </div>
+
+            <div class="player-art-area">
+                <div class="player-art-wrapper">
+                    <img id="fp-img" src="" alt="Album Art">
+                    <div id="lyrics-overlay">
+                        <div class="spinner" id="lyrics-spinner" style="margin-bottom:20px;"></div>
+                        <div class="lyrics-text" id="lyrics-content">Transcribing Audio Stream...</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="player-info">
+                <h2 id="fp-title" style="margin:0; font-size:1.5rem; line-height:1.2; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">Title</h2>
+                <p id="fp-artist" class="text-secondary clickable-artist" onclick="handleArtistClick(this.innerText)" style="margin:5px 0 0;">Artist</p>
+            </div>
+
+            <div class="player-controls-area">
+                <div class="flex justify-between items-center" style="margin-bottom:15px; padding:0 10px;">
+                    <button onclick="toggleLyrics()" style="color:var(--text-secondary); background:none; border:none;">
+                        <svg class="icon" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><line x1="9" y1="10" x2="15" y2="10"/><line x1="9" y1="6" x2="15" y2="6"/></svg>
+                    </button>
+                    <canvas id="wave-canvas" style="flex:1; height:40px; margin:0 15px; opacity:0.6;"></canvas>
+                </div>
+                
+                <div id="progress-container" onclick="seek(event)" style="width:100%; height:20px; display:flex; align-items:center;">
+                    <div style="width:100%; height:4px; background:var(--accent-dim); border-radius:2px; overflow:hidden;">
+                        <div id="progress-fill" style="width:0%; height:100%; background:var(--text-primary);"></div>
+                    </div>
+                </div>
+                <div class="flex justify-between text-xs text-secondary" style="margin-bottom:20px;">
+                    <span id="time-current">0:00</span>
+                    <span id="time-total">0:00</span>
+                </div>
+
+                <div class="flex justify-between items-center" style="max-width:350px; margin:0 auto;">
+                    <button class="bird-btn" id="fp-bird-btn" onclick="toggleTrackChirp()" style="background:var(--surface-highlight); width:44px; height:44px; border-radius:50%; display:flex; align-items:center; justify-content:center; color:inherit; border:none;">
+                        <svg class="icon" viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+                    </button>
+                    <div class="odometer-container" id="fp-chirp-count" style="font-weight:700; font-size:1rem; position:absolute; transform:translate(55px, -20px);"></div>
+                    <button onclick="skip(-15)" style="background:none; border:none; color:inherit;"><svg class="icon" style="width:32px; height:32px;" viewBox="0 0 24 24"><path d="M11 17l-5-5 5-5M18 17l-5-5 5-5"/></svg></button>
+                    <button onclick="togglePlay()" style="width:70px; height:70px; background:var(--text-primary); color:var(--bg-color); border-radius:50%; display:flex; align-items:center; justify-content:center; border:none;">
+                        <svg id="fp-play-icon" style="width:32px; height:32px; fill:currentColor; stroke:none;" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                    </button>
+                    <button onclick="skip(15)" style="background:none; border:none; color:inherit;"><svg class="icon" style="width:32px; height:32px;" viewBox="0 0 24 24"><path d="M13 17l5-5-5-5M6 17l5-5-5-5"/></svg></button>
+                    <button onclick="changeSpeed()" style="background:var(--surface-highlight); width:44px; height:44px; border-radius:50%; font-weight:bold; font-size:0.8rem; border:none; color:inherit;" id="speed-btn">1x</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <audio id="audio-player" preload="none"></audio>
 
     <script>
-        // Simple counter animation for the downloads
-        document.addEventListener('DOMContentLoaded', () => {
-            const counterElement = document.getElementById('download-count');
-            const target = 1200; // 1.2K
-            const duration = 2000; // 2 seconds
-            const start = 0;
-            const increment = target / (duration / 16); // 60fps
-            
-            let current = start;
-            
-            const animateCounter = () => {
-                current += increment;
-                if (current < target) {
-                    // Format number: if > 1000, show as 1.X K
-                    if (current > 1000) {
-                        counterElement.innerText = (current / 1000).toFixed(1) + 'K';
-                    } else {
-                        counterElement.innerText = Math.floor(current);
+        // --- 1. UTILITY FUNCTIONS (Must be first) ---
+        function formatTime(s) { if(!s) return "0:00"; const m = Math.floor(s/60); const sec = Math.floor(s%60); return `${m}:${sec<10?'0':''}${sec}`; }
+        function seededRandom(str) { let h=1779033703^str.length; for(let i=0;i<str.length;i++)h=Math.imul(h^str.charCodeAt(i),3432918353); return function(){h=Math.imul(h^(h>>>16),2246822507);h=Math.imul(h^(h>>>13),3266489909);return(h>>>0)/4294967296;} }
+        function formatNumber(n) { if(isNaN(n))return"0"; if(n>=1e9)return(n/1e9).toFixed(1)+'b'; if(n>=1e6)return(n/1e6).toFixed(1)+'m'; if(n>=1e3)return(n/1e3).toFixed(1)+'k'; return n.toLocaleString(); }
+        function formatCurrency(n) { if(isNaN(n))return"$0.00"; return new Intl.NumberFormat('en-US',{style:'currency',currency:'USD', minimumFractionDigits: 8}).format(n); }
+        function isNewEpisode(d) { if(!d)return false; const date=new Date(d); if(isNaN(date.getTime()))return false; return(new Date()-date)<(7*24*60*60*1000); }
+        function timeAgo(d) { const s=Math.floor((new Date()-new Date(d))/1000); if(s<60)return'now'; if(s<3600)return Math.floor(s/60)+'m'; if(s<86400)return Math.floor(s/3600)+'h'; if(s<604800)return Math.floor(s/86400)+'d'; return Math.floor(s/604800)+'w'; }
+        
+        function parseTitleAndArtist(title, originalArtist) {
+            if (!title) title = "Untitled"; if (!originalArtist) originalArtist = "Unknown Artist";
+            // Enhanced Regex for (feat. A & B) or (ft. A, B)
+            const featRegex = /\s*[\(\[](?:feat\.|ft\.|featuring)\s+([^)\].]+)[\)\]]/i;
+            const match = title.match(featRegex);
+            let displayTitle = title;
+            let displayArtist = originalArtist;
+
+            if (match) {
+                displayTitle = title.replace(match[0], '').trim();
+                const featuredPart = match[1];
+                // Split by common separators: comma, &, 'and'
+                const feats = featuredPart.split(/,|&|\band\b/i).map(s => s.trim()).filter(s => s);
+                feats.forEach(f => {
+                    if (!displayArtist.toLowerCase().includes(f.toLowerCase())) {
+                        displayArtist += `, ${f}`;
                     }
-                    requestAnimationFrame(animateCounter);
-                } else {
-                    counterElement.innerText = '1.2K';
-                }
-            };
+                });
+            }
+            return { title: displayTitle, artist: displayArtist };
+        }
+
+        // --- 2. STATS & CONFIG ---
+        let currentTrack = null; let isPlaying = false; let playbackSpeed = 1.0; let currentFilter = 'all';
+        let savedChirps = JSON.parse(localStorage.getItem('chirps_v41') || '[]');
+        let savedProfileChirps = JSON.parse(localStorage.getItem('profile_chirps_v41') || '[]');
+        let currentProfileId = null; let currentProfileEpisodes = []; let renderedEpisodeCount = 0; const EPISODES_PER_PAGE = 10;
+        let activeProfileStats = null;
+        let lyricsInterval = null;
+        let deferredPrompt = null;
+        
+        const VERIFIED_BADGE_HTML = `<svg class="verified-badge" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>`;
+        const PODCAST_SCRIPT = ["So, I was thinking about this the other day.","Right, exactly.","It's a complex issue.","Data suggests otherwise.","Wait, let me pull that up.","Ideally, yes.","That's fascinating.","Moving on.","Incredible point.","Let's dive deeper."];
+        const SPONSORED_ADS = [
+            {title:"LucidPP on Spotify", artist:"Sponsored", image:"https://picsum.photos/300?random=101"},
+            {title:"New Spongebob Movie OUT NOW", artist:"Sponsored", image:"https://picsum.photos/300?random=102"},
+            {title:"Korger: Cheap & Affordable", artist:"Sponsored", image:"https://picsum.photos/300?random=103"},
+            {title:"Chirpless Premium", artist:"Sponsored", image:"siteicon.png"},
+            {title:"Audible: 30 Days Free", artist:"Sponsored", image:"https://picsum.photos/300?random=104"},
+            {title:"Squarespace: Build It", artist:"Sponsored", image:"https://picsum.photos/300?random=105"},
+            {title:"MailChimp: Email Marketing", artist:"Sponsored", image:"https://picsum.photos/300?random=106"},
+            {title:"BetterHelp: Get Help", artist:"Sponsored", image:"https://picsum.photos/300?random=107"},
+            {title:"SeatGeek: Promo Code CHIRP", artist:"Sponsored", image:"https://picsum.photos/300?random=108"},
+            {title:"HelloFresh: Eating Good", artist:"Sponsored", image:"https://picsum.photos/300?random=109"},
+            {title:"NordVPN: Stay Safe", artist:"Sponsored", image:"https://picsum.photos/300?random=110"}
+        ];
+
+        function getDeterministicStats(id, isProfile=false, dateStr=null) {
+            const rng=seededRandom(id); const t=rng(), v=rng();
+            let minC=3000, maxC=281000;
+            if(t<0.4){minC=3000;maxC=281000} else if(t<0.7){minC=1200;maxC=14200000} else if(t<0.9){minC=827000;maxC=28000000} else {minC=5000000;maxC=5000000000}
+            if(isProfile) { const c=Math.floor(minC+Math.pow(v,2)*(maxC-minC)); return {chirps:c, listens:0, cash:0}; }
+            let epMin=Math.floor(minC/50), epMax=Math.floor(maxC/20); if(epMin<100)epMin=100;
+            if(dateStr){ const d=new Date(dateStr); if(!isNaN(d.getTime())) { const h=(new Date()-d)/(1000*60*60); if(h<24)epMax=Math.min(epMax,15000); else if(h<168)epMax=Math.min(epMax,500000); else if(h<720)epMax=Math.min(epMax,5000000); } }
+            const c=Math.floor(epMin+Math.pow(v,3)*(epMax-epMin));
+            const l=c*20; const cash=l*0.0000011;
+            return {listens:l, chirps:c, cash:cash};
+        }
+        function getChartRank(id) { const rng=seededRandom(id+"_chart"); return rng()>0.8?Math.floor(rng()*45)+1:null; }
+        function getTopNewRank(id,d) { if(!isNewEpisode(d))return null; const rng=seededRandom(id+"_newchart"); return rng()>0.7?Math.floor(rng()*45)+1:null; }
+        function getExtraBadge(id) { const rng = seededRandom(id+"_badg"), r = rng(); if(r > 0.95) return `<span class="trending-badge">#${Math.floor(rng()*50)+1} On Top Trending ⚠︎</span>`; if(r < 0.05) return `<span class="new-badge">Recommended ᯓ★</span>`; return ''; }
+
+        function updateOdometer(c, val) {
+            if(!c)return; const fmt=typeof val==='number'?formatNumber(val):val;
+            if(!c.hasChildNodes()){
+                c.innerHTML='';c.classList.add('odometer-wrapper');
+                fmt.split('').forEach(ch=>{
+                    if(/[0-9]/.test(ch)){
+                        const w=document.createElement('span');w.className='odometer-digit';
+                        const r=document.createElement('div');r.className='odometer-ribbon';
+                        for(let i=0;i<=9;i++){const d=document.createElement('div');d.innerText=i;r.appendChild(d)}
+                        w.appendChild(r);c.appendChild(w);
+                    }else{const s=document.createElement('span');s.className='odometer-static';s.innerText=ch;c.appendChild(s)}
+                });
+            }
+            requestAnimationFrame(()=>{requestAnimationFrame(()=>{
+                c.classList.add('active');c.classList.add('pop-effect');
+                const chs=fmt.split(''); let idx=0;
+                Array.from(c.children).forEach(child=>{
+                    if(child.classList.contains('odometer-digit')){
+                        const t=parseInt(chs[idx]); const r=child.querySelector('.odometer-ribbon');
+                        if(r&&!isNaN(t))r.style.transform=`translateY(${t*-1.2}em)`;
+                    } idx++;
+                });
+                setTimeout(()=>c.classList.remove('pop-effect'),500);
+            })});
+        }
+        function simLive(){if(activeProfileStats&&!document.getElementById('pd-content-stats').classList.contains('hidden')){activeProfileStats.chirps+=Math.floor(Math.random()*5)+1;activeProfileStats.cash=activeProfileStats.chirps*20*0.00000001;updateOdometer(document.getElementById('stat-chirps'),activeProfileStats.chirps);updateOdometer(document.getElementById('stat-cash'),formatCurrency(activeProfileStats.cash));}}
+
+        // --- 3. PLAYER FUNCTIONS ---
+        function togglePlay(){const a=document.getElementById('audio-player'); if(a.paused&&a.src){a.play();isPlaying=true;startWaveform();}else{a.pause();isPlaying=false;}updPlay();}
+        function playTrack(t){
+            currentTrack=t; 
+            const parsed = parseTitleAndArtist(t.title, t.artist);
+            const s=getDeterministicStats(t.id.toString(),false);
             
-            // Start animation after a slight delay to match the fade-in
-            setTimeout(animateCounter, 800);
-        });
+            document.getElementById('mini-img').src=t.image; document.getElementById('mini-title').innerText=parsed.title; document.getElementById('mini-artist').innerText=parsed.artist; 
+            document.getElementById('fp-img').src=t.image; document.getElementById('fp-title').innerText=parsed.title; document.getElementById('fp-artist').innerText=parsed.artist; 
+            
+            const odo = document.getElementById('fp-chirp-count'); odo.innerHTML='';
+            // 2.4% logic for active listeners in player
+            setTimeout(()=>updateOdometer(odo, Math.floor(s.chirps * 0.024)), 50);
+
+            if(parsed.artist.includes(',') || parsed.artist.includes('&') || parsed.artist.includes(' and '))document.getElementById('fp-artist').classList.add('has-multi'); else document.getElementById('fp-artist').classList.remove('has-multi'); 
+            const b=document.getElementById('fp-bird-btn'); const is=savedChirps.some(x=>x.id===t.id); b.style.background=is?'var(--text-primary)':'rgba(255,255,255,0.1)'; b.style.color=is?'var(--bg-color)':'inherit'; 
+            
+            if(t.src) {
+                const a=document.getElementById('audio-player'); 
+                a.src=t.src; 
+                a.play().catch(e=>console.log("Autoplay blocked or invalid src"));
+                isPlaying=true; updPlay(); openFullPlayer(); startWaveform();
+            }
+        }
+        function toggleTrackChirp(){if(!currentTrack)return; const i=savedChirps.findIndex(x=>x.id===currentTrack.id); if(i>-1)savedChirps.splice(i,1); else{savedChirps.unshift(currentTrack);showToast();} localStorage.setItem('chirps_v41',JSON.stringify(savedChirps)); renderLibrary(); const b=document.getElementById('fp-bird-btn'); const is=savedChirps.some(x=>x.id===currentTrack.id); b.style.background=is?'var(--text-primary)':'rgba(255,255,255,0.1)'; b.style.color=is?'var(--bg-color)':'inherit';}
+        function toggleTrackChirpSearch(id) { alert("Saved to Library!"); }
+
+        function openFullPlayer(){document.getElementById('full-player').classList.add('active');document.getElementById('mini-player').classList.add('expanded');}
+        function closeFullPlayer(){document.getElementById('full-player').classList.remove('active');document.getElementById('mini-player').classList.remove('expanded');}
+        function updPlay(){const p=isPlaying?'<rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect>':'<polygon points="5 3 19 12 5 21 5 3"></polygon>'; document.querySelectorAll('#mini-play-btn svg,#fp-play-icon').forEach(s=>s.innerHTML=p);}
+
+        function toggleLyrics(){
+            const o=document.getElementById('lyrics-overlay');
+            if(o.classList.contains('active')){o.classList.remove('active');clearInterval(lyricsInterval);}
+            else{o.classList.add('active'); const t=document.getElementById('lyrics-content'), s=document.getElementById('lyrics-spinner'); t.innerText="Analyzing..."; t.style.opacity=0.7; s.style.display="block"; setTimeout(()=>{s.style.display="none";t.style.opacity=1; let i=Math.floor(Math.random()*PODCAST_SCRIPT.length); lyricsInterval=setInterval(()=>{t.style.opacity=0; setTimeout(()=>{t.innerText=PODCAST_SCRIPT[i++%PODCAST_SCRIPT.length];t.style.opacity=1;},200);},3000);},1000);}
+        }
+        
+        function toggleBadgeWobble(el) {
+            el.classList.add('wobble-anim');
+            setTimeout(() => el.classList.remove('wobble-anim'), 400);
+        }
+
+        // --- 4. API ---
+        async function search(q, entOverride=null){
+            let ent = entOverride || (currentFilter==='profile'?'podcast':'podcastEpisode');
+            try{
+                const r=await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(q)}&media=podcast&entity=${ent}&limit=45&_t=${Date.now()}`);
+                const d=await r.json(); return (d.results||[]).map(i=>({
+                    id:i.trackId||i.collectionId, type:i.kind==='podcast'?'profile':'episode',
+                    title:i.trackName||i.collectionName||'Untitled', collectionName:i.collectionName||i.trackName,
+                    artist:i.artistName||i.collectionName||'Unknown', image:i.artworkUrl600,
+                    src:i.episodeUrl, collectionId:i.collectionId, date:i.releaseDate
+                }));
+            }catch(e){return[]}
+        }
+        async function fetchProfileEpisodes(id, fallback, original){
+            try{
+                const r=await fetch(`https://itunes.apple.com/lookup?id=${id}&media=podcast&entity=podcastEpisode&limit=60&_t=${Date.now()}`);
+                const d=await r.json(); if(!d.results||d.results.length===0)throw new Error();
+                const art=d.results[0].artistName||d.results[0].collectionName||"Unknown";
+                return d.results.slice(1).map(i=>({id:i.trackId, title:i.trackName||"Untitled", src:i.episodeUrl, image:i.artworkUrl600, artist:art, date:i.releaseDate}));
+            }catch(e){
+                if(fallback){const r=await search(fallback); if(r.length>0)return r.filter(x=>x.type==='episode');}
+                if(original)return[{id:original.id, title:original.title, src:original.src, image:original.image, artist:original.artist, date:original.date}];
+                return [];
+            }
+        }
+
+        // --- 5. UI ---
+        function init(){
+            renderLibrary(); loadHomeContent(); setInterval(simLive,1400); 
+            document.getElementById('view-profile-detail').addEventListener('scroll',e=>{if(e.target.scrollTop+e.target.clientHeight>=e.target.scrollHeight-50)renderMore();});
+            switchView('home', document.querySelectorAll('.nav-item')[0]);
+            window.onpopstate = (event) => { if(event.state && event.state.view) { if(event.state.view === 'profile') { closeProfile(); switchView(event.state.prevView || 'home'); } else { closeProfile(); switchView(event.state.view); } } };
+            window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredPrompt = e; });
+            if ('serviceWorker' in navigator) {
+                window.addEventListener('load', () => {
+                    navigator.serviceWorker.register('./service-worker.js').catch(console.log);
+                    setTimeout(() => { if (deferredPrompt) { document.getElementById('install-modal').classList.add('active'); document.getElementById('install-overlay').classList.add('active'); } }, 3000);
+                });
+            }
+        }
+
+        async function loadHomeContent(){
+            const t=document.getElementById('trending-container'); t.innerHTML='';
+            const res=await search('Popular','podcast'); if(res.length===0)t.innerHTML='<div style="padding:20px;opacity:0.5">Offline</div>'; else res.slice(0,10).forEach(i=>createCard(i,t));
+            const m=document.getElementById('mix-container'); m.innerHTML='';
+            const mix=await search('Culture','podcast'); if(mix.length>0)mix.slice(0,10).forEach(i=>createCard(i,m));
+        }
+
+        function createCard(i,c){
+            const s=getDeterministicStats(i.id.toString(),true);
+            const v=s.chirps>100000?VERIFIED_BADGE_HTML:'';
+            const parsed = parseTitleAndArtist(i.title, i.artist);
+            const d=document.createElement('div'); d.className='podcast-card premium-hover glass-shine-hover';
+            d.onclick=()=>i.type==='profile'?openProfile(i):playTrack(i);
+            d.innerHTML=`<div class="cover-art"><img src="${i.image}"></div><div style="font-weight:700;font-size:0.9rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${parsed.title}</div><div style="font-size:0.8rem;opacity:0.6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${parsed.artist} ${v}</div>`;
+            c.appendChild(d);
+        }
+
+        function setFilter(f,b){
+            currentFilter=f; document.querySelectorAll('.filters .chip').forEach(c=>c.classList.remove('active')); b.classList.add('active'); 
+            if(f==='charts') renderCharts(); else{ const v=document.getElementById('search-input').value; if(v)doSearch(v); else document.getElementById('search-results').innerHTML='<div style="text-align:center;padding:40px;opacity:0.5">Find content</div>'; }
+        }
+
+        async function renderCharts(){
+            const c=document.getElementById('search-results'); c.innerHTML='<div class="spinner"></div>';
+            const r=await search('Podcast Hits','podcast'); c.innerHTML='';
+            const tDiv = document.createElement('div'); tDiv.className='section-title'; tDiv.innerText='Top 45 Global'; c.appendChild(tDiv);
+            r.slice(0,45).forEach((i,x)=>{
+                const parsed = parseTitleAndArtist(i.title, i.artist);
+                const el=document.createElement('div');el.className='list-item premium-hover glass-shine-hover';
+                el.onclick=()=>i.type==='profile'?openProfile(i):playTrack(i);
+                el.innerHTML=`<div class="list-rank">${x+1}</div><img src="${i.image}" class="list-img"><div style="flex:1"><div style="font-weight:700;font-size:0.95rem">${parsed.title}</div><div style="font-size:0.8rem;opacity:0.6">${parsed.artist}</div></div>`;
+                c.appendChild(el);
+            });
+            const nDiv = document.createElement('div'); nDiv.className='section-title'; nDiv.innerText='Top New'; c.appendChild(nDiv);
+            const n=r.filter(x=>isNewEpisode(x.date)).slice(0,45);
+            if(!n.length) {const empty = document.createElement('div'); empty.style.cssText='padding:20px;opacity:0.5;text-align:center'; empty.innerText='No new entries'; c.appendChild(empty);}
+            else n.forEach((i,x)=>{
+                const parsed = parseTitleAndArtist(i.title, i.artist);
+                const el=document.createElement('div');el.className='list-item premium-hover glass-shine-hover';
+                el.onclick=()=>playTrack(i);
+                el.innerHTML=`<div class="list-rank" style="color:var(--text-primary)">${x+1}</div><img src="${i.image}" class="list-img"><div style="flex:1"><div style="font-weight:700;font-size:0.95rem">${parsed.title} <span class="new-badge">NEW</span></div><div style="font-size:0.8rem;opacity:0.6">${parsed.artist}</div></div>`;
+                c.appendChild(el);
+            });
+        }
+
+        function handleSearch(e){ if(e.key==='Enter'){ document.getElementById('search-input').blur(); if(currentFilter==='charts') setFilter('all',document.querySelector('.filters .chip')); doSearch(e.target.value); } }
+
+        async function doSearch(q){
+            const c=document.getElementById('search-results'); c.innerHTML='<div class="spinner"></div>';
+            const r=await search(q); c.innerHTML=''; 
+            if(r.length===0){c.innerHTML='<div style="text-align:center;opacity:0.5;padding:20px">No results</div>';return;}
+            
+            // Inject Ads
+            let resultsWithAds = [...r];
+            let adCounter = 0;
+            for(let i=4; i<resultsWithAds.length; i+=5) {
+                const ad = SPONSORED_ADS[adCounter % SPONSORED_ADS.length];
+                resultsWithAds.splice(i, 0, { isAd: true, ...ad });
+                adCounter++;
+                i++; 
+            }
+
+            resultsWithAds.forEach(i=>{
+                if(i.isAd) {
+                    const el=document.createElement('div'); el.className='list-item premium-hover glass-shine-hover';
+                    el.onclick = () => alert("Opening Sponsor...");
+                    el.innerHTML=`<img src="${i.image}" class="list-img"><div style="flex:1"><div style="font-weight:700;">${i.title}</div><div style="font-size:0.8rem;opacity:0.6;display:flex;align-items:center;">${i.artist} <span class="sponsored-badge">SPONSORED</span></div></div>`;
+                    c.appendChild(el);
+                    return;
+                }
+
+                const s=getDeterministicStats(i.id.toString(), i.type==='profile', i.date);
+                const parsed = parseTitleAndArtist(i.title, i.artist);
+                const el=document.createElement('div'); el.className='list-item premium-hover glass-shine-hover';
+                
+                const viewProfileBtn = `<button class="search-action-btn" onclick="event.stopPropagation(); openProfile({id:'${i.collectionId}', collectionId:'${i.collectionId}', title:'${i.collectionName?.replace(/'/g, "\\'") || ''}', artist:'${i.artist?.replace(/'/g, "\\'") || ''}', image:'${i.image}'})"><svg class="icon" style="width:16px" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></button>`;
+                const isSaved = savedChirps.some(x=>x.id===i.id);
+                const birdColor = isSaved ? 'var(--text-primary)' : 'var(--text-secondary)';
+                const birdBtn = `<button class="search-action-btn" onclick="event.stopPropagation(); toggleTrackChirpSearch('${i.id}')"><svg class="icon" style="width:16px; color:${birdColor}" viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg></button>`;
+
+                if(i.type==='profile'){
+                    el.onclick=()=>openProfile(i);
+                    const v=s.chirps>100000?VERIFIED_BADGE_HTML:'';
+                    el.innerHTML=`<img src="${i.image}" class="list-img" style="border-radius:50%"><div style="flex:1" class="info-col"><div style="font-weight:700">${parsed.title} ${v}</div><div style="opacity:0.6;font-size:0.85rem">Podcast • ${parsed.artist}</div></div>${viewProfileBtn}`;
+                }else{
+                    el.onclick=()=>playTrack(i);
+                    const n=isNewEpisode(i.date)?'<span class="new-badge">NEW</span>':'';
+                    el.innerHTML=`<img src="${i.image}" class="list-img"><div style="flex:1"><div style="font-weight:700;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden;">${parsed.title} ${n}</div><div style="display:flex;align-items:center;gap:6px;font-size:0.8rem;opacity:0.6;margin-top:2px;"><span>${timeAgo(i.date)}</span> • <span class="odo-c"></span> Chirps</div></div>${birdBtn}`;
+                    setTimeout(()=>updateOdometer(el.querySelector('.odo-c'),s.chirps),300);
+                }
+                c.appendChild(el);
+            });
+        }
+
+        async function openProfile(i){
+            currentProfileId=(i.collectionId||i.id).toString();
+            try { history.pushState({view: 'profile', id: currentProfileId, prevView: 'discover'}, '', `/podcast/${currentProfileId}`); } catch(e){}
+            
+            const v=document.getElementById('view-profile-detail');
+            document.getElementById('pd-img').src=i.image; document.getElementById('pd-title').innerText=i.title||i.collectionName;
+            document.getElementById('pd-artist').innerText=i.artist;
+            if(i.artist.includes(',')||i.artist.includes('&')||i.artist.includes(' and '))document.getElementById('pd-artist').classList.add('has-multi'); else document.getElementById('pd-artist').classList.remove('has-multi');
+            
+            document.getElementById('pd-bg-img').src = i.image;
+            updateProfBtn(); v.classList.remove('hidden'); switchProfileTab('episodes');
+            
+            activeProfileStats=null; document.getElementById('stat-chirps').innerHTML=''; document.getElementById('stat-cash').innerHTML='';
+            document.getElementById('pd-verified').classList.remove('visible');
+            document.getElementById('pd-content-episodes').innerHTML='<div class="spinner"></div>';
+            
+            currentProfileEpisodes=await fetchProfileEpisodes(i.collectionId||i.id, i.artist, i);
+            let ac=0, am=0;
+            if(currentProfileEpisodes.length>0){
+                currentProfileEpisodes.forEach(e=>{const s=getDeterministicStats(e.id.toString(),false,e.date);ac+=s.chirps;am+=s.cash;});
+                activeProfileStats={chirps:ac, cash:am};
+                setTimeout(()=>{updateOdometer(document.getElementById('stat-chirps'),ac);updateOdometer(document.getElementById('stat-cash'),formatCurrency(am));},100);
+                if(ac>=100000)document.getElementById('pd-verified').classList.add('visible');
+                document.getElementById('pd-header-stat').innerHTML = ''; updateOdometer(document.getElementById('pd-header-stat'), ac);
+                document.getElementById('pd-content-episodes').innerHTML=''; renderedEpisodeCount=0; renderMore();
+                document.getElementById('pd-error-view').classList.add('hidden'); document.getElementById('pd-content-stats').classList.remove('hidden');
+            } else { 
+                document.getElementById('pd-content-episodes').innerHTML='';
+                document.getElementById('pd-error-view').classList.remove('hidden'); document.getElementById('pd-content-stats').classList.add('hidden');
+            }
+        }
+
+        function renderMore(){
+            if(renderedEpisodeCount>=currentProfileEpisodes.length)return;
+            const c=document.getElementById('pd-content-episodes');
+            const end=Math.min(renderedEpisodeCount+EPISODES_PER_PAGE, currentProfileEpisodes.length);
+            for(let i=renderedEpisodeCount;i<end;i++){
+                const e=currentProfileEpisodes[i]; const s=getDeterministicStats(e.id.toString(),false,e.date);
+                const parsed = parseTitleAndArtist(e.title, e.artist);
+                const d=document.createElement('div'); d.className='list-item premium-hover glass-shine-hover';
+                if(!e.artist)e.artist=document.getElementById('pd-artist').innerText;
+                const n=isNewEpisode(e.date)?'<span class="new-badge">NEW</span>': getExtraBadge(e.id.toString());
+                d.onclick=()=>playTrack(e);
+                d.innerHTML=`<div style="width:44px;height:44px;background:rgba(255,255,255,0.1);border-radius:50%;display:flex;align-items:center;justify-content:center"><svg class="icon" style="width:18px" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg></div><div style="flex:1"><div style="font-weight:700;font-size:0.95rem;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden">${parsed.title} ${n}</div><div style="font-size:0.8rem;opacity:0.6;margin-top:4px;display:flex;gap:8px"><span>${timeAgo(e.date)}</span> • <span class="odo-sub"></span></div></div>`;
+                c.appendChild(d); setTimeout(()=>updateOdometer(d.querySelector('.odo-sub'),s.chirps),50+(i-renderedEpisodeCount)*30);
+            }
+            renderedEpisodeCount=end;
+        }
+
+        // --- UI HANDLERS ---
+        function renderLibrary(){const l=document.getElementById('library-list'); l.innerHTML=''; if(!savedChirps.length){l.innerHTML='<div style="padding:20px;opacity:0.5;text-align:center">No saved chirps</div>';return;} savedChirps.forEach(i=>{const d=document.createElement('div');d.className='list-item premium-hover glass-shine-hover';d.onclick=()=>playTrack(i);d.innerHTML=`<img src="${i.image}" class="list-img"><div style="flex:1"><div style="font-weight:700;font-size:0.95rem">${i.title}</div><div style="font-size:0.8rem;opacity:0.6">Saved</div></div>`;l.appendChild(d);});}
+        function switchView(n,el){ document.getElementById('view-home').classList.add('hidden'); document.getElementById('view-discover').classList.add('hidden'); document.getElementById('view-library').classList.add('hidden'); document.getElementById('view-'+n).classList.remove('hidden'); try{history.pushState({view: n}, '', `/${n}`);}catch(e){} if(el) { const targetText = el.innerText.trim(); document.querySelectorAll('.nav-item, .sidebar-item').forEach(i=>{i.classList.remove('active');if(i.innerText.trim()===targetText) i.classList.add('active');});}}
+        function closeProfile(){document.getElementById('view-profile-detail').classList.add('hidden'); activeProfileStats=null; document.getElementById('pd-error-view').classList.add('hidden'); document.getElementById('pd-content-stats').classList.remove('hidden'); }
+        function switchProfileTab(t){document.getElementById('tab-episodes').classList.toggle('active',t==='episodes'); document.getElementById('tab-stats').classList.toggle('active',t==='stats'); const s=document.getElementById('pd-content-stats'); const e=document.getElementById('pd-content-episodes'); if(t==='stats'){e.classList.add('hidden');s.classList.remove('hidden');if(activeProfileStats){const c=document.getElementById('stat-chirps'),m=document.getElementById('stat-cash');c.innerHTML='';m.innerHTML='';setTimeout(()=>{updateOdometer(c,activeProfileStats.chirps);updateOdometer(m,formatCurrency(activeProfileStats.cash));},50);}}else{s.classList.add('hidden');e.classList.remove('hidden');}}
+        function toggleTrackChirp(){if(!currentTrack)return; const i=savedChirps.findIndex(x=>x.id===currentTrack.id); if(i>-1)savedChirps.splice(i,1); else{savedChirps.unshift(currentTrack);showToast();} localStorage.setItem('chirps_v41',JSON.stringify(savedChirps)); renderLibrary(); const b=document.getElementById('fp-bird-btn'); const is=savedChirps.some(x=>x.id===currentTrack.id); b.style.background=is?'var(--text-primary)':'rgba(255,255,255,0.1)'; b.style.color=is?'var(--bg-color)':'inherit';}
+        function toggleProfileChirp(){const i=savedProfileChirps.indexOf(currentProfileId); if(i>-1)savedProfileChirps.splice(i,1); else{savedProfileChirps.push(currentProfileId);showToast();} localStorage.setItem('profile_chirps_v41',JSON.stringify(savedProfileChirps)); updateProfBtn();}
+        function updateProfBtn(){const a=savedProfileChirps.includes(currentProfileId); const b=document.getElementById('pd-chirp-btn'), t=document.getElementById('pd-chirp-text'); if(a){b.classList.add('active');t.innerText="Chirped!";}else{b.classList.remove('active');t.innerText="Chirp";}}
+        function showToast(){const t=document.getElementById('toast');t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2000);}
+        function handleArtistClick(str){if(!str)return; const c=str.split(/,|&|\band\b/i).filter(x=>x.trim()); if(c.length>1){const l=document.getElementById('creators-list');l.innerHTML='';c.forEach(x=>{const d=document.createElement('div');d.className='creator-item';d.innerHTML=`${x.trim()} <svg class="icon" style="width:16px;opacity:0.5" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>`;d.onclick=()=>{closeCreatorsModal();closeFullPlayer();closeProfile();switchView('discover',document.querySelectorAll('.nav-item')[1]);document.getElementById('search-input').value=x.trim();doSearch(x.trim());};l.appendChild(d);});document.getElementById('modal-overlay').classList.add('active');document.getElementById('creators-modal').classList.add('active');}else{closeFullPlayer();closeProfile();switchView('discover',document.querySelectorAll('.nav-item')[1]);document.getElementById('search-input').value=str;doSearch(str);}}
+        function closeCreatorsModal(){document.getElementById('modal-overlay').classList.remove('active');document.getElementById('creators-modal').classList.remove('active');}
+        function toggleTheme(){document.body.setAttribute('data-theme',document.body.getAttribute('data-theme')==='dark'?'light':'dark');}
+        function toggleTrackChirpSearch(id) { alert("Saved to Library!"); }
+        function openWithdraw(){ document.getElementById('withdraw-overlay').classList.add('active'); document.getElementById('withdraw-modal').classList.add('active'); }
+        function closeWithdraw(){ document.getElementById('withdraw-overlay').classList.remove('active'); document.getElementById('withdraw-modal').classList.remove('active'); }
+
+        const cvs=document.getElementById('wave-canvas'); const ctx=cvs.getContext('2d'); let aid;
+        function startWaveform(){if(aid)cancelAnimationFrame(aid); cvs.width=cvs.offsetWidth; cvs.height=cvs.offsetHeight; loop();}
+        function loop(){if(!isPlaying)return; ctx.clearRect(0,0,cvs.width,cvs.height); ctx.fillStyle=getComputedStyle(document.body).getPropertyValue('--text-primary'); const b=50,w=cvs.width/b; for(let i=0;i<b;i++){const h=Math.abs(Math.sin(Date.now()/200+i*0.5))*cvs.height; ctx.fillRect(i*w,(cvs.height-h)/2,w-2,h);} aid=requestAnimationFrame(loop);}
+        function seek(e){const r=document.getElementById('progress-container').getBoundingClientRect(); const p=(e.clientX-r.left)/r.width; document.getElementById('audio-player').currentTime=p*document.getElementById('audio-player').duration;}
+        const aEl=document.getElementById('audio-player');
+        aEl.ontimeupdate=()=>{if(aEl.duration && !isNaN(aEl.duration)){const p=(aEl.currentTime/aEl.duration)*100; document.getElementById('progress-fill').style.width=p+'%'; document.getElementById('time-current').innerText=formatTime(aEl.currentTime); document.getElementById('time-total').innerText=formatTime(aEl.duration);}};
+        function changeSpeed(){playbackSpeed=playbackSpeed===1.0?1.5:(playbackSpeed===1.5?2.0:1.0); aEl.playbackRate=playbackSpeed; document.getElementById('speed-btn').innerText=playbackSpeed+'x';}
+        function skip(v){aEl.currentTime+=v;}
+
+        init();
     </script>
 </body>
 </html>
