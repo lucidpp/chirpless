@@ -26,7 +26,7 @@
             --border: #e8e8e8;
             --accent: #000000;
             --link: #0095f6;
-            --glass: rgba(255, 255, 255, 0.85); /* Slightly more transparent for top bar */
+            --glass: rgba(255, 255, 255, 0.85); 
             --glass-strong: rgba(255, 255, 255, 0.95);
             --sidebar-width: 260px;
             --font-main: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -46,7 +46,6 @@
             --glass-strong: rgba(5, 5, 5, 0.95);
         }
 
-        /* Auto Dark Mode Fallback */
         @media (prefers-color-scheme: dark) {
             :root:not(.light) {
                 --bg: #050505;
@@ -68,6 +67,9 @@
         .bold { font-weight: 700; }
         .subtle { color: var(--subtle); font-size: 0.9rem; }
         .pointer { cursor: pointer; }
+        
+        /* Utility Class for JS Hiding */
+        .hidden { display: none !important; }
 
         /* --- ODOMETER --- */
         .ticker-root {
@@ -80,14 +82,92 @@
         .ticker-digit-col { display: flex; flex-direction: column; transition: transform var(--anim-speed) var(--anim-ease); will-change: transform; }
         .ticker-digit { height: 1.2em; line-height: 1.2em; display: flex; align-items: center; justify-content: center; }
 
-        /* --- LAYOUT --- */
-        .modal-overlay {
+        /* --- LOGIN / ONBOARDING SCREEN --- */
+        #onboarding {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            z-index: 2000; display: flex; flex-direction: column; align-items: center; justify-content: center;
+            overflow: hidden;
+            transition: opacity 0.5s cubic-bezier(0.25, 1, 0.5, 1), transform 0.5s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+        
+        /* Base Background Color Layer */
+        #onboarding::before {
+            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--bg);
+            z-index: -2;
+        }
+
+        /* Decorative Gradient Layer */
+        #onboarding::after {
+            content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
+            background: radial-gradient(circle at 50% 50%, rgba(200, 50, 200, 0.15), transparent 60%),
+                        radial-gradient(circle at 80% 20%, rgba(50, 200, 250, 0.15), transparent 50%);
+            animation: pulse-bg 10s infinite alternate;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        .login-card {
+            width: 100%; max-width: 400px; padding: 2.5rem;
+            display: flex; flex-direction: column; align-items: center;
+            animation: slideUpFade 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+            background: rgba(255,255,255,0.05); /* Slight tint for card */
+            backdrop-filter: blur(10px);
+            border-radius: 30px;
+        }
+
+        .login-brand { font-size: 2rem; font-weight: 900; margin-bottom: 2rem; letter-spacing: -1px; }
+
+        .login-input-group {
+            width: 100%; margin-bottom: 1rem; position: relative;
+        }
+        
+        .login-input {
+            width: 100%; padding: 1rem; padding-top: 1.4rem; padding-bottom: 0.6rem;
+            background: rgba(125,125,125,0.05); border: 1px solid var(--border); border-radius: 12px;
+            color: var(--text); font-size: 1rem; font-family: inherit; transition: border-color 0.2s, background 0.2s;
+        }
+        .login-input:focus { border-color: var(--subtle); background: var(--bg); }
+        
+        .login-label {
+            position: absolute; left: 1rem; top: 0.5rem; font-size: 0.7rem; color: var(--subtle);
+            font-weight: 600; pointer-events: none; text-transform: uppercase; letter-spacing: 0.05em;
+        }
+        
+        .login-btn {
+            background: var(--text); color: var(--bg); border: none; padding: 1rem; border-radius: 12px;
+            font-weight: 600; cursor: pointer; width: 100%; margin-top: 1.5rem; font-size: 1rem;
+            transition: transform 0.1s, opacity 0.2s; position: relative; overflow: hidden;
+        }
+        .login-btn:active { transform: scale(0.98); opacity: 0.9; }
+        .login-btn.loading { color: transparent; pointer-events: none; }
+        .login-btn.loading::after {
+            content: ''; position: absolute; left: 50%; top: 50%; width: 20px; height: 20px;
+            border: 2px solid var(--bg); border-radius: 50%; border-top-color: transparent;
+            animation: spin 0.8s linear infinite; transform: translate(-50%, -50%);
+        }
+
+        .login-footer {
+            margin-top: 3rem; font-size: 0.8rem; color: var(--subtle);
+            display: flex; flex-direction: column; align-items: center; gap: 8px; opacity: 0.6;
+        }
+
+        /* Animations */
+        @keyframes slideUpFade { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes pulse-bg { 0% { transform: scale(1); } 100% { transform: scale(1.1); } }
+        @keyframes spin { 0% { transform: translate(-50%, -50%) rotate(0deg); } 100% { transform: translate(-50%, -50%) rotate(360deg); } }
+        
+        #onboarding.fade-out-scale {
+            opacity: 0; transform: scale(0.95); pointer-events: none;
+        }
+
+        /* --- INTERNAL MODALS --- */
+        .modal-overlay:not(#onboarding) {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); backdrop-filter: blur(5px);
-            z-index: 999; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2rem;
+            z-index: 2001; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2rem;
             text-align: center; transition: opacity 0.3s ease;
         }
-        .modal-overlay.hidden { opacity: 0; pointer-events: none; }
-        #onboarding { background: var(--bg); }
+        
         .modal-card { background: var(--bg); padding: 2rem; border-radius: 24px; max-width: 400px; width: 100%; border: 1px solid var(--border); text-align: left; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); max-height: 90vh; overflow-y: auto; }
         .input-group { margin: 1rem 0; width: 100%; text-align: left; }
         .input-group label { display: block; font-size: 0.75rem; color: var(--subtle); margin-bottom: 0.5rem; font-weight: 700; letter-spacing: 0.02em; text-transform: uppercase; }
@@ -101,22 +181,13 @@
         #app { display: none; flex-direction: row; height: 100%; }
         .sidebar { width: var(--sidebar-width); height: 100%; padding: 2rem; display: flex; flex-direction: column; border-right: 1px solid var(--border); position: relative; background: var(--glass-strong); z-index: 10; }
         .brand { font-size: 1.5rem; font-weight: 900; margin-bottom: 2rem; display: flex; align-items: center; gap: 12px; letter-spacing: -1px; }
-        
-        .nav-btn {
-            background: transparent; border: none; text-align: left; padding: 1rem 1.2rem; font-size: 1.05rem;
-            color: var(--subtle); cursor: pointer; transition: color 0.2s, transform 0.2s;
-            display: flex; align-items: center; gap: 15px; font-weight: 600;
-            border-radius: 16px; margin-bottom: 0.5rem; position: relative; overflow: hidden;
-        }
+        .nav-btn { background: transparent; border: none; text-align: left; padding: 1rem 1.2rem; font-size: 1.05rem; color: var(--subtle); cursor: pointer; transition: color 0.2s, transform 0.2s; display: flex; align-items: center; gap: 15px; font-weight: 600; border-radius: 16px; margin-bottom: 0.5rem; position: relative; overflow: hidden; }
         .nav-btn.active { color: var(--text); font-weight: 800; background: var(--border); }
         .nav-btn:hover { color: var(--text); background: rgba(125,125,125,0.05); }
-        
-        /* Glass Shine */
         @keyframes shine { 0% { left: -100%; opacity: 0.5; } 50% { opacity: 1; } 100% { left: 150%; opacity: 0.5; } }
         .nav-btn::after, .glass-shine::after { content: ''; position: absolute; top: 0; left: -100%; width: 50%; height: 100%; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent); transform: skewX(-20deg); pointer-events: none; transition: 0.5s; }
         html.dark .nav-btn::after, html.dark .glass-shine::after { background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent); }
         .nav-btn:hover::after, .glass-shine:hover::after { animation: shine 1.2s cubic-bezier(0.25, 1, 0.5, 1); }
-        
         .sidebar-stats { margin-top: auto; padding-top: 2rem; border-top: 1px solid var(--border); }
         .stat-block { margin-bottom: 1.5rem; }
         .stat-label { font-size: 0.75rem; color: var(--subtle); text-transform: uppercase; font-weight: 700; margin-bottom: 0.3rem; letter-spacing: 0.05em; }
@@ -126,11 +197,10 @@
         
         /* Updated Top Bar */
         .top-bar { 
-            padding: 1rem 1.5rem; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; 
+            padding: 1rem 1.5rem; border-bottom: 1px solid var(--border); display: flex; justify-content: flex-end; align-items: center; 
             background: var(--glass); backdrop-filter: blur(12px); position: sticky; top: 0; z-index: 20; flex-shrink: 0; 
         }
         
-        .day-counter { font-weight: 800; font-size: 0.9rem; padding: 0.5rem 1rem; background: var(--border); border-radius: 20px; }
         .btn-next-day { background: var(--text); color: var(--bg); border: none; padding: 0.6rem 1.4rem; border-radius: 20px; font-weight: 700; font-size: 0.9rem; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
         .btn-next-day:hover { transform: translateY(-1px); box-shadow: 0 6px 15px rgba(0,0,0,0.15); }
         .btn-next-day:active { transform: scale(0.96); }
@@ -138,18 +208,18 @@
         .view-section { display: none; flex-direction: column; flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding-bottom: 80px; }
         .view-section.active { display: flex; }
 
-        /* COMPOSER & MENTIONS */
-        .composer { padding: 1.5rem; border-bottom: 1px solid var(--border); display: flex; gap: 1rem; flex-direction: column; flex-shrink: 0; position: relative; }
+        /* COMPOSER inside MODAL */
+        .composer { padding: 0; border: none; display: flex; gap: 1rem; flex-direction: column; width: 100%; }
         .composer-top { display: flex; gap: 1rem; }
         .avatar { width: 44px; height: 44px; background: #333; color: #fff; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1.1rem; cursor: pointer; overflow: hidden; position: relative; }
         .avatar img { width: 100%; height: 100%; object-fit: cover; }
-        textarea { width: 100%; border: none; resize: none; background: transparent; font-family: inherit; font-size: 1.1rem; color: var(--text); min-height: 50px; padding: 0.5rem 0; line-height: 1.4; }
+        textarea { width: 100%; border: none; resize: none; background: transparent; font-family: inherit; font-size: 1.1rem; color: var(--text); min-height: 80px; padding: 0.5rem 0; line-height: 1.4; }
         .image-preview-container { position: relative; margin-top: 10px; display: none; width: 100%; border-radius: 12px; overflow: hidden; }
         .image-preview-container.active { display: block; }
         .image-preview, .video-preview { width: 100%; max-height: 300px; object-fit: cover; display: block; border-radius: 12px; border: 1px solid var(--border); }
         .remove-media-btn { position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.6); color: white; border: none; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 5; }
         
-        .composer-tools { display: flex; justify-content: space-between; align-items: center; padding-left: 60px; }
+        .composer-tools { display: flex; justify-content: space-between; align-items: center; }
         .tools-left { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
         .collab-select { font-size: 0.85rem; padding: 0.4rem 0.8rem; border-radius: 15px; border: 1px solid var(--border); background: transparent; color: var(--text); cursor: pointer; max-width: 120px; }
         .btn-icon { background: transparent; border: 1px solid var(--border); padding: 0.4rem; border-radius: 50%; color: var(--text); cursor: pointer; display: flex; align-items: center; justify-content: center;}
@@ -160,10 +230,20 @@
         .poll-creator.active { display: flex; }
         .poll-creator input { padding: 0.6rem; font-size: 0.9rem; background: var(--bg); border-radius: 10px; }
 
+        /* FAB */
+        #fab-create {
+            position: fixed; bottom: 80px; right: 20px; width: 56px; height: 56px; border-radius: 50%;
+            background: var(--text); color: var(--bg); border: none; box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            font-size: 2rem; display: flex; align-items: center; justify-content: center; cursor: pointer;
+            z-index: 100; transition: transform 0.2s; font-family: inherit; font-weight: 400; padding-bottom: 4px;
+        }
+        #fab-create:active { transform: scale(0.9); }
+        @media (min-width: 769px) { #fab-create { bottom: 40px; right: 40px; } }
+
         /* MENTION SUGGESTIONS */
         #mention-suggestions {
             position: absolute; background: var(--bg); border: 1px solid var(--border); border-radius: 12px;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.15); width: 250px; z-index: 100; display: none; max-height: 200px; overflow-y: auto;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.15); width: 250px; z-index: 2200; display: none; max-height: 200px; overflow-y: auto;
         }
         .mention-item { padding: 0.8rem; cursor: pointer; display: flex; align-items: center; gap: 10px; font-size: 0.9rem; }
         .mention-item:hover { background: var(--border); }
@@ -255,16 +335,31 @@
     <div id="mention-suggestions"></div>
 
     <!-- Onboarding -->
-    <div id="onboarding" class="modal-overlay">
-        <div style="margin-bottom: 2rem;">
-            <h1>Welcome to Chirpless.</h1>
-            <p class="subtle">Simulation of fame.</p>
+    <div id="onboarding">
+        <div class="login-card">
+            <div class="login-brand">Chirpless</div>
+            <div class="login-input-group">
+                <input type="text" id="setup-name" class="login-input" placeholder=" " autocomplete="off">
+                <label class="login-label">Display Name</label>
+            </div>
+            <div class="login-input-group">
+                <input type="text" id="setup-handle" class="login-input" placeholder=" " autocomplete="off">
+                <label class="login-label">Handle</label>
+            </div>
+            <div class="login-input-group">
+                <input type="number" id="setup-audience" class="login-input" value="1200" placeholder=" ">
+                <label class="login-label">Initial Audience</label>
+            </div>
+            <div class="login-input-group">
+                <input type="number" id="setup-followers" class="login-input" value="450" placeholder=" ">
+                <label class="login-label">Initial Followers</label>
+            </div>
+            <button class="login-btn" onclick="startApp(this)">Enter Simulation</button>
+            <div class="login-footer">
+                <span>By entering, you agree to simulate fame.</span>
+                <span>© 2026 Chirpless Inc.</span>
+            </div>
         </div>
-        <div class="input-group"><label>DISPLAY NAME</label><input type="text" id="setup-name" placeholder="e.g. Jane Doe" autocomplete="off"></div>
-        <div class="input-group"><label>HANDLE</label><input type="text" id="setup-handle" placeholder="e.g. janedoe" autocomplete="off"></div>
-        <div class="input-group"><label>INITIAL MONTHLY AUDIENCE</label><input type="number" id="setup-audience" value="1200"></div>
-        <div class="input-group"><label>INITIAL FOLLOWERS</label><input type="number" id="setup-followers" value="450"></div>
-        <button class="btn-primary" onclick="startApp()">Enter Simulation</button>
     </div>
 
     <!-- Collaboration Modal -->
@@ -302,6 +397,57 @@
         </div>
     </div>
 
+    <!-- Post Modal (New) -->
+    <div id="post-modal" class="modal-overlay hidden">
+        <div class="modal-card" style="max-width: 600px; width: 95%;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; padding-bottom:1rem; border-bottom:1px solid var(--border);">
+                <div style="font-weight:700;font-size:1.1rem;">New Post</div>
+                <button class="btn-icon" onclick="closePostModal()">✕</button>
+            </div>
+            <div class="composer">
+                <div class="composer-top">
+                    <div class="avatar" id="modal-user-avatar">?</div>
+                    <div class="composer-area">
+                        <textarea id="post-input" placeholder="What's new? (@ to mention)" oninput="handleInput(this)"></textarea>
+                        <div class="image-preview-container" id="image-preview-container">
+                            <img src="" id="image-preview" class="image-preview" style="display:none;">
+                            <video src="" id="video-preview" class="video-preview" controls style="display:none;"></video>
+                            <button class="remove-media-btn" onclick="removeMedia()">✕</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="composer-tools">
+                    <div class="tools-left">
+                        <select id="collab-select-1" class="collab-select"><option value="">+ Collab 1</option></select>
+                        <select id="collab-select-2" class="collab-select"><option value="">+ Collab 2</option></select>
+                        
+                        <button class="btn-icon" onclick="triggerImageUpload()" title="Add Image">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                        </button>
+                        <input type="file" id="image-upload-input" accept="image/*" style="display: none;" onchange="handleFile(this, 'image')">
+
+                        <button class="btn-icon" onclick="triggerVideoUpload()" title="Add Video">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"></rect><line x1="7" y1="2" x2="7" y2="22"></line><line x1="17" y1="2" x2="17" y2="22"></line><line x1="2" y1="12" x2="22" y2="12"></line><line x1="2" y1="7" x2="7" y2="7"></line><line x1="2" y1="17" x2="7" y2="17"></line><line x1="17" y1="17" x2="22" y2="17"></line><line x1="17" y1="7" x2="22" y2="7"></line></svg>
+                        </button>
+                        <input type="file" id="video-upload-input" accept="video/*" style="display: none;" onchange="handleFile(this, 'video')">
+
+                        <button class="btn-icon" onclick="togglePollCreator()" title="Create Poll">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 20v-6M6 20V10M18 20V4"></path></svg>
+                        </button>
+                    </div>
+                    <button class="btn-post" id="post-btn" onclick="createPost()">Post</button>
+                </div>
+                <div class="poll-creator" id="poll-creator">
+                    <input type="text" id="poll-opt-1" placeholder="Option 1">
+                    <input type="text" id="poll-opt-2" placeholder="Option 2">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Floating Action Button -->
+    <button id="fab-create" onclick="openPostModal()">+</button>
+
     <!-- Main App -->
     <div id="app">
         <!-- Sidebar -->
@@ -324,7 +470,6 @@
         <!-- Content -->
         <main class="main-content">
             <div class="top-bar">
-                <div class="day-counter">Day <span id="day-display">1</span></div>
                 <button class="btn-next-day" onclick="nextDay()">Next Day &rarr;</button>
             </div>
 
@@ -335,44 +480,7 @@
 
             <!-- HOME TAB -->
             <div id="view-home" class="view-section active">
-                <div class="composer">
-                    <div class="composer-top">
-                        <div class="avatar" id="user-avatar" onclick="switchTab('profile')">?</div>
-                        <div class="composer-area">
-                            <textarea id="post-input" placeholder="What's new? (@ to mention)" oninput="handleInput(this)"></textarea>
-                            <div class="image-preview-container" id="image-preview-container">
-                                <img src="" id="image-preview" class="image-preview" style="display:none;">
-                                <video src="" id="video-preview" class="video-preview" controls style="display:none;"></video>
-                                <button class="remove-media-btn" onclick="removeMedia()">✕</button>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="composer-tools">
-                        <div class="tools-left">
-                            <select id="collab-select-1" class="collab-select"><option value="">+ Collab 1</option></select>
-                            <select id="collab-select-2" class="collab-select"><option value="">+ Collab 2</option></select>
-                            
-                            <button class="btn-icon" onclick="triggerImageUpload()" title="Add Image">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
-                            </button>
-                            <input type="file" id="image-upload-input" accept="image/*" style="display: none;" onchange="handleFile(this, 'image')">
-
-                            <button class="btn-icon" onclick="triggerVideoUpload()" title="Add Video">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"></rect><line x1="7" y1="2" x2="7" y2="22"></line><line x1="17" y1="2" x2="17" y2="22"></line><line x1="2" y1="12" x2="22" y2="12"></line><line x1="2" y1="7" x2="7" y2="7"></line><line x1="2" y1="17" x2="7" y2="17"></line><line x1="17" y1="17" x2="22" y2="17"></line><line x1="17" y1="7" x2="22" y2="7"></line></svg>
-                            </button>
-                            <input type="file" id="video-upload-input" accept="video/*" style="display: none;" onchange="handleFile(this, 'video')">
-
-                            <button class="btn-icon" onclick="togglePollCreator()" title="Create Poll">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 20v-6M6 20V10M18 20V4"></path></svg>
-                            </button>
-                        </div>
-                        <button class="btn-post" id="post-btn" onclick="createPost()">Post</button>
-                    </div>
-                    <div class="poll-creator" id="poll-creator">
-                        <input type="text" id="poll-opt-1" placeholder="Option 1">
-                        <input type="text" id="poll-opt-2" placeholder="Option 2">
-                    </div>
-                </div>
+                <!-- Composer Removed from here -->
                 <div id="feed"></div>
             </div>
 
@@ -437,18 +545,12 @@
             theme: 'light'
         };
         
-        let currentMedia = { type: null, data: null }; // Temp holder
+        let currentMedia = { type: null, data: null };
         let currentNotePostId = null;
-
-        // --- PERSISTENCE ---
-        const DB_KEY = 'chirpless_save_v10';
+        const DB_KEY = 'chirpless_save_v12';
         
         function saveData() {
-            try {
-                localStorage.setItem(DB_KEY, JSON.stringify(state));
-            } catch (e) {
-                console.error("Storage limit reached");
-            }
+            try { localStorage.setItem(DB_KEY, JSON.stringify(state)); } catch (e) { console.error("Storage limit reached"); }
         }
 
         function loadData() {
@@ -467,7 +569,7 @@
             return false;
         }
 
-        // --- GLOBAL FUNCTIONS (Must be top level) ---
+        // --- GLOBAL FUNCTIONS ---
         function updateGlobalStats(force = false) {
             const currentUser = getCurrentUser();
             ['audience-count', 'mob-audience-count'].forEach(id => {
@@ -480,12 +582,24 @@
             });
         }
 
+        function updateUserAvatarDisplay() {
+            const currentUser = getCurrentUser();
+            const el = document.getElementById('user-avatar');
+            // Check modal avatar as well
+            const modalEl = document.getElementById('modal-user-avatar');
+            
+            const isBot = state.activeAccountId !== 'me';
+            const content = getAvatarContent(currentUser, isBot);
+            
+            if(el) el.innerHTML = content;
+            if(modalEl) modalEl.innerHTML = content;
+        }
+
         function renderFeed(containerId, updateTimesOnly = false) {
             const container = document.getElementById(containerId);
             if(!container) return;
             
             let posts = state.posts;
-            // No filtering for main feed, handled inside if logic
             if (containerId === 'profile-feed') {
                 const targetId = state.viewingProfile;
                 posts = state.posts.filter(p => {
@@ -524,7 +638,6 @@
             if (id === 'me') user = state.user;
             else user = state.bots.find(b => b.id == id);
             
-            // Handle edge case where we view 'me' (main) while logged in as bot
             if (id === 'me' && state.activeAccountId !== 'me') user = state.user;
             else if (id == state.activeAccountId && state.activeAccountId !== 'me') user = state.bots.find(b => b.id == state.activeAccountId);
 
@@ -538,11 +651,11 @@
 
             let actionButton = '';
             if (isMe) {
-                actionButton = `<div style="display:flex; gap:8px;"><button class="profile-action-btn" onclick="switchTab('notes')">My Notes</button><button class="profile-action-btn" onclick="triggerPfpUpload()">Edit Profile</button></div><input type="file" id="pfp-upload-input" accept="image/*" style="display: none;" onchange="handlePfpFile(this)">`;
+                actionButton = `<div style="display:flex; gap:8px;"><button class="profile-action-btn glass-shine" onclick="switchTab('notes')">My Notes</button><button class="profile-action-btn glass-shine" onclick="triggerPfpUpload()">Edit Profile</button></div><input type="file" id="pfp-upload-input" accept="image/*" style="display: none;" onchange="handlePfpFile(this)">`;
             } else {
                 const text = user.following ? 'Following' : 'Follow';
                 const cls = user.following ? 'profile-action-btn' : 'profile-action-btn primary';
-                actionButton = `<button class="${cls}" onclick="toggleFollow('${user.id}'); this.classList.add('bounce-active'); setTimeout(()=>this.classList.remove('bounce-active'),300);">${text}</button>`;
+                actionButton = `<button class="${cls} glass-shine" onclick="toggleFollow('${user.id}'); this.classList.add('bounce-active'); setTimeout(()=>this.classList.remove('bounce-active'),300);">${text}</button>`;
             }
 
             container.innerHTML = `<div class="profile-header"><div class="profile-top"><div class="avatar" style="width:80px; height:80px; font-size:2rem; cursor:default; background:#eee;">${avatarHTML}</div>${actionButton}</div><div class="profile-info">${nameHTML}<span class="profile-handle">${user.handle}</span><div class="profile-stats-row"><div class="profile-stat"><span>${formatNumber(user.followers)}</span> followers</div><div class="profile-stat"><span>${formatNumber(user.audience)}</span> audience</div></div></div></div>`;
@@ -601,7 +714,7 @@
                 createTicker(container.querySelector(`#detail-like-${post.id}`), post.likes);
                 createTicker(container.querySelector(`#detail-repost-${post.id}`), post.reposts);
                 if(post.hasLink) createTicker(container.querySelector(`#detail-clicks-${post.id}`), post.clicks);
-                if(post.poll) updatePollDOM(post, null); // Pass null to force full DOM query
+                if(post.poll) updatePollDOM(post, null); 
             }, 0);
         }
 
@@ -622,30 +735,31 @@
             }
         };
 
-        function startApp() {
-            const name = document.getElementById('setup-name').value;
-            const handle = document.getElementById('setup-handle').value;
-            const audience = parseInt(document.getElementById('setup-audience').value) || 0;
-            const followers = parseInt(document.getElementById('setup-followers').value) || 0;
-
-            if(!name || !handle) { alert("Name and handle required."); return; }
-
-            state.user.name = name;
-            state.user.handle = handle.startsWith('@') ? handle : '@' + handle;
-            state.user.audience = audience;
-            state.user.followers = followers;
-
-            document.getElementById('onboarding').classList.add('hidden');
-            document.getElementById('app').style.display = 'flex';
-            updateUserAvatarDisplay();
-            
-            populateDefaults();
-            saveData();
-            updateGlobalStats(true);
-            renderFeed('feed');
+        function startApp(btn) {
+            if(btn) btn.classList.add('loading');
+            setTimeout(() => {
+                const name = document.getElementById('setup-name').value;
+                const handle = document.getElementById('setup-handle').value;
+                const audience = parseInt(document.getElementById('setup-audience').value) || 0;
+                const followers = parseInt(document.getElementById('setup-followers').value) || 0;
+                if(!name || !handle) { alert("Name and handle required."); if(btn) btn.classList.remove('loading'); return; }
+                state.user.name = name;
+                state.user.handle = handle.startsWith('@') ? handle : '@' + handle;
+                state.user.audience = audience;
+                state.user.followers = followers;
+                document.getElementById('onboarding').classList.add('fade-out-scale');
+                setTimeout(() => {
+                    document.getElementById('onboarding').classList.add('hidden');
+                    document.getElementById('app').style.display = 'flex';
+                    updateUserAvatarDisplay();
+                    populateDefaults();
+                    saveData();
+                    updateGlobalStats(true);
+                    renderFeed('feed');
+                }, 500);
+            }, 800);
         }
 
-        // --- HELPERS ---
         function applyTheme() {
             if (state.theme === 'dark') document.documentElement.classList.add('dark');
             else document.documentElement.classList.remove('dark');
@@ -667,7 +781,7 @@
             updateGlobalStats(true);
             saveData();
             
-            // Force refresh active tab
+            // Re-render based on current view
             if(state.activeTab === 'profile') renderProfile(id);
             else if(state.activeTab === 'home') renderFeed('feed');
             else if(state.activeTab === 'notes') renderFeed('notes-feed');
@@ -678,29 +792,22 @@
         function toggleAccountMenu(event) {
             event.stopPropagation();
             closeAllMenus();
-            
             const accounts = [{id: 'me', name: state.user.name, handle: state.user.handle, pfp: state.user.pfp}];
             state.bots.filter(b => b.isCustom).forEach(b => accounts.push(b));
             
             const div = document.createElement('div');
             div.className = 'post-menu active';
-            div.style.position = 'absolute';
-            div.style.top = '100%'; div.style.left = '0'; div.style.minWidth = '200px'; div.style.zIndex = 1000;
-            
+            div.style.position = 'absolute'; div.style.top = '100%'; div.style.left = '0'; div.style.minWidth = '200px'; div.style.zIndex = 1000;
             let html = '';
             accounts.forEach(acc => {
                 const isMe = acc.id === 'me';
-                const avatar = isMe ? (acc.pfp ? `<img src="${acc.pfp}" style="width:24px;height:24px;border-radius:50%;object-fit:cover;margin-right:8px;">` : `<div style="width:24px;height:24px;border-radius:50%;background:#eee;margin-right:8px;display:flex;align-items:center;justify-content:center;font-size:0.8rem;font-weight:700;">${acc.name.substring(0,1)}</div>`) 
-                                    : `<img src="https://api.dicebear.com/9.x/thumbs/svg?seed=${acc.handle}" style="width:24px;height:24px;border-radius:50%;object-fit:cover;margin-right:8px;">`;
-                
+                const avatar = isMe ? (acc.pfp ? `<img src="${acc.pfp}" style="width:24px;height:24px;border-radius:50%;object-fit:cover;margin-right:8px;">` : `<div style="width:24px;height:24px;border-radius:50%;background:#eee;margin-right:8px;display:flex;align-items:center;justify-content:center;font-size:0.8rem;font-weight:700;">${acc.name.substring(0,1)}</div>`) : `<img src="https://api.dicebear.com/9.x/thumbs/svg?seed=${acc.handle}" style="width:24px;height:24px;border-radius:50%;object-fit:cover;margin-right:8px;">`;
                 const check = state.activeAccountId == acc.id ? ' ✓' : '';
                 html += `<button class="menu-item" onclick="switchAccount('${acc.id}')" style="display:flex;align-items:center;">${avatar} ${acc.name}${check}</button>`;
             });
             div.innerHTML = html;
-            
             const h2 = event.currentTarget.parentElement;
             if(h2) { h2.style.position = 'relative'; h2.appendChild(div); }
-            
             const remover = (e) => { if(!div.contains(e.target)) { div.remove(); document.body.removeEventListener('click', remover); }};
             setTimeout(() => document.body.addEventListener('click', remover), 0);
         }
@@ -890,7 +997,27 @@
             textarea.focus();
         }
 
-        // --- POST CREATION ---
+        // --- POST MODAL & CREATION ---
+        function openPostModal() {
+            // Set current avatar
+            const el = document.getElementById('modal-user-avatar');
+            el.innerHTML = getAvatarContent(getCurrentUser(), state.activeAccountId !== 'me');
+            
+            document.getElementById('post-modal').classList.remove('hidden');
+            document.getElementById('post-modal').style.opacity = '1';
+            
+            // Populate collabs
+            const select1 = document.getElementById('collab-select-1'); 
+            const select2 = document.getElementById('collab-select-2');
+            const opts = `<option value="">+ Collab</option>` + state.bots.map(b => `<option value="${b.id}">${b.name}</option>`).join('');
+            select1.innerHTML = opts; select2.innerHTML = opts;
+        }
+
+        function closePostModal() {
+            document.getElementById('post-modal').style.opacity = '0';
+            setTimeout(() => document.getElementById('post-modal').classList.add('hidden'), 300);
+        }
+
         function createPost() {
             const text = document.getElementById('post-input').value.trim();
             const pollOpt1 = document.getElementById('poll-opt-1').value.trim();
@@ -937,6 +1064,7 @@
             state.lastPostDay = state.day;
             currentUser.audience += Math.floor(currentUser.audience * 0.02) + 50; 
             
+            // Clean UI
             document.getElementById('post-input').value = '';
             document.getElementById('poll-opt-1').value = ''; document.getElementById('poll-opt-2').value = '';
             document.getElementById('poll-creator').classList.remove('active');
@@ -944,6 +1072,8 @@
             removeMedia();
             checkInput();
             
+            closePostModal();
+
             if(state.activeTab === 'home') renderFeed('feed');
             else if(state.activeTab === 'profile') renderProfile(state.activeAccountId);
             
@@ -982,7 +1112,7 @@
         // --- SIMULATION ---
         function nextDay() {
             state.day++;
-            document.getElementById('day-display').innerText = state.day;
+            // Removed day display from top bar as requested
             const daysSincePost = state.day - state.lastPostDay;
             let totalNewViews = 0;
 
