@@ -158,6 +158,30 @@
 
         .horizontal-scroll { display: flex; gap: 16px; overflow-x: auto; padding: 0 var(--padding) 10px; }
         .horizontal-scroll::-webkit-scrollbar { display: none; }
+
+        /* FEATURED STORIES UI */
+        .story-scroll { display: flex; gap: 18px; overflow-x: auto; padding: 0 var(--padding) 20px; }
+        .story-scroll::-webkit-scrollbar { display: none; }
+        .story-item { 
+            display: flex; flex-direction: column; align-items: center; gap: 8px; 
+            min-width: 75px; cursor: pointer; transition: transform 0.2s;
+        }
+        .story-item:active { transform: scale(0.95); }
+        .story-ring {
+            width: 74px; height: 74px; border-radius: 50%; padding: 3px;
+            background: linear-gradient(135deg, #FF2E93, #00F0FF);
+            position: relative; box-shadow: var(--shadow-soft);
+        }
+        .story-img {
+            width: 100%; height: 100%; border-radius: 50%; 
+            border: 3px solid var(--bg-color); 
+            object-fit: cover; background: var(--surface-highlight);
+        }
+        .story-name { 
+            font-size: 0.7rem; font-weight: 600; text-align: center; 
+            max-width: 80px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+            opacity: 0.9;
+        }
         
         .podcast-card { min-width: 140px; width: 140px; display: flex; flex-direction: column; gap: 8px; cursor: pointer; }
         .cover-art {
@@ -450,6 +474,9 @@
 
         <main id="main-content">
             <div id="view-home" class="view">
+                <div class="section-title">Featured <span class="new-badge">New</span></div>
+                <div class="story-scroll" id="featured-container"></div>
+
                 <div class="section-title">Trending Now</div>
                 <div class="horizontal-scroll" id="trending-container" style="min-height:200px"><div class="spinner"></div></div>
                 <div class="section-title">Recommended for You</div>
@@ -599,7 +626,7 @@
             <div class="nav-item glass-shine-hover" onclick="switchView('library', this)">
                 <svg class="icon" viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg> Library
             </div>
-             <div class="nav-item glass-shine-hover" onclick="openWithdraw()">
+            <div class="nav-item glass-shine-hover" onclick="openWithdraw()">
                  <svg class="icon" viewBox="0 0 24 24"><path d="M21 12V7H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h16v4h2v10a2 2 0 0 1-2 2h-2v-5a2 2 0 0 0-2-2H3v2h14v7H5a2 2 0 0 1-2-2v-5"/></svg> Withdraw
             </div>
              <div class="nav-item glass-shine-hover" onclick="openInstallModal()">
@@ -667,7 +694,7 @@
     <audio id="audio-player" preload="none"></audio>
 
     <script>
-        // --- 1. UTILITY FUNCTIONS ---
+        // --- 1. UTILITY FUNCTIONS (Must be first) ---
         function formatTime(s) { if(!s) return "0:00"; const m = Math.floor(s/60); const sec = Math.floor(s%60); return `${m}:${sec<10?'0':''}${sec}`; }
         function seededRandom(str) { let h=1779033703^str.length; for(let i=0;i<str.length;i++)h=Math.imul(h^str.charCodeAt(i),3432918353); return function(){h=Math.imul(h^(h>>>16),2246822507);h=Math.imul(h^(h>>>13),3266489909);return(h>>>0)/4294967296;} }
         function formatNumber(n) { if(isNaN(n))return"0"; if(n>=1e9)return(n/1e9).toFixed(1)+'b'; if(n>=1e6)return(n/1e6).toFixed(1)+'m'; if(n>=1e3)return(n/1e3).toFixed(1)+'k'; return n.toLocaleString(); }
@@ -692,28 +719,17 @@
 
         // --- 2. STATS & CONFIG ---
         let currentTrack = null; let isPlaying = false; let playbackSpeed = 1.0; let currentFilter = 'all';
-        let savedChirps = JSON.parse(localStorage.getItem('chirps_v44') || '[]');
-        let savedProfileChirps = JSON.parse(localStorage.getItem('profile_chirps_v44') || '[]');
+        let savedChirps = JSON.parse(localStorage.getItem('chirps_v45') || '[]');
+        let savedProfileChirps = JSON.parse(localStorage.getItem('profile_chirps_v45') || '[]');
         let currentProfileId = null; let currentProfileEpisodes = []; let renderedEpisodeCount = 0; const EPISODES_PER_PAGE = 10;
         let activeProfileStats = null;
         let lyricsInterval = null;
         let deferredPrompt = null;
+        let searchHistory = JSON.parse(localStorage.getItem('search_history') || '[]');
         
         const VERIFIED_BADGE_HTML = `<svg class="verified-badge" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>`;
         const PODCAST_SCRIPT = ["So, I was thinking about this the other day.","Right, exactly.","It's a complex issue.","Data suggests otherwise.","Wait, let me pull that up.","Ideally, yes.","That's fascinating.","Moving on.","Incredible point.","Let's dive deeper."];
-        const SPONSORED_ADS = [
-            {title:"LucidPP on Spotify", artist:"Sponsored", image:"https://picsum.photos/300?random=101"},
-            {title:"New Spongebob Movie OUT NOW", artist:"Sponsored", image:"https://picsum.photos/300?random=102"},
-            {title:"Korger: Cheap & Affordable", artist:"Sponsored", image:"https://picsum.photos/300?random=103"},
-            {title:"Chirpless Premium", artist:"Sponsored", image:"siteicon.png"},
-            {title:"Audible: 30 Days Free", artist:"Sponsored", image:"https://picsum.photos/300?random=104"},
-            {title:"Squarespace: Build It", artist:"Sponsored", image:"https://picsum.photos/300?random=105"},
-            {title:"MailChimp: Email Marketing", artist:"Sponsored", image:"https://picsum.photos/300?random=106"},
-            {title:"BetterHelp: Get Help", artist:"Sponsored", image:"https://picsum.photos/300?random=107"},
-            {title:"SeatGeek: Promo Code CHIRP", artist:"Sponsored", image:"https://picsum.photos/300?random=108"},
-            {title:"HelloFresh: Eating Good", artist:"Sponsored", image:"https://picsum.photos/300?random=109"},
-            {title:"NordVPN: Stay Safe", artist:"Sponsored", image:"https://picsum.photos/300?random=110"}
-        ];
+        const FEATURED_PODCASTS = ["C@shXan", "LucidPP", "Stories With Ivanna", "The Joe Rogan Experience", "The Interview", "Chirpless"];
 
         function getDeterministicStats(id, isProfile=false, dateStr=null) {
             const rng=seededRandom(id); const t=rng(), v=rng();
@@ -780,7 +796,7 @@
                 isPlaying=true; updPlay(); openFullPlayer(); startWaveform();
             }
         }
-        function toggleTrackChirp(){if(!currentTrack)return; const i=savedChirps.findIndex(x=>x.id===currentTrack.id); if(i>-1)savedChirps.splice(i,1); else{savedChirps.unshift(currentTrack);showToast();} localStorage.setItem('chirps_v44',JSON.stringify(savedChirps)); renderLibrary(); const b=document.getElementById('fp-bird-btn'); const is=savedChirps.some(x=>x.id===currentTrack.id); b.style.background=is?'var(--text-primary)':'rgba(255,255,255,0.1)'; b.style.color=is?'var(--bg-color)':'inherit';}
+        function toggleTrackChirp(){if(!currentTrack)return; const i=savedChirps.findIndex(x=>x.id===currentTrack.id); if(i>-1)savedChirps.splice(i,1); else{savedChirps.unshift(currentTrack);showToast();} localStorage.setItem('chirps_v45',JSON.stringify(savedChirps)); renderLibrary(); const b=document.getElementById('fp-bird-btn'); const is=savedChirps.some(x=>x.id===currentTrack.id); b.style.background=is?'var(--text-primary)':'rgba(255,255,255,0.1)'; b.style.color=is?'var(--bg-color)':'inherit';}
         function toggleTrackChirpSearch(id) { alert("Saved to Library!"); }
 
         function openFullPlayer(){document.getElementById('full-player').classList.add('active');document.getElementById('mini-player').classList.add('expanded');}
@@ -826,7 +842,7 @@
 
         // --- 5. UI ---
         function init(){
-            renderLibrary(); loadHomeContent(); setInterval(simLive,1400); 
+            renderLibrary(); renderFeatured(); loadHomeContent(); setInterval(simLive,1400); 
             document.getElementById('view-profile-detail').addEventListener('scroll',e=>{if(e.target.scrollTop+e.target.clientHeight>=e.target.scrollHeight-50)renderMore();});
             switchView('home', document.querySelectorAll('.nav-item')[0]);
             window.onpopstate = (event) => { if(event.state && event.state.view) { if(event.state.view === 'profile') { closeProfile(); switchView(event.state.prevView || 'home'); } else { closeProfile(); switchView(event.state.view); } } };
@@ -834,16 +850,64 @@
             if ('serviceWorker' in navigator) {
                 window.addEventListener('load', () => {
                     navigator.serviceWorker.register('./service-worker.js').catch(console.log);
-                    setTimeout(() => { if (deferredPrompt) { openInstallModal(); } }, 3000);
+                    setTimeout(() => { if (deferredPrompt) { document.getElementById('install-modal').classList.add('active'); document.getElementById('install-overlay').classList.add('active'); } }, 3000);
                 });
             }
         }
 
+        async function renderFeatured() {
+            const c = document.createElement('div');
+            c.className = 'section-title'; 
+            c.innerHTML = 'Featured Stories <span class="new-badge">New</span>';
+            const s = document.createElement('div');
+            s.className = 'story-scroll';
+            s.id = 'featured-stories';
+            
+            // Insert at top of home view
+            const homeView = document.getElementById('view-home');
+            homeView.insertBefore(s, homeView.firstChild);
+            homeView.insertBefore(c, homeView.firstChild);
+            
+            FEATURED_PODCASTS.forEach(name => {
+                const item = document.createElement('div');
+                item.className = 'story-item glass-shine-hover';
+                // Generate deterministic art
+                const rng = seededRandom(name);
+                const hue = Math.floor(rng() * 360);
+                
+                item.onclick = () => {
+                    switchView('discover', document.querySelectorAll('.nav-item')[1]);
+                    document.getElementById('search-input').value = name;
+                    doSearch(name);
+                };
+                
+                item.innerHTML = `
+                    <div class="story-ring">
+                        <img class="story-img" src="https://picsum.photos/100?random=${Math.floor(rng()*1000)}" onerror="this.style.background='hsl(${hue}, 60%, 50%)'">
+                    </div>
+                    <div class="story-name">${name}</div>
+                `;
+                s.appendChild(item);
+            });
+        }
+
         async function loadHomeContent(){
+            // Dynamic Trending/Recs based on history
+            let trendQuery = 'Popular';
+            let recQuery = 'Culture';
+            
+            if(searchHistory.length > 0) {
+                recQuery = searchHistory[searchHistory.length - 1]; // Last search
+                if(searchHistory.length > 1) trendQuery = searchHistory[Math.floor(Math.random() * searchHistory.length)];
+            }
+            
+            document.getElementById('trending-container').previousElementSibling.innerText = `Trending in ${trendQuery}`;
+            document.getElementById('mix-container').previousElementSibling.innerText = `Because you searched "${recQuery}"`;
+
             const t=document.getElementById('trending-container'); t.innerHTML='';
-            const res=await search('Popular','podcast'); if(res.length===0)t.innerHTML='<div style="padding:20px;opacity:0.5">Offline</div>'; else res.slice(0,10).forEach(i=>createCard(i,t));
+            const res=await search(trendQuery,'podcast'); if(res.length===0)t.innerHTML='<div style="padding:20px;opacity:0.5">Offline</div>'; else res.slice(0,10).forEach(i=>createCard(i,t));
             const m=document.getElementById('mix-container'); m.innerHTML='';
-            const mix=await search('Culture','podcast'); if(mix.length>0)mix.slice(0,10).forEach(i=>createCard(i,m));
+            const mix=await search(recQuery,'podcast'); if(mix.length>0)mix.slice(0,10).forEach(i=>createCard(i,m));
         }
 
         function createCard(i,c){
@@ -884,32 +948,25 @@
             });
         }
 
-        function handleSearch(e){ if(e.key==='Enter'){ document.getElementById('search-input').blur(); if(currentFilter==='charts') setFilter('all',document.querySelector('.filters .chip')); doSearch(e.target.value); } }
+        function handleSearch(e){ 
+            if(e.key==='Enter'){ 
+                const val = e.target.value.trim();
+                if(val) {
+                    searchHistory.push(val);
+                    if(searchHistory.length > 5) searchHistory.shift();
+                    localStorage.setItem('search_history', JSON.stringify(searchHistory));
+                }
+                document.getElementById('search-input').blur(); 
+                if(currentFilter==='charts') setFilter('all',document.querySelector('.filters .chip')); 
+                doSearch(val); 
+            } 
+        }
 
         async function doSearch(q){
             const c=document.getElementById('search-results'); c.innerHTML='<div class="spinner"></div>';
             const r=await search(q); c.innerHTML=''; 
             if(r.length===0){c.innerHTML='<div style="text-align:center;opacity:0.5;padding:20px">No results</div>';return;}
-            
-            // Inject Ads
-            let resultsWithAds = [...r];
-            let adCounter = 0;
-            for(let i=4; i<resultsWithAds.length; i+=5) {
-                const ad = SPONSORED_ADS[adCounter % SPONSORED_ADS.length];
-                resultsWithAds.splice(i, 0, { isAd: true, ...ad });
-                adCounter++;
-                i++; 
-            }
-
-            resultsWithAds.forEach(i=>{
-                if(i.isAd) {
-                    const el=document.createElement('div'); el.className='list-item premium-hover glass-shine-hover';
-                    el.onclick = () => alert("Opening Sponsor...");
-                    el.innerHTML=`<img src="${i.image}" class="list-img"><div style="flex:1"><div style="font-weight:700;">${i.title}</div><div style="font-size:0.8rem;opacity:0.6;display:flex;align-items:center;">${i.artist} <span class="sponsored-badge">SPONSORED</span></div></div>`;
-                    c.appendChild(el);
-                    return;
-                }
-
+            r.forEach(i=>{
                 const s=getDeterministicStats(i.id.toString(), i.type==='profile', i.date);
                 const parsed = parseTitleAndArtist(i.title, i.artist);
                 const el=document.createElement('div'); el.className='list-item premium-hover glass-shine-hover';
