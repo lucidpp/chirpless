@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chirpless</title>
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="siteicon.png">
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;700&display=swap" rel="stylesheet">
     <style>
@@ -29,7 +31,7 @@
             width: 100vw;
             height: 100vh;
             z-index: -1;
-            opacity: 0.03;
+            opacity: 0.04;
             background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
             pointer-events: none;
         }
@@ -37,13 +39,13 @@
         /* Minimalist Glass */
         .glass-panel {
             background: rgba(255, 255, 255, 0.03);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
             border: 1px solid rgba(255, 255, 255, 0.08);
         }
         
         .header-blur {
-            background: rgba(0, 0, 0, 0.8);
+            background: rgba(0, 0, 0, 0.7);
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
             border-bottom: 1px solid rgba(255, 255, 255, 0.05);
@@ -54,10 +56,11 @@
             position: relative;
             overflow: hidden;
             transition: transform 0.2s cubic-bezier(0.2, 0, 0.2, 1), background-color 0.2s ease, border-color 0.2s ease;
+            user-select: none;
         }
 
         .btn-animated:active {
-            transform: scale(0.94);
+            transform: scale(0.95);
         }
 
         /* Ripple Effect */
@@ -66,30 +69,39 @@
             background: rgba(255, 255, 255, 0.3);
             border-radius: 50%;
             transform: scale(0);
-            animation: ripple-animation 0.6s linear;
+            animation: ripple-animation 0.5s linear;
             pointer-events: none;
         }
 
         @keyframes ripple-animation {
-            to {
-                transform: scale(4);
-                opacity: 0;
-            }
+            to { transform: scale(4); opacity: 0; }
         }
 
-        /* Entrance Animations */
-        .fade-up {
-            animation: fadeUp 0.8s cubic-bezier(0.2, 0, 0.2, 1) forwards;
+        /* Scroll Animation Utility */
+        .reveal {
             opacity: 0;
+            transform: translateY(30px);
+            transition: all 0.8s cubic-bezier(0.2, 0, 0.2, 1);
         }
 
-        @keyframes fadeUp {
+        .reveal.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Hero Animation */
+        .hero-reveal {
+            animation: heroReveal 1s cubic-bezier(0.2, 0, 0.2, 1) forwards;
+        }
+
+        @keyframes heroReveal {
             from { opacity: 0; transform: translateY(20px); }
             to { opacity: 1; transform: translateY(0); }
         }
 
-        .delay-1 { animation-delay: 0.1s; }
-        .delay-2 { animation-delay: 0.2s; }
+        @media (max-width: 768px) {
+            .mobile-padding { padding-top: 5rem; }
+        }
     </style>
 </head>
 <body class="antialiased min-h-screen flex flex-col selection:bg-white selection:text-black">
@@ -98,68 +110,70 @@
 
     <!-- Header -->
     <header class="fixed top-0 w-full z-50 header-blur">
-        <div class="max-w-5xl mx-auto px-6 h-16 flex items-center justify-center">
-            <h1 class="text-2xl font-bold tracking-tight text-white cursor-default">
-                Chirpless
-            </h1>
+        <div class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-center">
+            <div class="flex items-center gap-3">
+                <img src="siteicon.png" alt="Chirpless Icon" class="w-6 h-6 object-contain" onerror="this.style.display='none'">
+                <h1 class="text-xl font-bold tracking-tight text-white cursor-default">
+                    Chirpless
+                </h1>
+            </div>
         </div>
     </header>
 
     <!-- Main Content -->
-    <main class="flex-grow flex items-center justify-center pt-20 px-4">
-        <div class="w-full max-w-5xl mx-auto grid md:grid-cols-2 gap-16 items-center">
+    <main class="flex-grow flex items-center justify-center px-6 mobile-padding py-24 md:py-0">
+        <div class="w-full max-w-6xl mx-auto grid lg:grid-cols-2 gap-12 items-center">
             
-            <!-- Left: Hero Text -->
-            <div class="space-y-8 text-center md:text-left z-10">
-                <h2 class="text-5xl md:text-7xl font-bold leading-tight tracking-tight fade-up">
+                
+                <h2 class="text-5xl md:text-7xl font-bold leading-[1.1] tracking-tight">
                     Social without <br>
                     <span class="text-neutral-500">the noise.</span>
                 </h2>
-                <p class="text-lg text-neutral-400 max-w-md mx-auto md:mx-0 leading-relaxed font-light fade-up delay-1">
-                    A pure, federated experience. Connect with community on your own terms. Simple, fast, and open.
+                <p class="text-lg md:text-xl text-neutral-400 max-w-md mx-auto lg:mx-0 leading-relaxed font-light">
+                    The federated home for conversations that matter. Pure. Minimal. Open.
                 </p>
 
                 <!-- CTA Buttons -->
-                <div class="flex flex-col sm:flex-row gap-4 justify-center md:justify-start pt-6 fade-up delay-2">
-                    <a href="https://s.chirpless.com/login" class="nav-link btn-animated px-8 py-3.5 bg-white text-black rounded-xl font-semibold text-center hover:bg-neutral-200">
+                <div class="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start pt-4">
+                    <a href="https://web.chirpless.com/login" class="nav-link btn-animated px-10 py-4 bg-white text-black rounded-2xl font-bold text-center hover:bg-neutral-200 transition-colors">
                         Sign In
                     </a>
                     
-                    <a href="https://s.chirpless.com/signup/photon-w2vyv-u65756.vm.elestio.app" class="nav-link btn-animated px-8 py-3.5 border border-neutral-700 text-white rounded-xl font-semibold text-center hover:border-neutral-500">
+                    <a href="https://web.chirpless.com/signup/photon-w2vyv-u65756.vm.elestio.app" class="nav-link btn-animated px-10 py-4 border border-neutral-800 text-white rounded-2xl font-bold text-center hover:bg-neutral-900 transition-all">
                         Create Account
                     </a>
                 </div>
             </div>
 
-            <!-- Right: Visual -->
-            <div class="relative hidden md:flex justify-center h-[400px] fade-up delay-2">
-                <div class="relative w-72 h-full">
-                    <div class="absolute top-0 right-4 w-64 p-5 glass-panel rounded-2xl border border-neutral-800 transform rotate-[-3deg] hover:rotate-0 transition-all duration-700 ease-out z-20 bg-black/40">
-                        <div class="flex items-center space-x-3 mb-4">
-                            <div class="w-8 h-8 rounded-full bg-neutral-800"></div>
-                            <div class="h-2 w-20 bg-neutral-800 rounded-full"></div>
+            <!-- Right: Visual (Hidden on small mobile) -->
+            <div class="relative hidden lg:flex justify-end h-[450px] hero-reveal" style="animation-delay: 0.2s;">
+                <div class="relative w-80">
+                    <div class="absolute top-0 right-0 w-72 p-6 glass-panel rounded-[2rem] border border-neutral-800 transform rotate-[-4deg] hover:rotate-0 transition-all duration-1000 ease-out z-20 bg-black/60 shadow-2xl">
+                        <div class="flex items-center space-x-3 mb-6">
+                            <div class="w-10 h-10 rounded-full bg-neutral-800 animate-pulse"></div>
+                            <div class="h-2 w-24 bg-neutral-800 rounded-full"></div>
                         </div>
-                        <div class="space-y-3">
-                            <div class="h-24 bg-neutral-900/50 rounded-xl border border-neutral-800/50"></div>
-                            <div class="h-1.5 w-full bg-neutral-800 rounded-full"></div>
-                            <div class="h-1.5 w-3/4 bg-neutral-800 rounded-full"></div>
+                        <div class="space-y-4">
+                            <div class="h-32 bg-neutral-900/80 rounded-2xl border border-neutral-800/50"></div>
+                            <div class="h-2 w-full bg-neutral-800 rounded-full"></div>
+                            <div class="h-2 w-4/5 bg-neutral-800 rounded-full"></div>
                         </div>
-                        <div class="flex gap-4 mt-6 text-neutral-600">
-                             <div class="w-5 h-5 rounded-full border border-neutral-700"></div>
-                             <div class="w-5 h-5 rounded-full border border-neutral-700"></div>
-                             <div class="w-5 h-5 rounded-full border border-neutral-700"></div>
+                        <div class="flex gap-6 mt-8 text-neutral-600">
+                             <div class="w-6 h-6 rounded-lg border border-neutral-800"></div>
+                             <div class="w-6 h-6 rounded-lg border border-neutral-800"></div>
+                             <div class="w-6 h-6 rounded-lg border border-neutral-800"></div>
                         </div>
                     </div>
 
-                    <div class="absolute top-12 right-12 w-64 p-5 glass-panel rounded-2xl border border-neutral-800 transform rotate-[3deg] z-10 opacity-40 grayscale">
-                        <div class="flex items-center space-x-3 mb-4">
-                            <div class="w-8 h-8 rounded-full bg-neutral-800"></div>
-                            <div class="h-2 w-20 bg-neutral-800 rounded-full"></div>
+                    <div class="absolute top-16 -left-12 w-72 p-6 glass-panel rounded-[2rem] border border-neutral-800 transform rotate-[4deg] z-10 opacity-30 grayscale">
+                        <div class="flex items-center space-x-3 mb-6">
+                            <div class="w-10 h-10 rounded-full bg-neutral-800"></div>
+                            <div class="h-2 w-24 bg-neutral-800 rounded-full"></div>
                         </div>
-                        <div class="space-y-3">
-                            <div class="h-1.5 w-full bg-neutral-800 rounded-full"></div>
-                            <div class="h-1.5 w-full bg-neutral-800 rounded-full"></div>
-                            <div class="h-1.5 w-1/2 bg-neutral-800 rounded-full"></div>
+                        <div class="space-y-4">
+                            <div class="h-2 w-full bg-neutral-800 rounded-full"></div>
+                            <div class="h-2 w-full bg-neutral-800 rounded-full"></div>
+                            <div class="h-2 w-3/5 bg-neutral-800 rounded-full"></div>
                         </div>
                     </div>
                 </div>
@@ -167,72 +181,92 @@
         </div>
     </main>
 
-    <!-- Minimal Features -->
-    <section class="py-24 px-4 border-t border-neutral-900">
-        <div class="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-12">
-            <div class="group cursor-default">
-                <div class="w-10 h-10 border border-neutral-800 rounded-lg flex items-center justify-center mb-4 group-hover:border-white transition-all duration-300">
-                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+    <!-- Scroll Reveal Features -->
+    <section class="py-32 px-6 border-t border-neutral-900/50 bg-neutral-950/20">
+        <div class="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-16">
+            <!-- Feature 1 -->
+            <div class="reveal group">
+                <div class="w-12 h-12 border border-neutral-800 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-white group-hover:text-black transition-all duration-500 text-neutral-400">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"></path></svg>
                 </div>
-                <h3 class="text-lg font-semibold mb-2 text-white">Federated</h3>
-                <p class="text-neutral-500 text-sm leading-relaxed">Connected to the open web. No walled gardens.</p>
+                <h3 class="text-xl font-bold mb-3">Federated</h3>
+                <p class="text-neutral-500 leading-relaxed">Cross-instance communication powered by ActivityPub. Your world, expanded.</p>
             </div>
 
-            <div class="group cursor-default">
-                <div class="w-10 h-10 border border-neutral-800 rounded-lg flex items-center justify-center mb-4 group-hover:border-white transition-all duration-300">
-                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+            <!-- Feature 2 -->
+            <div class="reveal group" style="transition-delay: 0.1s;">
+                <div class="w-12 h-12 border border-neutral-800 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-white group-hover:text-black transition-all duration-500 text-neutral-400">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
                 </div>
-                <h3 class="text-lg font-semibold mb-2 text-white">Fast</h3>
-                <p class="text-neutral-500 text-sm leading-relaxed">Built for speed. Interactions feel instant.</p>
+                <h3 class="text-xl font-bold mb-3">Instant</h3>
+                <p class="text-neutral-500 leading-relaxed">Real-time updates and lightning-fast loading. Zero friction interaction.</p>
             </div>
 
-            <div class="group cursor-default">
-                <div class="w-10 h-10 border border-neutral-800 rounded-lg flex items-center justify-center mb-4 group-hover:border-white transition-all duration-300">
-                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+            <!-- Feature 3 -->
+            <div class="reveal group" style="transition-delay: 0.2s;">
+                <div class="w-12 h-12 border border-neutral-800 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-white group-hover:text-black transition-all duration-500 text-neutral-400">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
                 </div>
-                <h3 class="text-lg font-semibold mb-2 text-white">Secure</h3>
-                <p class="text-neutral-500 text-sm leading-relaxed">Privacy-first design. Your data is yours.</p>
+                <h3 class="text-xl font-bold mb-3">Sovereign</h3>
+                <p class="text-neutral-500 leading-relaxed">Encryption and privacy at the core. You own your identity and your data.</p>
             </div>
         </div>
     </section>
 
-    <footer class="py-12 text-center text-neutral-600 text-xs">
+    <!-- Final CTA Reveal -->
+    <section class="py-32 px-6 text-center reveal">
+        <h2 class="text-4xl md:text-5xl font-bold mb-8">Join the evolution.</h2>
+        <a href="https://web.chirpless.com/signup/photon-w2vyv-u65756.vm.elestio.app" class="nav-link inline-block btn-animated px-12 py-5 bg-white text-black rounded-2xl font-bold text-lg hover:bg-neutral-200">
+            Get Started
+        </a>
+    </section>
+
+    <footer class="py-12 text-center text-neutral-700 text-xs border-t border-neutral-900">
+        <div class="flex items-center justify-center gap-4 mb-4">
+            <a href="#" class="hover:text-white transition-colors">Privacy</a>
+            <a href="#" class="hover:text-white transition-colors">Terms</a>
+            <a href="#" class="hover:text-white transition-colors">Support</a>
+        </div>
         <p>&copy; 2026 Chirpless. All rights reserved.</p>
     </footer>
 
     <script>
+        // Intersection Observer for Scroll Animations
+        const revealCallback = (entries, observer) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('active');
+                }
+            });
+        };
+
+        const observer = new IntersectionObserver(revealCallback, {
+            threshold: 0.1
+        });
+
+        document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
         // Button Ripple and Navigation Logic
         document.querySelectorAll('.btn-animated').forEach(button => {
             button.addEventListener('mousedown', function(e) {
-                // Create ripple
                 const ripple = document.createElement('span');
                 ripple.classList.add('ripple');
-                
-                // Position ripple
                 const rect = this.getBoundingClientRect();
-                const x = e.clientX - rect.left;
-                const y = e.clientY - rect.top;
-                
-                ripple.style.left = `${x}px`;
-                ripple.style.top = `${y}px`;
-                
+                ripple.style.left = `${e.clientX - rect.left}px`;
+                ripple.style.top = `${e.clientY - rect.top}px`;
                 this.appendChild(ripple);
-                
-                // Cleanup ripple
-                setTimeout(() => ripple.remove(), 600);
+                setTimeout(() => ripple.remove(), 500);
             });
 
             button.addEventListener('click', function(e) {
-                e.preventDefault();
                 const targetUrl = this.getAttribute('href');
-                
-                // Add transition class to body
-                document.body.classList.add('leaving');
-                
-                // Delay actual navigation for the animation
-                setTimeout(() => {
-                    window.location.href = targetUrl;
-                }, 400);
+                if (targetUrl && targetUrl !== '#') {
+                    e.preventDefault();
+                    document.body.classList.add('leaving');
+                    setTimeout(() => {
+                        window.location.href = targetUrl;
+                    }, 400);
+                }
             });
         });
     </script>
